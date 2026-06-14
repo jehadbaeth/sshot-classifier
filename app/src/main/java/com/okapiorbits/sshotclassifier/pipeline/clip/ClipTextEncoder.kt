@@ -17,7 +17,7 @@ import kotlin.math.sqrt
 class ClipTextEncoder @Inject constructor(
     private val modelManager: ClipModelManager,
     private val tokenizer: ClipTokenizer,
-) {
+) : TextEmbedder {
     @Volatile private var interpreter: Interpreter? = null
 
     private fun ensureInterpreter(): Interpreter? {
@@ -30,10 +30,10 @@ class ClipTextEncoder @Inject constructor(
         }
     }
 
-    fun isReady(): Boolean = modelManager.isTextModelInstalled()
+    override fun isReady(): Boolean = modelManager.isTextModelInstalled()
 
     /** Returns the L2-normalized text embedding, or null if model missing or run fails. */
-    fun encode(text: String): FloatArray? {
+    override fun encode(text: String): FloatArray? {
         val interp = ensureInterpreter() ?: return null
         val tokens = tokenizer.tokenize(text, ClipModelManager.CONTEXT_LENGTH)
         val input = arrayOf(tokens) // [1, 77] int32

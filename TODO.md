@@ -26,6 +26,14 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Now / next up
 
+- [x] **Close the search-path test gap (done 2026-06-14).** The repository fusion
+      glue was previously unverified at runtime. Extracted RRF + FTS sanitization +
+      result reordering into a pure `SearchFusion` object with JVM unit tests (run in
+      CI), added a `TextEmbedder` interface seam, and added `HybridSearchInstrumentedTest`
+      that drives the REAL Room FTS4 DB through `hybridSearch` with a fake embedder
+      (no model files). 5/5 pass on emulator. Remaining gaps: two-file download not
+      re-run e2e (low risk, loop logic is simple), and the on-device CLIP test set is
+      small/partly synthetic (backlog).
 - [ ] Phase 4: user-triggered reorganization into app-managed folder (margin/OCR
       gate), custom user tags, "needs review" surface, settings.
 - [ ] Reprocess action to re-tag/re-embed already-DONE screenshots after model
@@ -149,6 +157,11 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Decisions log (newest first)
 
+- **2026-06-14 — Search fusion is pure + seam-tested.** Hybrid search logic lives in
+  `SearchFusion` (pure, JVM-unit-tested in CI) and `SemanticSearcher` depends on a
+  `TextEmbedder` interface, not the concrete `ClipTextEncoder`. This lets the real
+  Room path be integration-tested with a fake embedder (no 65 MB model), closing the
+  earlier "repository fusion never exercised at runtime" gap.
 - **2026-06-14 — Phase 3 fusion = reciprocal rank fusion, not weighted scores.**
   CLIP text-image cosine (~0.2-0.35) and a binary FTS hit live on incompatible
   scales; normalizing them is fiddly and fragile. RRF fuses by rank position, is

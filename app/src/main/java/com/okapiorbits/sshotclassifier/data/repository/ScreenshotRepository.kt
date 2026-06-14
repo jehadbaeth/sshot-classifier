@@ -33,7 +33,7 @@ class ScreenshotRepository @Inject constructor(
 
     /** Full-text OCR search. Empty/blank query returns nothing. */
     fun search(query: String): Flow<List<ScreenshotWithTags>> {
-        val fts = toFtsPrefixQuery(query) ?: return flowOf(emptyList())
+        val fts = SearchFusion.toFtsPrefixQuery(query) ?: return flowOf(emptyList())
         return dao.searchByText(fts)
     }
 
@@ -51,41 +51,16 @@ class ScreenshotRepository @Inject constructor(
         if (query.isBlank()) return emptyList()
 
         val visualRanking = semanticSearcher.search(query, limit).map { it.screenshotId }
-        val textRanking = toFtsPrefixQuery(query)
+        val textRanking = SearchFusion.toFtsPrefixQuery(query)
             ?.let { dao.searchIdsByText(it) }
             ?: emptyList()
 
-        val fused = reciprocalRankFusion(listOf(visualRanking, textRanking))
+        val fused = SearchFusion.reciprocalRankFusion(listOf(visualRanking, textRanking))
             .take(limit)
         if (fused.isEmpty()) return emptyList()
 
         val byId = dao.screenshotsByIds(fused).associateBy { it.screenshot.id }
-        return fused.mapNotNull { byId[it] }
-    }
-
-    /** Reciprocal rank fusion over multiple ranked id lists. Returns ids by score desc. */
-    private fun reciprocalRankFusion(rankings: List<List<Long>>, k: Int = 60): List<Long> {
-        val scores = HashMap<Long, Double>()
-        for (ranking in rankings) {
-            ranking.forEachIndexed { rank, id ->
-                scores[id] = (scores[id] ?: 0.0) + 1.0 / (k + rank + 1)
-            }
-        }
-        return scores.entries.sortedByDescending { it.value }.map { it.key }
-    }
-
-    /**
-     * Turns free user text into a safe FTS4 MATCH expression: strip special
-     * characters, then prefix-match each token (AND semantics). Returns null if
-     * nothing usable remains.
-     */
-    private fun toFtsPrefixQuery(raw: String): String? {
-        val tokens = raw.lowercase()
-            .replace(Regex("""[^\p{L}\p{N}\s]"""), " ")
-            .split(Regex("""\s+"""))
-            .filter { it.isNotBlank() }
-        if (tokens.isEmpty()) return null
-        return tokens.joinToString(" ") { "$it*" }
+        return SearchFusion.reorderTo(fused, byId)
     }
 
     /**

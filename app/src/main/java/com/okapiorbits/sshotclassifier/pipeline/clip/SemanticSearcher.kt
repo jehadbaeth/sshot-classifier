@@ -21,7 +21,7 @@ data class SemanticHit(val screenshotId: Long, val score: Float)
 @Singleton
 class SemanticSearcher @Inject constructor(
     private val dao: ScreenshotDao,
-    private val textEncoder: ClipTextEncoder,
+    private val textEncoder: TextEmbedder,
 ) {
     suspend fun search(query: String, limit: Int = 100): List<SemanticHit> =
         withContext(Dispatchers.Default) {

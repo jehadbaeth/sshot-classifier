@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.okapiorbits.sshotclassifier.data.db.AppDatabase
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
+import com.okapiorbits.sshotclassifier.pipeline.clip.ClipTextEncoder
+import com.okapiorbits.sshotclassifier.pipeline.clip.TextEmbedder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,4 +27,7 @@ object AppModule {
 
     @Provides
     fun provideScreenshotDao(db: AppDatabase): ScreenshotDao = db.screenshotDao()
+
+    @Provides
+    fun provideTextEmbedder(encoder: ClipTextEncoder): TextEmbedder = encoder
 }
