@@ -34,13 +34,20 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       (no model files). 5/5 pass on emulator. Remaining gaps: two-file download not
       re-run e2e (low risk, loop logic is simple), and the on-device CLIP test set is
       small/partly synthetic (backlog).
-- [~] Phase 4 (started). Done: reprocess action, Settings screen, custom user tags
-      (manual + auto-categories) — all below. Next: "needs review" surface, then
-      user-triggered file reorganization.
-- [ ] **v0.5.0 release pending.** Six shippable changes have stacked up since v0.4.0
-      (search hardening, reprocess, Node 24, Settings, manual tags, custom categories)
-      with versionCode still 4. Per our cadence we release at phase end; cut v0.5.0 once
-      the remaining Phase 4 items land, or sooner on request.
+- [x] **Phase 4 COMPLETE, v0.5.0 RELEASED (2026-06-14).** Reprocess, Settings, custom
+      tags (manual + auto-categories), needs-review surface, copy-into-tag-albums reorg.
+      Tech debt cleared: OCR min-score floor, foreground-service processing, doc updates.
+- [ ] **Usage guide + screenshots in README (or docs/ subsection).** Write a detailed,
+      user-facing walkthrough: install the model, scan, browse tags, search (text +
+      visual), manual tags, custom categories, needs-review, reorganize. Include
+      annotated screenshots of each screen. (Requested 2026-06-14.)
+- [ ] **Scale / load test on 500-1000 screenshots.** The whole point is classifying a
+      large library, but we have only tested ~4 images. Generate/seed a few hundred to
+      ~1000 screenshots and verify on device: full backfill via the foreground-service
+      worker (battery/thermal, no ANR), brute-force cosine search latency + memory at
+      that size (design sec 12 targets: <50ms search, ~20MB vectors for 10k), reorg copy
+      throughput, and that the JobScheduler does not wedge at volume. Likely needs a test
+      fixture that bulk-generates screenshots. (Requested 2026-06-14.)
 - [x] **Device-matrix + real-model validation (done 2026-06-14).** Created a Galaxy
       S20 FE-shaped AVD (1080x2400, 420 dpi) on Android 13 / API 33 (galaxy_s20fe_api33).
       NOTE: the stock emulator cannot run Samsung firmware / One UI — S20-FE-shaped AVD on
