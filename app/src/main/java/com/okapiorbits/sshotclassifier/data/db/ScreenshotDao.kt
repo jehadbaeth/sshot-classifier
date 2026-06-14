@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
+import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.EmbeddingEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrEntryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrFtsEntity
@@ -61,6 +62,27 @@ interface ScreenshotDao {
     /** One screenshot by id (for the detail view); null if it was removed. */
     @Query("SELECT * FROM screenshots WHERE id = :id")
     fun observeScreenshot(id: Long): Flow<ScreenshotEntity?>
+
+    /** Removes all tags with a given label and source (used when a custom category is deleted). */
+    @Query("DELETE FROM tags WHERE label = :label AND source = :source")
+    suspend fun deleteTagsByLabelAndSource(label: String, source: String)
+
+    // ---- User-defined auto-tag categories ----
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertCategory(category: CustomCategoryEntity): Long
+
+    @Query("SELECT * FROM custom_categories ORDER BY label ASC")
+    fun observeCategories(): Flow<List<CustomCategoryEntity>>
+
+    @Query("SELECT * FROM custom_categories")
+    suspend fun allCategories(): List<CustomCategoryEntity>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM custom_categories WHERE label = :label)")
+    suspend fun categoryExists(label: String): Boolean
+
+    @Query("DELETE FROM custom_categories WHERE id = :id")
+    suspend fun deleteCategory(id: Long)
 
     @Query("DELETE FROM tags WHERE screenshot_id = :screenshotId AND source != 'USER'")
     suspend fun deleteAutoTags(screenshotId: Long)

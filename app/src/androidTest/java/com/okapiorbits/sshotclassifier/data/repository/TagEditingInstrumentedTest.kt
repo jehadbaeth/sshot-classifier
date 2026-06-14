@@ -10,6 +10,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
+import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
 import com.okapiorbits.sshotclassifier.pipeline.clip.TextEmbedder
 import kotlinx.coroutines.flow.first
@@ -35,6 +36,10 @@ class TagEditingInstrumentedTest {
         override fun isReady() = false
         override fun encode(text: String): FloatArray? = null
     }
+    private val noLabelEmbedder = object : LabelEmbedder {
+        override fun isReady() = false
+        override fun embed(label: String): FloatArray? = null
+    }
 
     @Before
     fun setUp() {
@@ -46,6 +51,7 @@ class TagEditingInstrumentedTest {
             scanner = MediaStoreScanner(context),
             hasher = ImageHasher(context),
             semanticSearcher = SemanticSearcher(dao, noEmbedder),
+            categoryEmbedder = noLabelEmbedder,
         )
         runBlocking {
             dao.insert(

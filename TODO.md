@@ -34,8 +34,9 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       (no model files). 5/5 pass on emulator. Remaining gaps: two-file download not
       re-run e2e (low risk, loop logic is simple), and the on-device CLIP test set is
       small/partly synthetic (backlog).
-- [~] Phase 4 (started). Done: reprocess action, Settings screen (below). Next:
-      custom user tags, "needs review" surface, user-triggered file reorganization.
+- [~] Phase 4 (started). Done: reprocess action, Settings screen, custom user tags
+      (manual + auto-categories) — all below. Next: "needs review" surface, then
+      user-triggered file reorganization.
 - [x] **Reprocess action (done 2026-06-14).** Gallery banner appears when the image
       model is installed and there are DONE screenshots with no embedding; tapping it
       resets those rows to PENDING and enqueues the worker, which re-runs them through
@@ -109,12 +110,16 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Reprocess already-DONE-but-unembedded screenshots after model install
       (gallery banner -> reset to PENDING -> worker re-embeds; DAO tested on device)
 - [ ] User-triggered file reorganization into app-managed folder (margin/OCR gate, not raw floor)
-- [~] Custom user tags. Slice 1 DONE (manual per-image tags): tap a gallery cell ->
-      detail/tag-editor (image + tag chips + add field); add a user tag (trim+lowercase
-      +dedup, source=USER) or remove ANY tag incl. wrong auto ones. In-Gallery selection
-      state + BackHandler, no Nav-Compose. DAO/repo verified (TagEditingInstrumentedTest)
-      + full add/remove flow smoke-tested on device. Slice 2 TODO: custom auto-categories
-      embedded on-device via the text encoder (prompt-ensembled) joining zero-shot.
+- [x] Custom user tags (DONE 2026-06-14, both slices). Slice 1: manual per-image tags
+      (gallery cell -> detail/tag-editor; add user tag trim+lowercase+dedup source=USER,
+      or remove ANY tag). Slice 2: custom AUTO-categories. User defines a concept; it is
+      prompt-ensembled on-device by the text encoder (CategoryEmbedder, 7 templates,
+      averaged+normalized), stored, and scored against image embeddings by INDEPENDENT
+      cosine threshold (CustomCategoryScorer, 0.24) — additive, does not touch the
+      built-in softmax (decided with user). Adding a category immediately tags matching
+      already-indexed screenshots; new ones are scored in ImageProcessor. Managed in
+      Settings (gated on text model). Tests: CustomCategoryScorerTest (unit, CI) +
+      CustomCategoryRepoTest (real Room, fake embedder) + Settings UI smoke-tested.
 - [ ] "Needs review" surface for low-confidence/contradicted tags
 - [x] Settings screen (done 2026-06-14): third bottom-nav tab. Library stats, AI
       model status + install/update, reprocess + scan-now, About/version. Smoke-tested

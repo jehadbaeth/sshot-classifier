@@ -10,6 +10,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipEncoder
+import com.okapiorbits.sshotclassifier.pipeline.clip.CustomCategoryScorer
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
 import com.okapiorbits.sshotclassifier.pipeline.clip.TagFuser
 import com.okapiorbits.sshotclassifier.pipeline.clip.ZeroShotClassifier
@@ -59,6 +60,17 @@ class ImageProcessor @Inject constructor(
                 TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.FUSED.name)
             }
             if (tags.isNotEmpty()) dao.insertTags(tags)
+
+            // User-defined auto-categories (additive; independent of the built-in tags).
+            val categories = dao.allCategories().map {
+                CustomCategoryScorer.Category(it.label, EmbeddingCodec.toFloats(it.embedding))
+            }
+            if (categories.isNotEmpty()) {
+                val customTags = CustomCategoryScorer.score(embedding, categories).map {
+                    TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.CUSTOM.name)
+                }
+                if (customTags.isNotEmpty()) dao.insertTags(customTags)
+            }
         } else {
             val tags = ocrCandidates.map {
                 TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.OCR_HEURISTIC.name)

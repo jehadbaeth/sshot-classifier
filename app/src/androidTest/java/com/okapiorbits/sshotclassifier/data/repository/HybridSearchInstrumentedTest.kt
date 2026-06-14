@@ -11,6 +11,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
+import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
 import com.okapiorbits.sshotclassifier.pipeline.clip.TextEmbedder
 import kotlinx.coroutines.runBlocking
@@ -55,11 +56,17 @@ class HybridSearchInstrumentedTest {
     @After
     fun tearDown() = db.close()
 
+    private val noLabelEmbedder = object : LabelEmbedder {
+        override fun isReady() = false
+        override fun embed(label: String): FloatArray? = null
+    }
+
     private fun repo(embedder: TextEmbedder) = ScreenshotRepository(
         dao = dao,
         scanner = MediaStoreScanner(context),
         hasher = ImageHasher(context),
         semanticSearcher = SemanticSearcher(dao, embedder),
+        categoryEmbedder = noLabelEmbedder,
     )
 
     /** Inserts a screenshot with OCR text and an embedding aligned to [axis]. */

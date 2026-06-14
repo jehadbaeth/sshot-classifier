@@ -3,11 +3,15 @@ package com.okapiorbits.sshotclassifier.data.repository
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.data.db.TagCount
+import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
+import com.okapiorbits.sshotclassifier.pipeline.clip.CustomCategoryScorer
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
+import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -20,6 +24,7 @@ class ScreenshotRepository @Inject constructor(
     private val scanner: MediaStoreScanner,
     private val hasher: ImageHasher,
     private val semanticSearcher: SemanticSearcher,
+    private val categoryEmbedder: LabelEmbedder,
 ) {
     fun observeGallery(): Flow<List<ScreenshotWithTags>> = dao.observeAllWithTags()
 
@@ -65,6 +70,62 @@ class ScreenshotRepository @Inject constructor(
 
     /** Removes any single tag (user-added or a wrong auto tag) by row id. */
     suspend fun removeTag(tagId: Long) = dao.deleteTag(tagId)
+
+    // ---- User-defined auto-tag categories ----
+
+    fun observeCategories(): Flow<List<CustomCategoryEntity>> = dao.observeCategories()
+
+    /** Whether categories can be created (needs the text model to embed labels). */
+    fun canAddCategories(): Boolean = categoryEmbedder.isReady()
+
+    sealed interface AddCategoryResult {
+        /** Created and applied to [matched] existing screenshots. */
+        data class Added(val matched: Int) : AddCategoryResult
+        data object Blank : AddCategoryResult
+        data object Duplicate : AddCategoryResult
+        data object ModelMissing : AddCategoryResult
+        data object EncodeFailed : AddCategoryResult
+    }
+
+    /**
+     * Creates a custom auto-category: embeds the label on-device (prompt-ensembled),
+     * stores it, then immediately scores it against every stored image embedding so
+     * already-indexed screenshots get tagged right away. New screenshots are scored
+     * later by [com.okapiorbits.sshotclassifier.pipeline.ImageProcessor].
+     */
+    suspend fun addCustomCategory(rawLabel: String): AddCategoryResult {
+        val label = rawLabel.trim().lowercase()
+        if (label.isEmpty()) return AddCategoryResult.Blank
+        if (!categoryEmbedder.isReady()) return AddCategoryResult.ModelMissing
+        if (dao.categoryExists(label)) return AddCategoryResult.Duplicate
+        val embedding = categoryEmbedder.embed(label) ?: return AddCategoryResult.EncodeFailed
+
+        dao.insertCategory(CustomCategoryEntity(label = label, embedding = EmbeddingCodec.toBytes(embedding)))
+
+        val cat = listOf(CustomCategoryScorer.Category(label, embedding))
+        var matched = 0
+        for (row in dao.allEmbeddings()) {
+            val hits = CustomCategoryScorer.score(EmbeddingCodec.toFloats(row.vector), cat)
+            if (hits.isEmpty()) continue
+            if (dao.tagExists(row.screenshot_id, label)) continue // don't duplicate an existing tag
+            dao.insertTag(
+                TagEntity(
+                    screenshot_id = row.screenshot_id,
+                    label = label,
+                    weight = hits.first().weight,
+                    source = TagSource.CUSTOM.name,
+                )
+            )
+            matched++
+        }
+        return AddCategoryResult.Added(matched)
+    }
+
+    /** Deletes a custom category and removes the auto tags it produced. */
+    suspend fun removeCustomCategory(id: Long, label: String) {
+        dao.deleteCategory(id)
+        dao.deleteTagsByLabelAndSource(label, TagSource.CUSTOM.name)
+    }
 
     /** Full-text OCR search. Empty/blank query returns nothing. */
     fun search(query: String): Flow<List<ScreenshotWithTags>> {

@@ -3,7 +3,9 @@ package com.okapiorbits.sshotclassifier.ui.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
+import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository.AddCategoryResult
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
@@ -61,6 +63,34 @@ class SettingsViewModel @Inject constructor(
     val versionName: String = runCatching {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
     }.getOrNull() ?: "?"
+
+    val categories: StateFlow<List<CustomCategoryEntity>> =
+        repository.observeCategories()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _categoryStatus = MutableStateFlow<String?>(null)
+    val categoryStatus: StateFlow<String?> = _categoryStatus.asStateFlow()
+
+    fun addCategory(label: String) {
+        viewModelScope.launch {
+            _categoryStatus.value = when (val r = repository.addCustomCategory(label)) {
+                is AddCategoryResult.Added ->
+                    "Added \"${label.trim().lowercase()}\" · tagged ${r.matched} existing"
+                AddCategoryResult.Blank -> null
+                AddCategoryResult.Duplicate -> "That category already exists"
+                AddCategoryResult.ModelMissing -> "Install the text model first"
+                AddCategoryResult.EncodeFailed -> "Could not build an embedding for that label"
+            }
+        }
+    }
+
+    fun removeCategory(category: CustomCategoryEntity) {
+        viewModelScope.launch { repository.removeCustomCategory(category.id, category.label) }
+    }
+
+    fun clearCategoryStatus() {
+        _categoryStatus.value = null
+    }
 
     /** Re-read model install state from disk (call when returning to the screen). */
     fun refresh() {

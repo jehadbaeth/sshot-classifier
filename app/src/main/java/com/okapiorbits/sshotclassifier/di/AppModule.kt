@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import com.okapiorbits.sshotclassifier.data.db.AppDatabase
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
+import com.okapiorbits.sshotclassifier.pipeline.clip.CategoryEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipTextEncoder
+import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.TextEmbedder
 import dagger.Module
 import dagger.Provides
@@ -30,4 +32,7 @@ object AppModule {
 
     @Provides
     fun provideTextEmbedder(encoder: ClipTextEncoder): TextEmbedder = encoder
+
+    @Provides
+    fun provideLabelEmbedder(embedder: CategoryEmbedder): LabelEmbedder = embedder
 }
