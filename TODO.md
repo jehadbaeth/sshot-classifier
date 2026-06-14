@@ -37,6 +37,16 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 - [~] Phase 4 (started). Done: reprocess action, Settings screen, custom user tags
       (manual + auto-categories) — all below. Next: "needs review" surface, then
       user-triggered file reorganization.
+- [ ] **v0.5.0 release pending.** Six shippable changes have stacked up since v0.4.0
+      (search hardening, reprocess, Node 24, Settings, manual tags, custom categories)
+      with versionCode still 4. Per our cadence we release at phase end; cut v0.5.0 once
+      the remaining Phase 4 items land, or sooner on request.
+- [~] **Device-matrix testing.** Everything so far verified on Pixel/API 35 only. Adding
+      a Samsung Galaxy S20 FE profile (6.5", 1080x2400, ~407 dpi) on Android 13 / API 33.
+      NOTE: the stock emulator cannot run Samsung firmware / One UI — this is an S20-FE-
+      shaped AVD on a Google system image, useful for screen + API-level coverage, not a
+      literal Samsung OS. Legacy permission path (<API 33, READ_EXTERNAL_STORAGE) still
+      untested; candidate follow-up (e.g. an API 30 run).
 - [x] **Reprocess action (done 2026-06-14).** Gallery banner appears when the image
       model is installed and there are DONE screenshots with no embedding; tapping it
       resets those rows to PENDING and enqueues the worker, which re-runs them through
@@ -180,6 +190,13 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Decisions log (newest first)
 
+- **2026-06-14 — Custom auto-categories use an independent cosine threshold, not the
+  softmax pool.** User-defined categories are scored on their own (CustomCategoryScorer,
+  threshold 0.24) and are purely additive, so they cannot regress the fragile built-in
+  zero-shot tagging. Chosen with the user over joining the built-in softmax. The label is
+  prompt-ensembled on-device by the text encoder. Threshold 0.24 is an untuned starting
+  value (just below the 0.25-0.30 match band seen in Phase 3); manual tag removal is the
+  false-positive safety net. Built manual tagging first so the override surface existed.
 - **2026-06-14 — Search fusion is pure + seam-tested.** Hybrid search logic lives in
   `SearchFusion` (pure, JVM-unit-tested in CI) and `SemanticSearcher` depends on a
   `TextEmbedder` interface, not the concrete `ClipTextEncoder`. This lets the real
