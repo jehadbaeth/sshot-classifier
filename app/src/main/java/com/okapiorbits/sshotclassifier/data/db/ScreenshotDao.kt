@@ -32,6 +32,9 @@ interface ScreenshotDao {
     suspend fun insertTags(tags: List<TagEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTag(tag: TagEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOcr(entry: OcrEntryEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -42,6 +45,22 @@ interface ScreenshotDao {
 
     @Query("DELETE FROM tags WHERE screenshot_id = :screenshotId AND source = :source")
     suspend fun deleteTagsBySource(screenshotId: Long, source: String)
+
+    /** Tags on one screenshot, weightiest first, for the detail editor. */
+    @Query("SELECT * FROM tags WHERE screenshot_id = :screenshotId ORDER BY weight DESC, label ASC")
+    fun observeTagsFor(screenshotId: Long): Flow<List<TagEntity>>
+
+    /** True if a tag with this exact label already exists on the screenshot (any source). */
+    @Query("SELECT EXISTS(SELECT 1 FROM tags WHERE screenshot_id = :screenshotId AND label = :label)")
+    suspend fun tagExists(screenshotId: Long, label: String): Boolean
+
+    /** Removes a single tag by row id (used to delete a user or a wrong auto tag). */
+    @Query("DELETE FROM tags WHERE id = :tagId")
+    suspend fun deleteTag(tagId: Long)
+
+    /** One screenshot by id (for the detail view); null if it was removed. */
+    @Query("SELECT * FROM screenshots WHERE id = :id")
+    fun observeScreenshot(id: Long): Flow<ScreenshotEntity?>
 
     @Query("DELETE FROM tags WHERE screenshot_id = :screenshotId AND source != 'USER'")
     suspend fun deleteAutoTags(screenshotId: Long)

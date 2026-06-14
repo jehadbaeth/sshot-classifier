@@ -4,6 +4,8 @@ import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.data.db.TagCount
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
+import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
+import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
@@ -36,6 +38,33 @@ class ScreenshotRepository @Inject constructor(
     suspend fun markForReprocessing(): Int = dao.markMissingEmbeddingsForReprocessing()
 
     suspend fun pendingScreenshots(): List<ScreenshotEntity> = dao.pending()
+
+    /** Reactive screenshot + its tags for the detail editor. */
+    fun observeScreenshot(id: Long): Flow<ScreenshotEntity?> = dao.observeScreenshot(id)
+    fun observeTags(screenshotId: Long): Flow<List<TagEntity>> = dao.observeTagsFor(screenshotId)
+
+    /**
+     * Adds a user-authored tag. Labels are trimmed and lowercased so they match
+     * the auto-tag namespace and the search chips. No-ops (returns false) on a
+     * blank label or an exact duplicate already present on the screenshot.
+     */
+    suspend fun addUserTag(screenshotId: Long, rawLabel: String): Boolean {
+        val label = rawLabel.trim().lowercase()
+        if (label.isEmpty()) return false
+        if (dao.tagExists(screenshotId, label)) return false
+        dao.insertTag(
+            TagEntity(
+                screenshot_id = screenshotId,
+                label = label,
+                weight = 1f,
+                source = TagSource.USER.name,
+            )
+        )
+        return true
+    }
+
+    /** Removes any single tag (user-added or a wrong auto tag) by row id. */
+    suspend fun removeTag(tagId: Long) = dao.deleteTag(tagId)
 
     /** Full-text OCR search. Empty/blank query returns nothing. */
     fun search(query: String): Flow<List<ScreenshotWithTags>> {

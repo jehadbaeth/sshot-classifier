@@ -109,7 +109,12 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Reprocess already-DONE-but-unembedded screenshots after model install
       (gallery banner -> reset to PENDING -> worker re-embeds; DAO tested on device)
 - [ ] User-triggered file reorganization into app-managed folder (margin/OCR gate, not raw floor)
-- [ ] Custom user tags (new prompt-ensembled label embeddings)
+- [~] Custom user tags. Slice 1 DONE (manual per-image tags): tap a gallery cell ->
+      detail/tag-editor (image + tag chips + add field); add a user tag (trim+lowercase
+      +dedup, source=USER) or remove ANY tag incl. wrong auto ones. In-Gallery selection
+      state + BackHandler, no Nav-Compose. DAO/repo verified (TagEditingInstrumentedTest)
+      + full add/remove flow smoke-tested on device. Slice 2 TODO: custom auto-categories
+      embedded on-device via the text encoder (prompt-ensembled) joining zero-shot.
 - [ ] "Needs review" surface for low-confidence/contradicted tags
 - [x] Settings screen (done 2026-06-14): third bottom-nav tab. Library stats, AI
       model status + install/update, reprocess + scan-now, About/version. Smoke-tested

@@ -1,5 +1,7 @@
 package com.okapiorbits.sshotclassifier.ui.gallery
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,14 +27,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
+import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailScreen
+import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +50,22 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
     val pending by viewModel.pendingCount.collectAsStateWithLifecycle()
     val modelState by viewModel.modelState.collectAsStateWithLifecycle()
     val reprocessable by viewModel.reprocessableCount.collectAsStateWithLifecycle()
+
+    // In-tab navigation to a screenshot's tag editor; no NavHost needed.
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val selected = selectedId?.let { id -> screenshots.find { it.screenshot.id == id } }
+    BackHandler(enabled = selectedId != null) { selectedId = null }
+    if (selectedId != null && selected == null) selectedId = null // row vanished
+    if (selected != null) {
+        val detailVm: ScreenshotDetailViewModel = hiltViewModel()
+        ScreenshotDetailScreen(
+            screenshotId = selected.screenshot.id,
+            filePath = selected.screenshot.file_path,
+            viewModel = detailVm,
+            onBack = { selectedId = null },
+        )
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -76,7 +101,7 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(screenshots, key = { it.screenshot.id }) { item ->
-                        GalleryCell(item)
+                        GalleryCell(item, onClick = { selectedId = item.screenshot.id })
                     }
                 }
             }
@@ -127,8 +152,8 @@ private fun ReprocessBanner(count: Int, onReprocess: () -> Unit) {
 }
 
 @Composable
-fun GalleryCell(item: ScreenshotWithTags) {
-    Box(modifier = Modifier.aspectRatio(0.62f)) {
+fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
+    Box(modifier = Modifier.aspectRatio(0.62f).clickable(onClick = onClick)) {
         AsyncImage(
             model = item.screenshot.file_path,
             contentDescription = null,
