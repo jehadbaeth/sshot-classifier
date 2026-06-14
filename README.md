@@ -1,5 +1,7 @@
 # Screenshot Classifier
 
+[![CI](https://github.com/jehadbaeth/sshot-classifier/actions/workflows/ci.yml/badge.svg)](https://github.com/jehadbaeth/sshot-classifier/actions/workflows/ci.yml)
+
 An Android app that watches your screenshot folders, classifies new images with
 on-device machine learning, tags them, and lets you find them again through
 semantic search (visual concepts and text inside the image). Fully offline. No
@@ -21,6 +23,12 @@ The ML pipeline (OCR, CLIP, semantic search) lands in later phases per the desig
 
 The build uses the Gradle wrapper, so no global Gradle install is needed.
 
+## Download a prebuilt APK
+
+Each `v*` tag publishes a [GitHub Release](https://github.com/jehadbaeth/sshot-classifier/releases)
+with the APK attached. It is debug-signed for sideloading, so enable "install
+unknown apps" on the device. It is not a Play Store signed release.
+
 ## Build
 
 ```bash
@@ -29,6 +37,14 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 ```
 
 The APK lands in `app/build/outputs/apk/debug/`.
+
+## CI and releases
+
+- `.github/workflows/ci.yml` builds the debug APK and runs unit tests on every
+  push and PR to `main`, and uploads the APK as a build artifact.
+- `.github/workflows/release.yml` runs on a `v*` tag, builds the APK, and creates
+  a GitHub Release with it attached. To cut a release:
+  `git tag v0.1.0 && git push origin v0.1.0`.
 
 ## Run on an emulator
 

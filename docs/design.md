@@ -4,6 +4,14 @@
 > Last updated: 2026-06-14
 > Owner: mohamed.baeth@okapiorbits.com
 
+> **Update 2026-06-14 (CLIP spike):** A zero-shot spike
+> ([docs/spikes/clip-findings.md](spikes/clip-findings.md)) showed CLIP is strong
+> on visually distinctive screens (maps, code) but confidently wrong on text-heavy
+> and ambiguous UI. CLIP is therefore **not** the sole classifier. OCR is promoted
+> to a co-classifier, tagging is gated on margin and OCR agreement rather than raw
+> confidence, and LAION-2B weights plus prompt ensembling are the default. Sections
+> 4, 6, and 11 reflect this; section 13 tracks the residual risks.
+
 ## 1. Overview
 
 An Android app that watches the device's screenshot folders, classifies new images using on-device machine learning, and tags them so they can be found later through semantic search. It works fully offline. No backend, no network calls for inference, no data leaving the device.
@@ -13,7 +21,7 @@ The mental model is similar to Immich's machine learning classification, but loc
 ### 1.1 What it does
 
 1. Detects new screenshots automatically (live) and on a periodic schedule (catch-up).
-2. Runs each screenshot through three signals: a CLIP vision encoder, OCR text extraction, and zero-shot tag classification.
+2. Runs each screenshot through three signals: a CLIP vision encoder, OCR text extraction, and a fused classifier that combines CLIP zero-shot scores with OCR-derived signals.
 3. Stores per-image metadata, multiple weighted tags, OCR text, and a CLIP embedding in a local database.
 4. Lets the user search by visual concept and by text appearing in screenshots ("Python error traceback", "boarding pass", "that chat about rent").
 5. Optionally reorganizes files into folders based on the highest-weight tag, on explicit user trigger only.
@@ -119,38 +127,48 @@ app/
 
 ## 4. ML stack
 
-The core decision: **CLIP zero-shot classification handles both tagging and semantic search with one model.** The vision encoder produces a 512 dimensional vector per image. That same vector is used for tag scoring (compared against text encoded labels) and for visual search (compared against text encoded queries). We do not train a separate classifier.
+The core decision (revised after the spike): **CLIP is one signal, not the whole classifier.** The vision encoder produces a 512 dimensional vector per image. That vector drives semantic search and contributes zero-shot scores for visually distinctive categories. For text-heavy and ambiguous screens, where the spike showed CLIP is confidently wrong, OCR-derived signals carry the classification. A small fusion step combines the two into the final weighted tags.
 
 ```mermaid
 flowchart LR
     IMG[Screenshot] --> OCRX[ML Kit OCR]
-    IMG --> MLK[ML Kit Image Labels<br/>optional boost]
     IMG --> CV[CLIP Vision Encoder]
 
     OCRX --> TXT[Raw text]
     TXT --> FTSIDX[FTS5 index]
+    TXT --> OSIG[OCR signals<br/>keywords / patterns]
 
     CV --> VEC[512-dim vector]
-    VEC --> ZSC[Zero-shot tag scoring]
+    VEC --> ZSC[CLIP zero-shot scores]
     VEC --> STORE[Stored for search]
-
     LBL[Label text embeddings] --> ZSC
+
+    ZSC --> FUSE[Fusion + margin gate]
+    OSIG --> FUSE
+    FUSE --> TAGS[Final weighted tags]
 ```
 
 ### 4.1 Components
 
 | Component | Tech | Approx size | Notes |
 |---|---|---|---|
-| Vision encoder | CLIP ViT-B/32 vision, TFLite | ~80 MB | Produces 512-dim image vector. |
-| Text encoder | CLIP text, TFLite | ~40 MB | Encodes labels and search queries. Only needed at query time and at taxonomy setup. |
-| OCR | ML Kit Text Recognition v2 | bundled | On-device, multi script. |
-| Image labels | ML Kit Image Labeling | bundled | Optional coarse signal, not the primary classifier. |
+| Vision encoder | CLIP ViT-B/32 vision, TFLite (LAION-2B weights) | ~80 MB | Produces 512-dim image vector. Spike found LAION-2B beats OpenAI weights for this task. |
+| Text encoder | CLIP text, TFLite | ~40 MB | Encodes labels (with prompt ensembling) and search queries. Needed at query time and taxonomy setup. |
+| OCR | ML Kit Text Recognition v2 | bundled | On-device, multi script. Now a co-classifier, not just a search feed. |
+| Image labels | ML Kit Image Labeling | bundled | Optional coarse signal. |
 
 CLIP models are downloaded on first launch. They are too large to bundle in the APK. See section 9.
 
-### 4.2 Why CLIP and not a trained classifier
+### 4.2 Why CLIP zero-shot, and why it is not enough alone
 
-A fine tuned MobileNet would give one label per image and would need training data we do not have. CLIP zero-shot gives a score against every candidate label for free, which is exactly the multi-tag behavior we want, and the same embedding powers search. The tradeoff is model size and slightly slower per image inference. Worth it.
+CLIP zero-shot gives a score against every candidate label for free, which is the multi-tag behavior we want, and the same embedding powers search, so we still avoid training a custom classifier. But the spike was clear: CLIP is reliable only for screens with a distinctive visual signature (maps near-perfect, source code reliable with prompt ensembling) and is confidently wrong on text-heavy or ambiguous UI (a clock read as video, a file manager as shopping, an article about receipts as a receipt), at 0.5 to 0.97 confidence. High confidence on wrong answers means a confidence floor alone is no protection.
+
+### 4.3 Fusion and gating
+
+- **CLIP-led** for visually distinctive categories: map, photo-like, game, video, social feed.
+- **OCR-led** for text-heavy categories: code vs error vs document, finance vs news, calendar, receipt, and utility screens. These are cheaply separable by keywords and patterns (currency symbols and totals → receipt, stack-trace shapes → error, monospace plus language tokens → code).
+- **Margin gate, not confidence floor.** Decide on the top1-minus-top2 margin and whether OCR agrees with CLIP. Low margin or CLIP-OCR disagreement routes the screenshot to "needs review" / "other" instead of attaching a confident wrong tag.
+- **Label set.** Use a granular, concrete internal label set (prompt ensembled) and map it onto the user-facing taxonomy. Concrete labels measurably outperformed abstract buckets in the spike.
 
 ## 5. Data model
 
@@ -212,7 +230,9 @@ weights = softmax(scores / temperature)   # temperature ~0.01 for CLIP
 
 Now the weights sum to 1.0 across tags for that image, they are comparable, and selecting the top tag is meaningful.
 
-Tag attachment rule: keep tags above a relative threshold (weight > 0.1) capped at the top 3 to 5. Everything else is dropped.
+These are the CLIP-side scores. They are then fused with OCR signals (section 4.3) and gated on margin before tags are attached. The spike showed raw softmax weight is not enough: CLIP produced 0.97 weight on wrong tags, so weight alone cannot be the attachment criterion.
+
+Tag attachment rule: after fusion, keep tags above a relative threshold (weight > 0.1) capped at the top 3 to 5, AND require the top tag to clear a margin over the second (top1 - top2 >= margin) or be corroborated by OCR. Anything that fails the margin/OCR check is attached as low-confidence (surfaced for review) rather than treated as settled.
 
 ```mermaid
 flowchart TD
@@ -231,13 +251,19 @@ flowchart TD
 
 ### 6.1 Default taxonomy
 
-Ships with roughly 15 labels. Users can add custom ones (a custom label just becomes another text embedding scored the same way).
+These ~15 labels are the user-facing taxonomy. Users can add custom ones (a custom label becomes another prompt-ensembled text embedding scored the same way).
 
 ```
 social media, receipt, map, code editor, chat / messaging,
 document, browser / web, game, shopping, news,
 video / streaming, error / crash, calendar, finance, other
 ```
+
+Internally, classification runs against a finer, concrete label set (for example a
+clock app, a contacts list, a phone dialer, a file manager, a settings screen) that
+maps onto these user-facing tags. The spike showed concrete labels with prompt
+ensembling clearly beat abstract buckets (settings 0.99, contacts 0.96 on LAION
+versus scattered guesses for the abstract set).
 
 ### 6.2 Honest limitation on "the model decides the tags"
 
@@ -327,8 +353,8 @@ stateDiagram-v2
 ```mermaid
 flowchart TD
     T[User taps Reorganize] --> L[for each screenshot]
-    L --> P[primary = max weight tag]
-    P --> C{weight >= 0.4?}
+    L --> P[primary = max weight fused tag]
+    P --> C{passes margin gate<br/>+ OCR agreement?}
     C -->|yes| MV[move to folder named after primary tag]
     C -->|no| U[move to 'uncategorized']
     MV --> APP[app-managed folder]
@@ -336,7 +362,7 @@ flowchart TD
 ```
 
 - Moves only happen on explicit user action.
-- A confidence floor (primary weight >= 0.4) routes ambiguous images to "uncategorized" instead of forcing a bad guess.
+- The gate is margin plus OCR agreement (section 4.3), NOT a raw confidence floor. The spike proved a floor is useless here: CLIP filed a clock as "video" and a file manager as "shopping" at 0.5+ weight, which a 0.4 floor would wave straight through. Ambiguous or contradicted images go to "uncategorized" instead.
 - Files move into an app-managed folder the app has full access to.
 - The DB keeps tracking files by hash and updated path, so search keeps working after a move.
 
@@ -354,10 +380,11 @@ These are estimates to validate early on real hardware. The vision encode domina
 
 ## 13. Open risks
 
-1. On-device CLIP quality on screenshots specifically. CLIP was trained on natural images and web content. Screenshots (UI, text heavy) are somewhat out of distribution. Needs real testing before we trust the taxonomy.
-2. TFLite CLIP port quality and availability. Need to pick a specific reliable port and pin it.
+1. ~~On-device CLIP quality on screenshots.~~ **Tested (spike, 2026-06-14).** Confirmed out of distribution on text-heavy UI. Mitigated by the OCR co-classifier and margin gating (sections 4.3, 6, 11). Residual: the fusion and gate logic itself is unbuilt and unproven, and the spike set was small (11 images, several categories stood in by web consent walls).
+2. TFLite CLIP port quality and availability. Need a reliable LAION-2B ViT-B/32 port (image and text encoders) and to pin it. Not tested by the spike, which ran host-side. Quantization may cost a little more accuracy on device.
 3. FileObserver reliability across OEMs. Mitigated by the WorkManager backstop.
 4. Battery and thermal during large initial backfill (first scan of an existing screenshot library of thousands of images).
+5. A UI-domain model (SigLIP, or CLIP fine-tuned on RICO / Screen2Words) would likely beat generic CLIP on the screens where it failed. Candidate for a follow-up spike; costs more on-device size and complexity.
 
 ## 14. Phased plan
 
