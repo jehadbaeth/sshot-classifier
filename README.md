@@ -11,11 +11,17 @@ See [docs/design.md](docs/design.md) for the full design and roadmap.
 
 ## Status
 
-Phase 1 done: on-device OCR (ML Kit), full-text search over extracted text, OCR
-keyword/pattern tagging, and background processing (WorkManager + MediaStore
-ContentObserver). Phase 0 before it: scaffold, Room schema, permissions,
-MediaStore-backed gallery. CLIP embeddings and semantic visual search land in
-Phase 2 per the design doc.
+Phase 2 done: on-device CLIP image encoder (TFLite int8, downloaded on first
+launch) produces image embeddings and zero-shot tags against bundled label
+embeddings, fused with OCR signals behind a margin gate. Phase 1: on-device OCR,
+full-text search, OCR tagging, background processing. Phase 0: scaffold, Room,
+permissions, gallery. Free-text semantic visual search (CLIP text encoder) is
+Phase 3.
+
+The ~90 MB CLIP model is hosted on a public mirror repo
+([sshot-classifier-models](https://github.com/jehadbaeth/sshot-classifier-models))
+and downloaded on first launch with sha256 verification. Until it is installed the
+app tags from OCR text only.
 
 ## Requirements
 

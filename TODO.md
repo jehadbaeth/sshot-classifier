@@ -68,10 +68,11 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Fusion of CLIP scores with OCR signals + margin gate (TagFuser)
 - [x] Verified on-device: map/code/settings/receipt tags correct, no TFLite errors
 - [x] Text encoder NOT needed on-device for tagging (label embeddings precomputed)
-- [ ] Model delivery to a public host so the shipped APK works out of the box
-      (download URL is a placeholder; repo is private). BLOCKS v0.3.0 release.
-- [ ] First-launch download: checksum verify (downloader exists, no checksum yet)
+- [x] Model delivery: public mirror repo + first-launch download with sha256
+      verify; verified end to end on emulator (download -> checksum -> install)
 - [ ] Tune fusion (receipts-article -> receipt is a soft false positive)
+- [ ] Reprocess action to re-tag already-DONE screenshots after model install
+      (currently only new screenshots get CLIP tags; old ones stay OCR-only)
 
 ### Phase 3 — Semantic search
 - [ ] CLIP text-encode query -> in-memory brute-force cosine over embeddings
@@ -115,12 +116,10 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Known issues / tech debt
 
-- **CLIP model has no public host yet (blocks Phase 2 release).** The 89.5 MB
-  int8 model is gitignored and the download URL is a placeholder. On the emulator
-  it is pushed via adb. To ship a working APK we need a public host (Hugging Face
-  Hub, or a public GitHub mirror repo + release). The repo is private, so its own
-  release assets are not publicly downloadable. Until resolved, a released APK does
-  OCR-only tagging and shows the "Install AI model" banner (download fails).
+- ~~CLIP model has no public host.~~ **Resolved 2026-06-14.** Model hosted on the
+  public repo `jehadbaeth/sshot-classifier-models` (release `clip-vit-b32-laion-int8`).
+  App downloads from there on first launch with sha256 verification. End-to-end
+  download verified on emulator. The 89.5 MB model stays gitignored in the app repo.
 - **OCR heuristics are a first pass and over-fire.** Fixed the worst (status-bar
   clock -> chat on everything; `#include` -> social on all code). Remaining: rules
   trigger on a single weak keyword with no minimum-score floor; calendar time

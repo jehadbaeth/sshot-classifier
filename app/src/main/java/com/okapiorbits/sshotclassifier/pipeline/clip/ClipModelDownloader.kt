@@ -5,17 +5,15 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Downloads the CLIP image-encoder model (~90 MB) to internal storage on first
- * use. Writes to a temp file then renames, so a partial download never looks
- * installed.
- *
- * NOTE: MODEL_URL is a placeholder. The repo is private, so release assets are not
- * publicly fetchable; a public host (or a public mirror release) still needs to be
- * decided. For dev/test the model is pushed via adb instead (see ClipModelManager).
+ * use, verifies its sha256, then renames into place so a partial or corrupt
+ * download never looks installed. Hosted on a public mirror repo because the app
+ * repo is private (release assets of a private repo are not publicly fetchable).
  */
 @Singleton
 class ClipModelDownloader @Inject constructor(
@@ -52,6 +50,11 @@ class ClipModelDownloader @Inject constructor(
                     }
                 }
             }
+            val actual = sha256(tmp)
+            if (!actual.equals(MODEL_SHA256, ignoreCase = true)) {
+                tmp.delete()
+                return@withContext State.Failed("checksum mismatch")
+            }
             if (!tmp.renameTo(modelManager.modelFile)) return@withContext State.Failed("rename failed")
             State.Done
         } catch (e: Exception) {
@@ -60,8 +63,23 @@ class ClipModelDownloader @Inject constructor(
         }
     }
 
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { stream ->
+            val buf = ByteArray(64 * 1024)
+            var read = stream.read(buf)
+            while (read >= 0) {
+                digest.update(buf, 0, read)
+                read = stream.read(buf)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
     companion object {
-        // TODO: point at a real public host before shipping model download.
-        const val MODEL_URL = "https://example.invalid/clip_image_b32_int8w.tflite"
+        const val MODEL_URL =
+            "https://github.com/jehadbaeth/sshot-classifier-models/releases/download/clip-vit-b32-laion-int8/clip_image_b32_int8w.tflite"
+        const val MODEL_SHA256 =
+            "c2745120a841d43db4768a948bab42f612ceedb8f379b73df558215449e4f034"
     }
 }

@@ -9,6 +9,9 @@
         android:maxSdkVersion="32" />
     <!-- Foreground progress notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Sole network use: one-time download of the on-device CLIP model. All
+         inference is local; no other network calls. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".ScreenshotClassifierApp"
