@@ -319,7 +319,7 @@ flowchart TD
 - The query is tokenized by a faithful Kotlin port of open_clip's byte-level BPE tokenizer (`BpeTokenizer`), proven byte-identical to the Python reference by unit tests. The BPE merges are bundled (~1.3 MB).
 - Text search uses FTS4 MATCH over OCR text (FTS5/BM25 was not available through Room, see deviations in the TODO).
 - **Fusion is reciprocal rank fusion (RRF)**, not the weighted-score merge originally sketched. RRF combines the two rankings by rank position, which sidesteps the incompatible score scales (CLIP cosine ~0.2-0.35 vs a binary FTS hit). It degrades gracefully: no text model installed -> pure OCR results; no OCR match -> pure visual results.
-- Brute force is fine up to roughly 20k images (about 40 MB of vectors, a few milliseconds per query). Above that, move to an HNSW index. Most users will not hit this, so brute force ships first.
+- Brute force ships first. **Measured** (see [docs/spikes/scale-test.md](spikes/scale-test.md)): fast and well under target to ~5k images (sub-6 ms at 500-1000), but latency is linear and crosses 50 ms between 5k and 10k (~126 ms at 10k on the emulator) because `SemanticSearcher` re-reads and re-deserializes every embedding blob from Room on each query. The original "fine to ~20k" estimate was optimistic. Fix path before HNSW: cache the decoded vectors in memory (load once, invalidate on insert) to make repeat queries sub-millisecond. Move to an HNSW index only if libraries exceed that. Most users will not hit this.
 - **On-device verification (emulator, int8 models):** "a map of streets and roads" -> map 0.274 (next 0.129); "program source code in an editor" -> code 0.234 (next 0.181); "a store receipt with prices and total" -> receipt 0.300 (next 0.111). Clear top-1 separation against distractors.
 
 ## 9. Model delivery
@@ -376,10 +376,14 @@ flowchart TD
 | CLIP vision encode | 1 to 2 s per image |
 | OCR extract | ~300 ms per image |
 | Zero-shot classify | ~50 ms per image |
-| Semantic search (10k images) | < 50 ms |
-| Memory for vectors (10k) | ~20 MB |
+| Semantic search (10k images) | < 50 ms (target) / **~126 ms measured on emulator** |
+| Memory for vectors (10k) | ~20 MB (**19.5 MB measured**) |
+| OCR-only classify | **21.9 ms/image measured** (emulator) |
 
-These are estimates to validate early on real hardware. The vision encode dominates and is the thing to benchmark first.
+These were estimates; the **measured** column comes from the 2026-06-14 scale test
+([docs/spikes/scale-test.md](spikes/scale-test.md)). Search meets target to ~5k images
+but not 10k (linear, deserialize-per-query bound; see section 8). Memory estimate held.
+The CLIP vision encode still dominates a full re-embed and is the next thing to benchmark.
 
 ## 13. Open risks
 

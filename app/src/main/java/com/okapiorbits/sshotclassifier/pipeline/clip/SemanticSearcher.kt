@@ -11,12 +11,18 @@ data class SemanticHit(val screenshotId: Long, val score: Float)
 
 /**
  * Free-text visual search: embeds the query with the CLIP text encoder and ranks
- * stored image embeddings by cosine similarity (brute force, fine up to ~20k
- * images per design 11). Both encoders share the same 512-d space, and stored
- * image vectors are already L2-normalized, so cosine reduces to a dot product.
+ * stored image embeddings by cosine similarity. Both encoders share the same 512-d
+ * space, and stored image vectors are already L2-normalized, so cosine reduces to a
+ * dot product.
  *
  * Returns an empty list when the text model is not installed or no embeddings
  * exist yet, so the caller can fall back to OCR full-text search.
+ *
+ * Scaling note (measured 2026-06-14, docs/spikes/scale-test.md): brute force is
+ * fast to ~5k images (sub-6 ms at 500-1000) but linear, reaching ~126 ms at 10k.
+ * The cost is [ScreenshotDao.allEmbeddings] re-reading and re-decoding every blob on
+ * each query, NOT the dot products. To scale past ~5k, cache the decoded FloatArrays
+ * in memory and invalidate on insert (TODO) before reaching for an HNSW index.
  */
 @Singleton
 class SemanticSearcher @Inject constructor(

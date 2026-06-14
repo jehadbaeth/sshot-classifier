@@ -41,13 +41,23 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       user-facing walkthrough: install the model, scan, browse tags, search (text +
       visual), manual tags, custom categories, needs-review, reorganize. Include
       annotated screenshots of each screen. (Requested 2026-06-14.)
-- [ ] **Scale / load test on 500-1000 screenshots.** The whole point is classifying a
-      large library, but we have only tested ~4 images. Generate/seed a few hundred to
-      ~1000 screenshots and verify on device: full backfill via the foreground-service
-      worker (battery/thermal, no ANR), brute-force cosine search latency + memory at
-      that size (design sec 12 targets: <50ms search, ~20MB vectors for 10k), reorg copy
-      throughput, and that the JobScheduler does not wedge at volume. Likely needs a test
-      fixture that bulk-generates screenshots. (Requested 2026-06-14.)
+- [x] **Scale / load test on 500-1000 screenshots (done 2026-06-14).** Two instrumented
+      tests against a real on-disk Room DB on the S20 FE AVD; full numbers in
+      [docs/spikes/scale-test.md](docs/spikes/scale-test.md). `ScaleInstrumentedTest`:
+      search + memory at 500..10k. `ProcessingThroughputTest`: real `ImageProcessor`
+      draining 300 real screenshots. Results: at 500-1000 search is sub-6 ms and OCR
+      classify is ~22 ms/image, queue drains cleanly with no heap leak — fine. **Real
+      finding: the design's "<50 ms / brute force fine to 20k" claim is wrong** — search
+      is linear and hits ~126 ms at 10k because `SemanticSearcher` re-deserializes every
+      embedding per query. Fine to ~5k; needs the embedding cache below to go further.
+      Memory (~20 MB at 10k) matched. Design sec 8 + 12 corrected. JobScheduler-at-volume
+      deliberately not tested (its emulator wedging is a known harness artifact, not app
+      logic; the direct-loop test measures real app behavior without that noise).
+- [ ] **Cache decoded embeddings in memory for search (perf, justified by scale test).**
+      `SemanticSearcher.search()` calls `dao.allEmbeddings()` every query and re-decodes
+      every blob; that is the search bottleneck past ~5k images. Load + decode once, keep
+      the FloatArrays in memory, invalidate on new embedding insert. Not urgent (fast at
+      the sizes users actually have), but it is the fix before any HNSW work.
 - [x] **Device-matrix + real-model validation (done 2026-06-14).** Created a Galaxy
       S20 FE-shaped AVD (1080x2400, 420 dpi) on Android 13 / API 33 (galaxy_s20fe_api33).
       NOTE: the stock emulator cannot run Samsung firmware / One UI — S20-FE-shaped AVD on
@@ -77,6 +87,11 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true in both workflows to opt in now and
       silence the deprecation warning. (It was only a warning; GitHub force-defaults
       to Node 24 on 2026-06-16 and removes Node 20 on 2026-09-16, so CI never broke.)
+- [ ] **Make reorganization behaviour configurable** (requested 2026-06-14). Today
+      reorg is hardcoded to non-destructive COPY into per-tag albums. Expose it as a
+      user setting: at least copy-vs-move, and likely the album-root name and the
+      needs-review handling. Needs DataStore (no persisted prefs yet). Move is
+      destructive, so it needs a clear confirmation + undo story.
 - [ ] Heuristic tuning pass: reduce false positives (see Known issues).
 - [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
 
