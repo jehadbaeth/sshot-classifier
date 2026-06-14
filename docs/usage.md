@@ -1,0 +1,135 @@
+# Usage guide
+
+A walkthrough of every screen, with real captures from a Galaxy S20 FE (Android 13).
+The app is fully offline. The only time it touches the network is the one time it
+downloads the AI models on first launch.
+
+## Contents
+
+1. [First launch and the AI models](#1-first-launch-and-the-ai-models)
+2. [Scanning your screenshots](#2-scanning-your-screenshots)
+3. [The gallery and tags](#3-the-gallery-and-tags)
+4. [Search: text and visual](#4-search-text-and-visual)
+5. [Editing tags by hand](#5-editing-tags-by-hand)
+6. [Custom categories](#6-custom-categories)
+7. [Needs review](#7-needs-review)
+8. [Reorganizing into albums](#8-reorganizing-into-albums)
+
+---
+
+## 1. First launch and the AI models
+
+On first launch the app downloads two CLIP models from a public mirror: an image
+encoder (about 90 MB, used for tagging and visual search) and a text encoder (about
+65 MB, used for free text search and custom categories). Each download is verified
+with a sha256 checksum, stored in the app's private storage, and never fetched again.
+
+Until the image model is installed the app still works: it tags and searches from the
+text it reads inside your screenshots (OCR) only. Once both models are present you get
+visual tagging and visual search on top.
+
+You can check model status any time under **Settings > AI models**.
+
+<img src="images/settings.png" width="280" alt="Settings screen showing both models installed" />
+
+The Settings screen also shows how many screenshots are indexed, a button to scan for
+new ones, the reorganize action, and the custom categories editor.
+
+---
+
+## 2. Scanning your screenshots
+
+The app finds screenshots in your device's screenshot folders through MediaStore. It
+picks up new ones automatically while it is open, and a background pass also runs every
+6 hours so nothing is missed. You can force a pass at any time with **Scan for new
+screenshots** in Settings, or the **Scan** button on the gallery.
+
+Each screenshot goes through the pipeline once: read its text (OCR), then, if the image
+model is installed, compute a visual embedding, classify it, and store weighted tags.
+
+---
+
+## 3. The gallery and tags
+
+The gallery is the home screen. Every screenshot shows its top tag in the corner.
+Tags are weighted, so an image can carry more than one, and the strongest one is the
+label you see on the thumbnail.
+
+<img src="images/gallery.png" width="280" alt="Gallery grid with tagged screenshots" />
+
+In the capture above the receipt, a code screenshot, a street map, and a photo were each
+tagged on their own. The chip at the top filters the grid down to the screenshots that
+still want a human look (see [Needs review](#7-needs-review)).
+
+Tap any thumbnail to open it.
+
+---
+
+## 4. Search: text and visual
+
+The Search tab does two things at once and blends the results:
+
+- **Text search** matches words the app read inside your screenshots (OCR).
+- **Visual search** matches what a screenshot *looks like*, even when none of those
+  words appear anywhere in the image.
+
+The two rankings are fused so a screenshot that matches both rises to the top.
+
+<img src="images/visual-search.png" width="280" alt="Visual search for 'potted plant' returning the cactus photo first" />
+
+The capture shows a search for "potted plant". None of the screenshots contain that
+text, yet the cactus photo ranks first because the app recognizes it visually. You can
+also tap a tag chip to filter by a tag instead of typing.
+
+---
+
+## 5. Editing tags by hand
+
+Open any screenshot to see its tags. You can remove any tag, including a wrong automatic
+one, by tapping its X, and add your own with the **Add a tag** field.
+
+<img src="images/tag-editor.png" width="280" alt="Tag editor for a receipt screenshot" />
+
+Tags you add or remove are treated as the final word: editing a screenshot marks it as
+reviewed and clears it from the Needs review list. Your tags show up as filter chips in
+Search just like the automatic ones.
+
+---
+
+## 6. Custom categories
+
+Beyond the built in tags you can define your own visual concepts. Type a concept in
+**Settings > Custom categories** (for example "boarding pass" or "houseplant"). The text
+encoder turns it into a visual concept on device, then scores it against every screenshot
+you already have and tags the ones that match. New screenshots are scored automatically
+from then on.
+
+<img src="images/custom-category.png" width="280" alt="A cactus photo tagged with the custom 'houseplant' category alongside 'other'" />
+
+Here a "houseplant" category was added and it picked up the cactus photo, sitting next to
+its built in "other" tag. Custom categories are additive: they never change the built in
+tags, so they cannot make the automatic tagging worse. They are also imperfect, so if a
+category tags something it should not, just remove that tag in the screenshot's editor.
+
+Custom categories need the text model, so the section is disabled until it is installed.
+
+---
+
+## 7. Needs review
+
+When the app is not confident about a screenshot's tags (nothing stuck, the top guess was
+borderline, or it only landed on the catch all "other") it flags the screenshot for review
+instead of pretending it got it right. The gallery shows a **Needs review (N)** chip;
+tap it to see just those screenshots and fix them up. Editing the tags clears the flag.
+
+---
+
+## 8. Reorganizing into albums
+
+From **Settings**, the **Copy into tag albums** action copies each screenshot into
+`Pictures/ScreenshotClassifier/<tag>/`, putting anything still in Needs review into an
+`uncategorized` album. This is non destructive: your originals are kept exactly where
+they are, nothing is moved or deleted, and running it again only copies what is new.
+
+Because the database keeps tracking files, search and tags keep working regardless of
+how the albums are laid out.

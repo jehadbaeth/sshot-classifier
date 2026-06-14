@@ -7,7 +7,8 @@ on-device machine learning, tags them, and lets you find them again through
 semantic search (visual concepts and text inside the image). Fully offline. No
 backend. Nothing leaves the device.
 
-See [docs/design.md](docs/design.md) for the full design and roadmap.
+See the [usage guide](docs/usage.md) for a screen by screen walkthrough, and
+[docs/design.md](docs/design.md) for the full design and roadmap.
 
 ## Status
 

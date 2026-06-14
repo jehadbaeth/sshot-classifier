@@ -37,10 +37,12 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 - [x] **Phase 4 COMPLETE, v0.5.0 RELEASED (2026-06-14).** Reprocess, Settings, custom
       tags (manual + auto-categories), needs-review surface, copy-into-tag-albums reorg.
       Tech debt cleared: OCR min-score floor, foreground-service processing, doc updates.
-- [ ] **Usage guide + screenshots in README (or docs/ subsection).** Write a detailed,
-      user-facing walkthrough: install the model, scan, browse tags, search (text +
-      visual), manual tags, custom categories, needs-review, reorganize. Include
-      annotated screenshots of each screen. (Requested 2026-06-14.)
+- [x] **Usage guide + screenshots (done 2026-06-14).** Wrote [docs/usage.md](docs/usage.md),
+      a screen-by-screen walkthrough (models/scan/gallery/search/manual tags/custom
+      categories/needs-review/reorganize) with 5 real captures from the S20 FE AVD in
+      docs/images/ (gallery, tag editor, visual search, settings, custom category).
+      Linked from the README. Captures show real on-device results, e.g. a "potted plant"
+      visual search ranking the cactus first and a custom "houseplant" category tagging it.
 - [x] **Scale / load test on 500-1000 screenshots (done 2026-06-14).** Two instrumented
       tests against a real on-disk Room DB on the S20 FE AVD; full numbers in
       [docs/spikes/scale-test.md](docs/spikes/scale-test.md). `ScaleInstrumentedTest`:
