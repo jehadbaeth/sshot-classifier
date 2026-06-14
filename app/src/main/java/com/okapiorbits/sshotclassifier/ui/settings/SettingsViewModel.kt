@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
+import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
@@ -135,6 +136,30 @@ class SettingsViewModel @Inject constructor(
     /** Triggers an immediate scan + processing pass. */
     fun scanNow() {
         ScreenshotProcessingWorker.enqueue(context)
+    }
+
+    // ---- Watched folders ----
+
+    /** Folders currently watched for new images (bucket display names). */
+    val watchedFolders: StateFlow<Set<String>> =
+        repository.watchedFolders
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** All image folders on the device, busiest first; loaded on demand. */
+    private val _availableFolders = MutableStateFlow<List<WatchableFolder>>(emptyList())
+    val availableFolders: StateFlow<List<WatchableFolder>> = _availableFolders.asStateFlow()
+
+    /** (Re)load the folder list. Safe to call when opening the settings screen. */
+    fun loadFolders() {
+        viewModelScope.launch { _availableFolders.value = repository.availableFolders() }
+    }
+
+    /** Watch or unwatch a folder, then scan so its existing images get indexed. */
+    fun setFolderWatched(folder: String, watched: Boolean) {
+        viewModelScope.launch {
+            repository.setFolderWatched(folder, watched)
+            if (watched) ScreenshotProcessingWorker.enqueue(context)
+        }
     }
 
     // ---- Reorganization preferences ----

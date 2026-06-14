@@ -68,6 +68,7 @@ class HybridSearchInstrumentedTest {
         hasher = ImageHasher(context),
         semanticSearcher = SemanticSearcher(EmbeddingCache(dao), embedder),
         categoryEmbedder = noLabelEmbedder,
+        watchedFoldersStore = com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore(context),
     )
 
     /** Inserts a screenshot with OCR text and an embedding aligned to [axis]. */

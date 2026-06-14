@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
+import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
 
@@ -60,6 +61,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val reorgPrefs by viewModel.reorgPrefs.collectAsStateWithLifecycle()
     val undoableMoves by viewModel.undoableMoves.collectAsStateWithLifecycle()
     val pendingDelete by viewModel.pendingDelete.collectAsStateWithLifecycle()
+    val watchedFolders by viewModel.watchedFolders.collectAsStateWithLifecycle()
+    val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.loadFolders() }
 
     // MOVE mode: launch the system delete-consent dialog when one is pending.
     val deleteLauncher = rememberLauncherForActivityResult(
@@ -85,6 +90,13 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Stat("Screenshots indexed", total.toString())
             if (pending > 0) Stat("Waiting to be processed", pending.toString())
             if (reprocessable > 0 && models.imageInstalled) Stat("Awaiting visual tags", reprocessable.toString())
+
+            Section("Watched folders")
+            WatchedFoldersSection(
+                available = availableFolders,
+                watched = watchedFolders,
+                onToggle = viewModel::setFolderWatched,
+            )
 
             Section("AI models")
             ModelRow("Image encoder (tagging + visual search)", models.imageInstalled, models.imageBytes)
@@ -366,6 +378,44 @@ private fun LabeledSwitch(
             )
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+    }
+}
+
+@Composable
+private fun WatchedFoldersSection(
+    available: List<WatchableFolder>,
+    watched: Set<String>,
+    onToggle: (String, Boolean) -> Unit,
+) {
+    Text(
+        "Choose which image folders are watched for new screenshots. New files in a " +
+            "watched folder are tagged automatically.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    // Always show watched folders even if MediaStore lists none yet (e.g. an empty
+    // Screenshots bucket on a fresh device); merge them in with an unknown count.
+    val byName = available.associateBy { it.name }
+    val names = (available.map { it.name } + watched).distinct()
+    if (names.isEmpty()) {
+        Text(
+            "No image folders found on this device yet.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        return
+    }
+
+    for (name in names) {
+        val count = byName[name]?.imageCount
+        LabeledSwitch(
+            label = name,
+            subtitle = if (count != null) "$count images" else "watched",
+            checked = name in watched,
+            enabled = true,
+            onCheckedChange = { onToggle(name, it) },
+        )
     }
 }
 

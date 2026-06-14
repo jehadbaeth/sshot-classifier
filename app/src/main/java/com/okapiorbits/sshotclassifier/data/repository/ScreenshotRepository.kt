@@ -9,12 +9,16 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
+import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
+import com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore
 import com.okapiorbits.sshotclassifier.pipeline.clip.CustomCategoryScorer
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +29,17 @@ class ScreenshotRepository @Inject constructor(
     private val hasher: ImageHasher,
     private val semanticSearcher: SemanticSearcher,
     private val categoryEmbedder: LabelEmbedder,
+    private val watchedFoldersStore: WatchedFoldersStore,
 ) {
+    /** Folders the user is watching (reactive), and all folders available to pick. */
+    val watchedFolders: Flow<Set<String>> = watchedFoldersStore.folders
+
+    suspend fun availableFolders(): List<WatchableFolder> =
+        withContext(Dispatchers.IO) { scanner.availableFolders() }
+
+    suspend fun setFolderWatched(folder: String, watched: Boolean) =
+        watchedFoldersStore.setWatched(folder, watched)
+
     fun observeGallery(): Flow<List<ScreenshotWithTags>> = dao.observeAllWithTags()
 
     fun observeByTag(label: String): Flow<List<ScreenshotWithTags>> = dao.observeByTag(label)
@@ -177,7 +191,8 @@ class ScreenshotRepository @Inject constructor(
      */
     suspend fun syncFromMediaStore(): Int {
         var inserted = 0
-        for (found in scanner.queryScreenshots()) {
+        val folders = watchedFoldersStore.current()
+        for (found in scanner.queryScreenshots(folders)) {
             val hash = hasher.sha256(found.uri) ?: continue
             if (dao.existsByHash(hash)) continue
             val rowId = dao.insert(

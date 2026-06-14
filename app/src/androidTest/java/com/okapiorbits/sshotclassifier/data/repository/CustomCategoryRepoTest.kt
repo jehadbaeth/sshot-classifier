@@ -54,6 +54,7 @@ class CustomCategoryRepoTest {
         hasher = ImageHasher(context),
         semanticSearcher = SemanticSearcher(EmbeddingCache(dao), noText),
         categoryEmbedder = embedder,
+        watchedFoldersStore = com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore(context),
     )
 
     @Before

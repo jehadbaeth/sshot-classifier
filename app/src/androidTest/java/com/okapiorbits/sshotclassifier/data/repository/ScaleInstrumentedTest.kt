@@ -138,6 +138,7 @@ class ScaleInstrumentedTest {
                 hasher = ImageHasher(context),
                 semanticSearcher = searcher,
                 categoryEmbedder = noLabelEmbedder,
+                watchedFoldersStore = com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore(context),
             )
 
             // ---- warm up (first query pays JIT + page cache) ----

@@ -53,6 +53,7 @@ class TagEditingInstrumentedTest {
             hasher = ImageHasher(context),
             semanticSearcher = SemanticSearcher(EmbeddingCache(dao), noEmbedder),
             categoryEmbedder = noLabelEmbedder,
+            watchedFoldersStore = com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore(context),
         )
         runBlocking {
             dao.insert(
