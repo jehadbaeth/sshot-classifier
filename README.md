@@ -11,9 +11,11 @@ See [docs/design.md](docs/design.md) for the full design and roadmap.
 
 ## Status
 
-Phase 4 in progress: a Settings tab (library stats, model management, reprocess,
-scan) and a reprocess action that re-embeds screenshots tagged before the visual
-model was installed. Phase 3 done: free-text semantic search. The CLIP text encoder (TFLite int8) plus
+Phase 4 done: a Settings tab (library stats, model management, reprocess, scan,
+custom categories), manual per-image tags and user-defined visual auto-categories,
+a "needs review" surface for low-confidence tags, and non-destructive
+reorganization that copies screenshots into per-tag albums. Phase 3: free-text
+semantic search. The CLIP text encoder (TFLite int8) plus
 an on-device byte-level BPE tokenizer embed an arbitrary query and rank stored
 image embeddings by cosine similarity, fused with OCR full-text matches via
 reciprocal rank fusion. So you can search by what a screenshot *looks like*, not

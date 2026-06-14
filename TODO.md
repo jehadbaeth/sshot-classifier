@@ -12,15 +12,15 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Current state (snapshot)
 
-- **2026-06-14:** Phase 3 done and verified on emulator: free-text semantic search.
-  On-device CLIP text encoder (int8, 65.2 MB, min cos 0.9993 vs PyTorch) + a faithful
-  Kotlin BPE tokenizer (byte-identical to open_clip, unit-tested) embed a query and
-  rank stored image embeddings by cosine, fused with OCR FTS matches via reciprocal
-  rank fusion. Cross-modal retrieval proven on-device via an instrumented test:
-  "a map of streets and roads"->map 0.274, "program source code in an editor"->code
-  0.234, "a store receipt with prices and total"->receipt 0.300, each clearly ahead
-  of distractors. Phases 0/1/2 before it. Repo private, CI green.
-- Latest released tag target: `v0.4.0` (Phase 3). v0.3.0 = Phase 2, v0.2.0 = Phase 1.
+- **2026-06-14: Phase 4 complete (targeting v0.5.0).** Settings screen, reprocess
+  action, custom user tags (manual + auto-categories), needs-review surface, and
+  non-destructive copy-into-tag-albums reorganization all done. Real-model path
+  validated on a Galaxy S20 FE AVD (API 33): two-file download, built-in tagging,
+  custom-category autotag. Tech debt cleared: OCR min-score floor, foreground-service
+  processing, doc updates. All Phase 4 features smoke-tested on device; 15 instrumented
+  tests + unit tests green. Phases 0-3 before it. Repo private, CI green.
+- Latest released tag target: `v0.5.0` (Phase 4). v0.4.0 = Phase 3, v0.3.0 = Phase 2,
+  v0.2.0 = Phase 1.
 
 ---
 
@@ -130,7 +130,10 @@ Mirrors docs/design.md section 14, with task-level detail.
 ### Phase 4 — Reorg, taxonomy, polish
 - [x] Reprocess already-DONE-but-unembedded screenshots after model install
       (gallery banner -> reset to PENDING -> worker re-embeds; DAO tested on device)
-- [ ] User-triggered file reorganization into app-managed folder (margin/OCR gate, not raw floor)
+- [x] User-triggered reorganization: non-destructive COPY into Pictures/ScreenshotClassifier/<tag>/
+      (uncategorized when needs_review); idempotent; API 29+. Chose copy over move with user.
+- [x] "Needs review" surface (done): needs_review persisted, set on weak CLIP tagging /
+      untagged, cleared on manual edit; Gallery filter chip.
 - [x] Custom user tags (DONE 2026-06-14, both slices). Slice 1: manual per-image tags
       (gallery cell -> detail/tag-editor; add user tag trim+lowercase+dedup source=USER,
       or remove ANY tag). Slice 2: custom AUTO-categories. User defines a concept; it is
@@ -141,7 +144,6 @@ Mirrors docs/design.md section 14, with task-level detail.
       already-indexed screenshots; new ones are scored in ImageProcessor. Managed in
       Settings (gated on text model). Tests: CustomCategoryScorerTest (unit, CI) +
       CustomCategoryRepoTest (real Room, fake embedder) + Settings UI smoke-tested.
-- [ ] "Needs review" surface for low-confidence/contradicted tags
 - [x] Settings screen (done 2026-06-14): third bottom-nav tab. Library stats, AI
       model status + install/update, reprocess + scan-now, About/version. Smoke-tested
       on emulator (renders, navigates, no crash). Deferred (need DataStore / tag CRUD,
