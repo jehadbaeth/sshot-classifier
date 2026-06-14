@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
+import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository.AddCategoryResult
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
@@ -40,7 +41,10 @@ class SettingsViewModel @Inject constructor(
     private val repository: ScreenshotRepository,
     private val modelManager: ClipModelManager,
     private val downloader: ClipModelDownloader,
+    private val organizer: ScreenshotOrganizer,
 ) : ViewModel() {
+
+    val reorganizeSupported: Boolean = organizer.isSupported
 
     val screenshotCount: StateFlow<Int> =
         repository.observeCount()
@@ -123,6 +127,26 @@ class SettingsViewModel @Inject constructor(
     /** Triggers an immediate scan + processing pass. */
     fun scanNow() {
         ScreenshotProcessingWorker.enqueue(context)
+    }
+
+    private val _reorganizeStatus = MutableStateFlow<String?>(null)
+    val reorganizeStatus: StateFlow<String?> = _reorganizeStatus.asStateFlow()
+
+    /** Copies processed screenshots into per-tag albums (non-destructive). */
+    fun reorganize() {
+        if (_reorganizeStatus.value == RUNNING) return
+        viewModelScope.launch {
+            _reorganizeStatus.value = RUNNING
+            val r = organizer.organizeIntoAlbums()
+            _reorganizeStatus.value =
+                "Copied ${r.copied} into albums" +
+                    (if (r.skipped > 0) ", ${r.skipped} already there" else "") +
+                    (if (r.failed > 0) ", ${r.failed} failed" else "")
+        }
+    }
+
+    companion object {
+        const val RUNNING = "Organizing…"
     }
 
     private fun readModelInfo() = ModelInfo(

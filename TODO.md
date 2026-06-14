@@ -181,19 +181,18 @@ Mirrors docs/design.md section 14, with task-level detail.
   public repo `jehadbaeth/sshot-classifier-models` (release `clip-vit-b32-laion-int8`).
   App downloads from there on first launch with sha256 verification. End-to-end
   download verified on emulator. The 89.5 MB model stays gitignored in the app repo.
-- **OCR heuristics are a first pass and over-fire.** Fixed the worst (status-bar
-  clock -> chat on everything; `#include` -> social on all code). Remaining: rules
-  trigger on a single weak keyword with no minimum-score floor; calendar time
-  pattern could false-positive on 12h status-bar clocks; currency pattern is
-  shared by receipt/finance/shopping. These are signals for Phase 2 fusion, not
-  final tags, but a min-score floor and better disambiguation are wanted.
-- **APK size ~117 MB (debug).** Bulk is ML Kit OCR + TFLite native libs across 4
-  ABIs. CLIP model is NOT in the APK (downloaded at runtime). Mitigate later with
-  abiFilters / per-ABI splits / app bundle. Tracked in backlog.
-- **Design doc vs reality:** design.md sec 14 phase plan predates the OCR
-  co-classifier change; the rest of the doc is updated. Minor.
-- **GitHub Actions deprecation warning:** actions run on Node 20, forced to Node
-  24 after 2026-06-16. Bump action versions when they release Node 24 builds.
+- ~~**OCR heuristics over-fire on a single weak keyword / shared currency pattern.**~~
+  **Addressed 2026-06-14.** Pattern hits now weigh less than keyword hits and a
+  MIN_EMIT=0.30 floor drops single weak signals and lone shared patterns (a price no
+  longer tags receipt/finance/shopping by itself). Remaining nuance (calendar time vs
+  12h clock) is minor; revisit only if it shows up in practice.
+- **APK size ~124 MB (debug).** Bulk is ML Kit OCR + TFLite native libs across 4
+  ABIs. CLIP models are NOT in the APK (downloaded at runtime). This is an
+  optimization, not a defect: address with an app bundle / per-ABI splits at Play
+  time (Phase 5+), not now. Tracked in backlog.
+- ~~**Design doc sec 14 stale.**~~ Updated 2026-06-14 to current phase reality.
+- ~~**GitHub Actions Node 20 deprecation.**~~ **Done 2026-06-14:** opted into Node 24
+  via FORCE_JAVASCRIPT_ACTIONS_TO_NODE24; CI runs the actions on Node 24.
 - **Spike caveats:** 11 images, several categories stood in by web consent walls;
   host-side CLIP ignores TFLite quantization. See docs/spikes/clip-findings.md.
 

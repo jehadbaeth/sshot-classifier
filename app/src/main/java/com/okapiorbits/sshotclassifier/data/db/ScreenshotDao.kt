@@ -113,6 +113,11 @@ interface ScreenshotDao {
     @Query("SELECT * FROM screenshots ORDER BY date_added DESC")
     fun observeAllWithTags(): Flow<List<ScreenshotWithTags>>
 
+    /** Snapshot of processed screenshots with tags, for the reorganization pass. */
+    @Transaction
+    @Query("SELECT * FROM screenshots WHERE status = 'DONE' ORDER BY date_added DESC")
+    suspend fun doneWithTags(): List<ScreenshotWithTags>
+
     @Transaction
     @Query(
         """

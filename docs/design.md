@@ -395,6 +395,8 @@ These are estimates to validate early on real hardware. The vision encode domina
 - **Phase 1 (done, v0.2.0)**: OCR pipeline + FTS4 text search. Useful on its own and validates the queue and background work.
 - **Phase 2 (done, v0.3.0)**: CLIP image encoder, model download, embeddings, zero-shot tagging fused with OCR.
 - **Phase 3 (done, v0.4.0)**: Free-text visual + hybrid semantic search (CLIP text encoder + on-device BPE tokenizer + RRF fusion).
-- **Phase 4**: Reorganization, custom taxonomy, settings polish.
+- **Phase 4 (in progress)**: Settings screen (done), reprocess action (done), custom user tags — manual per-image tags + user-defined auto-categories scored by an independent cosine threshold (done), a "needs review" surface for low-confidence/contradicted tags (done), and user-triggered reorganization. Also clears standing debt: OCR min-score floor, foreground-service processing.
 
 Phase 1 ships value without the heavy CLIP dependency and de-risks the background processing machinery before adding the big model.
+
+Note on classification: CLIP is one signal, not the sole classifier. Per the spike (docs/spikes/clip-findings.md) it is confidently wrong on text-heavy/ambiguous UI, so OCR co-classifies text-heavy categories and tagging gates on the top1-top2 margin plus OCR agreement rather than a raw confidence floor. Custom user auto-categories are additive (independent cosine threshold) and never alter the built-in scoring.

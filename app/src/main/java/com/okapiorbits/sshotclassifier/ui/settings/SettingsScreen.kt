@@ -48,6 +48,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val download by viewModel.download.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val categoryStatus by viewModel.categoryStatus.collectAsStateWithLifecycle()
+    val reorganizeStatus by viewModel.reorganizeStatus.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
@@ -108,6 +109,24 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             }
             OutlinedButton(onClick = viewModel::scanNow, modifier = Modifier.padding(top = 4.dp)) {
                 Text(if (pending > 0) "Processing…" else "Scan for new screenshots")
+            }
+            if (viewModel.reorganizeSupported) {
+                OutlinedButton(
+                    onClick = viewModel::reorganize,
+                    enabled = reorganizeStatus != SettingsViewModel.RUNNING,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text("Copy into tag albums")
+                }
+                Text(
+                    "Copies each screenshot into Pictures/ScreenshotClassifier/<tag>/ " +
+                        "(uncategorized when unsure). Originals are kept; nothing is moved or deleted.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                reorganizeStatus?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+                }
             }
             Text(
                 "A background pass also runs every 6 hours.",
