@@ -89,9 +89,22 @@ class OcrHeuristics @Inject constructor() {
         Rule(
             label = "social media",
             // No bare @/# pattern: "#include", "#define" etc. tag every code
-            // screenshot as social.
-            strong = listOf("followers", "following", "retweet", "repost", "your story", "view profile", "reels"),
-            weak = listOf("likes", "comments", "shares"),
+            // screenshot as social. Reddit/forum markers live here too: CLIP reads
+            // text-heavy threads as documents, so OCR is the reliable signal.
+            strong = listOf("followers", "following", "retweet", "repost", "your story", "view profile", "reels", "upvote", "downvote", "subreddit", "posted by"),
+            weak = listOf("likes", "comments", "shares", "karma", "crosspost"),
+            // r/<sub> and u/<user> are distinctive; \b avoids matching "year/" etc.
+            patterns = listOf(Regex("""\br/\w"""), Regex("""\bu/\w""")),
+        ),
+        Rule(
+            label = "email",
+            // No dedicated tag existed before; CLIP routed "an email inbox" to
+            // document. Email screens have very reliable text markers.
+            strong = listOf("unsubscribe", "reply all", "forwarded message", "subject:", "compose email", "inbox"),
+            weak = listOf("reply", "forward", "to:", "from:", "cc:", "bcc:", "attachment", "draft", "archive", "mark as read"),
+            // A literal email address is corroborating but appears on many screens,
+            // so it stays a weak pattern, not a strong keyword.
+            patterns = listOf(Regex("""\b[\w.+-]+@[\w-]+\.[a-z]{2,}\b""")),
         ),
         Rule(
             label = "browser / web",

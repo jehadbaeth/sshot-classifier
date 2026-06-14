@@ -105,6 +105,8 @@ class OcrHeuristicsTest {
         Case("profile", "1.2M followers\n340 following\nView profile", setOf("social media"), emptySet()),
         Case("browser", "https://example.com/login\nSign in\nSearch", setOf("browser / web"), emptySet()),
         Case("agenda", "Monday\nTuesday\n9:00 am Standup\nAll day", setOf("calendar"), emptySet()),
+        Case("email inbox", "Inbox\nSubject: Your invoice\nReply all\nForward\nUnsubscribe", setOf("email"), emptySet()),
+        Case("reddit thread", "r/android\nPosted by u/someone\n1.2k upvotes\n340 comments\nShare", setOf("social media"), emptySet()),
 
         // --- true negatives: the (old) tempting label must NOT be produced ---
         Case("settings screen", "Settings\nAccount\nPrivacy\nNotifications\nStorage", emptySet(), setOf("finance")),
@@ -115,6 +117,7 @@ class OcrHeuristicsTest {
         Case("single price", "Acme Widget\n\$12.50\nView details", emptySet(), setOf("receipt", "finance", "shopping")),
         Case("news fatal", "Fatal accident on the highway closes the road", emptySet(), setOf("error / crash")),
         Case("show title", "Friday Night Live\nWatch now", emptySet(), setOf("calendar")),
+        Case("signup form", "Create account\njohn@example.com\nPassword\nSign up", emptySet(), setOf("email")),
     )
 
     @Test

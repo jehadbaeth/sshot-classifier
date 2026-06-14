@@ -17,6 +17,10 @@ class TagFuser @Inject constructor() {
     private val ocrAuthoritative = setOf(
         "code editor", "error / crash", "receipt", "finance", "calendar",
         "chat / messaging", "document", "shopping", "news", "browser / web",
+        // Email and forum/reddit screens are text-heavy; CLIP misreads them as
+        // documents, so OCR carries these. Without this they would be downweighted
+        // to a 0.15 nudge and lose to CLIP's "document" vote.
+        "email", "social media",
     )
 
     /** Result of fusion: weighted tags plus whether the top tag cleared the gate. */
