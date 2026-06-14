@@ -1,6 +1,5 @@
 package com.okapiorbits.sshotclassifier.pipeline.clip
 
-import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -18,29 +17,25 @@ data class SemanticHit(val screenshotId: Long, val score: Float)
  * Returns an empty list when the text model is not installed or no embeddings
  * exist yet, so the caller can fall back to OCR full-text search.
  *
- * Scaling note (measured 2026-06-14, docs/spikes/scale-test.md): brute force is
- * fast to ~5k images (sub-6 ms at 500-1000) but linear, reaching ~126 ms at 10k.
- * The cost is [ScreenshotDao.allEmbeddings] re-reading and re-decoding every blob on
- * each query, NOT the dot products. To scale past ~5k, cache the decoded FloatArrays
- * in memory and invalidate on insert (TODO) before reaching for an HNSW index.
+ * Scaling (measured 2026-06-14, docs/spikes/scale-test.md): the brute-force cost was
+ * never the dot products but re-decoding every embedding blob from SQLite per query
+ * (linear, ~126 ms at 10k). The decoded vectors now live in [EmbeddingCache], so only
+ * the first query after an embedding change pays that; repeats are near-instant.
  */
 @Singleton
 class SemanticSearcher @Inject constructor(
-    private val dao: ScreenshotDao,
+    private val embeddings: EmbeddingCache,
     private val textEncoder: TextEmbedder,
 ) {
     suspend fun search(query: String, limit: Int = 100): List<SemanticHit> =
         withContext(Dispatchers.Default) {
             if (query.isBlank() || !textEncoder.isReady()) return@withContext emptyList()
             val q = textEncoder.encode(query) ?: return@withContext emptyList()
-            val rows = dao.allEmbeddings()
+            val rows = embeddings.entries()
             if (rows.isEmpty()) return@withContext emptyList()
 
             rows.asSequence()
-                .map { row ->
-                    val v = EmbeddingCodec.toFloats(row.vector)
-                    SemanticHit(row.screenshot_id, dot(q, v))
-                }
+                .map { SemanticHit(it.screenshotId, dot(q, it.vector)) }
                 .sortedByDescending { it.score }
                 .take(limit)
                 .toList()

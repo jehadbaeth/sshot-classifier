@@ -10,6 +10,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCache
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
 import com.okapiorbits.sshotclassifier.pipeline.clip.TextEmbedder
@@ -50,7 +51,7 @@ class TagEditingInstrumentedTest {
             dao = dao,
             scanner = MediaStoreScanner(context),
             hasher = ImageHasher(context),
-            semanticSearcher = SemanticSearcher(dao, noEmbedder),
+            semanticSearcher = SemanticSearcher(EmbeddingCache(dao), noEmbedder),
             categoryEmbedder = noLabelEmbedder,
         )
         runBlocking {

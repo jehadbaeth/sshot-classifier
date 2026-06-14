@@ -43,9 +43,24 @@ is real. Tests:
 - **Root cause is structural, and fixable.** `SemanticSearcher.search()` calls
   `dao.allEmbeddings()` on *every query*, re-reading and re-deserializing every blob
   from SQLite. The dot products are cheap; the per-query deserialization dominates.
-  Caching the decoded `FloatArray`s in memory (load once, invalidate on new embedding)
-  would make repeat searches sub-millisecond and push the real ceiling well past 20k.
-  Logged as a TODO — not urgent, because it only bites past ~5k images.
+
+### Update (2026-06-14): embedding cache landed
+
+Added `EmbeddingCache`: the decoded `FloatArray`s are built from the DB once and reused
+across queries, invalidated when an embedding changes. Re-measured, same AVD:
+
+| Images | Cold query (cache rebuild) | Warm query (cached) | Before (per-query decode) |
+|-------:|---------------------------:|--------------------:|--------------------------:|
+| 500    | 4 ms                       | 1.2 ms              | 3.6 ms                    |
+| 1,000  | 6 ms                       | 1.4 ms              | 5.5 ms                    |
+| 5,000  | 41 ms                      | 5.5 ms              | 39.8 ms                   |
+| 10,000 | 127 ms                     | 11.3 ms             | 125.7 ms                  |
+
+The cold query (the first after any embedding change) still pays the full decode, the
+same cost as before. Every subsequent query is ~10x faster: 11 ms at 10k, comfortably
+under the 50 ms target, and linear extrapolation puts 20k at ~22 ms warm. So the design's
+"<50 ms, fine to ~20k" now actually holds for the common case (repeat searches), with the
+one-time rebuild paid only when the library changes.
 
 ## 2. Classification throughput (OCR-only path)
 

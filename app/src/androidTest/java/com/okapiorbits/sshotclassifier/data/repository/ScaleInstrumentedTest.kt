@@ -12,6 +12,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
 import com.okapiorbits.sshotclassifier.data.media.Reorganization
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCache
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
@@ -129,7 +130,8 @@ class ScaleInstrumentedTest {
             assertEquals(n, runBlocking { dao.allEmbeddings().size })
 
             val query = randomUnitVector(Random(7L))
-            val searcher = SemanticSearcher(dao, FakeEmbedder(query))
+            val cache = EmbeddingCache(dao)
+            val searcher = SemanticSearcher(cache, FakeEmbedder(query))
             val repo = ScreenshotRepository(
                 dao = dao,
                 scanner = MediaStoreScanner(context),
@@ -141,7 +143,11 @@ class ScaleInstrumentedTest {
             // ---- warm up (first query pays JIT + page cache) ----
             runBlocking { searcher.search("warmup") }
 
-            // ---- pure visual brute-force cosine latency (design target < 50 ms) ----
+            // ---- COLD: first query after an embedding change rebuilds the cache ----
+            cache.invalidate()
+            val coldMs = measure { runBlocking { searcher.search("cold") } }
+
+            // ---- WARM: repeat queries reuse the cached decoded vectors ----
             var visualResults = 0
             val visualMs = measureAvg(REPEATS) {
                 runBlocking { visualResults = searcher.search("query").size }
@@ -171,7 +177,7 @@ class ScaleInstrumentedTest {
 
             Log.i(
                 TAG,
-                "n=$n | seed=${seedMs}ms | visual=${"%.2f".format(visualMs)}ms (${visualResults} hits) " +
+                "n=$n | seed=${seedMs}ms | cold=${coldMs}ms | warm=${"%.2f".format(visualMs)}ms (${visualResults} hits) " +
                     "| hybrid=${"%.2f".format(hybridMs)}ms (${hybridResults} hits) " +
                     "| vectors=${vectorBytes / 1024}KB (${"%.1f".format(vectorBytes / 1_048_576.0)}MB) " +
                     "| reorgRoute=${reorgMs}ms for $albums",

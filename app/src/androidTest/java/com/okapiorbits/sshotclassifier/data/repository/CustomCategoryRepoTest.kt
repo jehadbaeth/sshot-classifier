@@ -10,6 +10,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCache
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
@@ -51,7 +52,7 @@ class CustomCategoryRepoTest {
         dao = dao,
         scanner = MediaStoreScanner(context),
         hasher = ImageHasher(context),
-        semanticSearcher = SemanticSearcher(dao, noText),
+        semanticSearcher = SemanticSearcher(EmbeddingCache(dao), noText),
         categoryEmbedder = embedder,
     )
 

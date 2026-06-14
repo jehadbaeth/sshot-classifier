@@ -55,11 +55,13 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       Memory (~20 MB at 10k) matched. Design sec 8 + 12 corrected. JobScheduler-at-volume
       deliberately not tested (its emulator wedging is a known harness artifact, not app
       logic; the direct-loop test measures real app behavior without that noise).
-- [ ] **Cache decoded embeddings in memory for search (perf, justified by scale test).**
-      `SemanticSearcher.search()` calls `dao.allEmbeddings()` every query and re-decodes
-      every blob; that is the search bottleneck past ~5k images. Load + decode once, keep
-      the FloatArrays in memory, invalidate on new embedding insert. Not urgent (fast at
-      the sizes users actually have), but it is the fix before any HNSW work.
+- [x] **Embedding cache for search (done 2026-06-14).** Added `EmbeddingCache`: decodes
+      all embeddings once and reuses the FloatArrays across queries, invalidated by
+      `ImageProcessor` whenever an embedding is written. `SemanticSearcher` now reads the
+      cache instead of `dao.allEmbeddings()` per query. Re-measured on the S20 FE AVD:
+      warm queries dropped ~10x (10k: 126 ms -> 11 ms; under the 50 ms target, ~22 ms
+      extrapolated at 20k). Only the first query after the library changes pays the
+      one-time rebuild. Scale test now reports cold-vs-warm; design sec 8 + 12 updated.
 - [x] **Device-matrix + real-model validation (done 2026-06-14).** Created a Galaxy
       S20 FE-shaped AVD (1080x2400, 420 dpi) on Android 13 / API 33 (galaxy_s20fe_api33).
       NOTE: the stock emulator cannot run Samsung firmware / One UI — S20-FE-shaped AVD on

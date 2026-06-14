@@ -11,6 +11,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipEncoder
 import com.okapiorbits.sshotclassifier.pipeline.clip.CustomCategoryScorer
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCache
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
 import com.okapiorbits.sshotclassifier.pipeline.clip.TagFuser
 import com.okapiorbits.sshotclassifier.pipeline.clip.ZeroShotClassifier
@@ -31,6 +32,7 @@ class ImageProcessor @Inject constructor(
     private val clipEncoder: ClipEncoder,
     private val zeroShot: ZeroShotClassifier,
     private val fuser: TagFuser,
+    private val embeddingCache: EmbeddingCache,
 ) {
     suspend fun process(screenshot: ScreenshotEntity): Boolean {
         dao.updateStatus(screenshot.id, ProcessingStatus.PROCESSING.name, null)
@@ -55,6 +57,7 @@ class ImageProcessor @Inject constructor(
         var needsReview: Boolean
         if (embedding != null) {
             dao.insertEmbedding(EmbeddingEntity(screenshot_id = screenshot.id, vector = EmbeddingCodec.toBytes(embedding)))
+            embeddingCache.invalidate() // the new vector must show up in search
             val clipScores = zeroShot.classify(embedding)
             val fused = fuser.fuse(clipScores, ocrCandidates)
             val tags = fused.tags.map {

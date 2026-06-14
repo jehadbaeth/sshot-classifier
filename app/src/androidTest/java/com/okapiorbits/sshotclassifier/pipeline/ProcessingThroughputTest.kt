@@ -12,6 +12,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipEncoder
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipLabels
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCache
 import com.okapiorbits.sshotclassifier.pipeline.clip.TagFuser
 import com.okapiorbits.sshotclassifier.pipeline.clip.ZeroShotClassifier
 import kotlinx.coroutines.runBlocking
@@ -112,6 +113,7 @@ class ProcessingThroughputTest {
             clipEncoder = ClipEncoder(appContext, modelManager),
             zeroShot = ZeroShotClassifier(ClipLabels(appContext)),
             fuser = TagFuser(),
+            embeddingCache = EmbeddingCache(dao),
         )
 
         val runtime = Runtime.getRuntime()
