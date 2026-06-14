@@ -1,5 +1,8 @@
 package com.okapiorbits.sshotclassifier.ui.settings
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,19 +27,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +57,20 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val categoryStatus by viewModel.categoryStatus.collectAsStateWithLifecycle()
     val reorganizeStatus by viewModel.reorganizeStatus.collectAsStateWithLifecycle()
+    val reorgPrefs by viewModel.reorgPrefs.collectAsStateWithLifecycle()
+    val undoableMoves by viewModel.undoableMoves.collectAsStateWithLifecycle()
+    val pendingDelete by viewModel.pendingDelete.collectAsStateWithLifecycle()
+
+    // MOVE mode: launch the system delete-consent dialog when one is pending.
+    val deleteLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) viewModel.onDeleteApproved()
+        else viewModel.onDeleteCancelled()
+    }
+    LaunchedEffect(pendingDelete) {
+        pendingDelete?.let { deleteLauncher.launch(it.request) }
+    }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
@@ -110,29 +132,28 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             OutlinedButton(onClick = viewModel::scanNow, modifier = Modifier.padding(top = 4.dp)) {
                 Text(if (pending > 0) "Processing…" else "Scan for new screenshots")
             }
-            if (viewModel.reorganizeSupported) {
-                OutlinedButton(
-                    onClick = viewModel::reorganize,
-                    enabled = reorganizeStatus != SettingsViewModel.RUNNING,
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    Text("Copy into tag albums")
-                }
-                Text(
-                    "Copies each screenshot into Pictures/ScreenshotClassifier/<tag>/ " +
-                        "(uncategorized when unsure). Originals are kept; nothing is moved or deleted.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                reorganizeStatus?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
-                }
-            }
             Text(
                 "A background pass also runs every 6 hours.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            if (viewModel.reorganizeSupported) {
+                Section("Reorganization")
+                ReorganizationSection(
+                    prefs = reorgPrefs,
+                    moveSupported = viewModel.moveSupported,
+                    status = reorganizeStatus,
+                    running = reorganizeStatus == SettingsViewModel.RUNNING,
+                    undoableMoves = undoableMoves,
+                    onRun = viewModel::reorganize,
+                    onUndo = viewModel::undoMoves,
+                    onModeChange = viewModel::setReorgMode,
+                    onAlbumRootChange = viewModel::setAlbumRoot,
+                    onNeedsReviewChange = viewModel::setNeedsReviewToUncategorized,
+                    onAutoRunChange = viewModel::setAutoRun,
+                )
+            }
 
             Section("Custom categories")
             CategoriesSection(
@@ -240,6 +261,111 @@ private fun CategoriesSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp),
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReorganizationSection(
+    prefs: ReorgPreferences,
+    moveSupported: Boolean,
+    status: String?,
+    running: Boolean,
+    undoableMoves: Int,
+    onRun: () -> Unit,
+    onUndo: () -> Unit,
+    onModeChange: (ReorgMode) -> Unit,
+    onAlbumRootChange: (String) -> Unit,
+    onNeedsReviewChange: (Boolean) -> Unit,
+    onAutoRunChange: (Boolean) -> Unit,
+) {
+    val moving = prefs.mode == ReorgMode.MOVE && moveSupported
+    val runLabel = if (moving) "Move into tag albums" else "Copy into tag albums"
+
+    OutlinedButton(onClick = onRun, enabled = !running, modifier = Modifier.padding(top = 4.dp)) {
+        Text(runLabel)
+    }
+    Text(
+        if (moving) {
+            "Copies each screenshot into Pictures/${prefs.albumRoot}/<tag>/, then asks you " +
+                "to confirm deleting the originals. You can undo a move afterwards."
+        } else {
+            "Copies each screenshot into Pictures/${prefs.albumRoot}/<tag>/ " +
+                "(uncategorized when unsure). Originals are kept; nothing is deleted."
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    status?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
+    }
+    if (undoableMoves > 0) {
+        OutlinedButton(onClick = onUndo, enabled = !running, modifier = Modifier.padding(top = 4.dp)) {
+            Text("Undo last move ($undoableMoves files)")
+        }
+    }
+
+    // Album root name.
+    var root by remember(prefs.albumRoot) { mutableStateOf(prefs.albumRoot) }
+    OutlinedTextField(
+        value = root,
+        onValueChange = { root = it },
+        label = { Text("Album folder name") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onAlbumRootChange(root) }),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    )
+
+    LabeledSwitch(
+        label = "Delete originals after copying (move)",
+        subtitle = if (moveSupported) {
+            "Off keeps originals (copy). On deletes them after you confirm."
+        } else {
+            "Move needs Android 11 or newer; this device can only copy."
+        },
+        checked = moving,
+        enabled = moveSupported,
+        onCheckedChange = { onModeChange(if (it) ReorgMode.MOVE else ReorgMode.COPY) },
+    )
+    LabeledSwitch(
+        label = "File low-confidence shots into 'uncategorized'",
+        subtitle = "Off skips screenshots flagged for review instead of filing them.",
+        checked = prefs.needsReviewToUncategorized,
+        enabled = true,
+        onCheckedChange = onNeedsReviewChange,
+    )
+    LabeledSwitch(
+        label = "Organize automatically after each scan",
+        subtitle = "Always copies (never deletes) in the background; moves stay manual.",
+        checked = prefs.autoRun,
+        enabled = true,
+        onCheckedChange = onAutoRunChange,
+    )
+}
+
+@Composable
+private fun LabeledSwitch(
+    label: String,
+    subtitle: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 

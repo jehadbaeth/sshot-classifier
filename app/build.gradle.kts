@@ -68,6 +68,9 @@ dependencies {
     // Background work
     implementation(libs.androidx.work.runtime.ktx)
 
+    // Preferences
+    implementation(libs.androidx.datastore.preferences)
+
     // Image loading
     implementation(libs.coil.compose)
 

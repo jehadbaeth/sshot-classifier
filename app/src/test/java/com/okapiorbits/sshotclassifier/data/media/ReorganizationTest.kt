@@ -42,4 +42,43 @@ class ReorganizationTest {
     fun blankAfterSanitizeFallsBackToUncategorized() {
         assertEquals(Reorganization.UNCATEGORIZED, Reorganization.sanitizeFolder("///"))
     }
+
+    // ---- needs-review handling preference ----
+
+    @Test
+    fun needsReviewSkipped_returnsNull_whenUserOptsOut() {
+        // needsReviewToUncategorized = false means "don't file low-confidence shots".
+        assertEquals(
+            null,
+            Reorganization.albumFor(needsReview = true, topLabel = "map", needsReviewToUncategorized = false),
+        )
+    }
+
+    @Test
+    fun needsReviewToUncategorized_whenEnabled() {
+        assertEquals(
+            Reorganization.UNCATEGORIZED,
+            Reorganization.albumFor(needsReview = true, topLabel = "map", needsReviewToUncategorized = true),
+        )
+    }
+
+    @Test
+    fun confidentTag_unaffectedByNeedsReviewPreference() {
+        assertEquals("map", Reorganization.albumFor(needsReview = false, topLabel = "map", needsReviewToUncategorized = false))
+        assertEquals("map", Reorganization.albumFor(needsReview = false, topLabel = "map", needsReviewToUncategorized = true))
+    }
+
+    // ---- album root sanitization ----
+
+    @Test
+    fun blankRootFallsBackToDefault() {
+        assertEquals(Reorganization.ROOT, Reorganization.sanitizeRoot(""))
+        assertEquals(Reorganization.ROOT, Reorganization.sanitizeRoot("   "))
+    }
+
+    @Test
+    fun rootSanitizedLikeAFolder() {
+        assertEquals("my shots", Reorganization.sanitizeRoot("My/Shots"))
+        assertEquals("screenshots_2026", Reorganization.sanitizeRoot("screenshots_2026"))
+    }
 }

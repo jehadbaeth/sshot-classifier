@@ -126,10 +126,26 @@ tap it to see just those screenshots and fix them up. Editing the tags clears th
 
 ## 8. Reorganizing into albums
 
-From **Settings**, the **Copy into tag albums** action copies each screenshot into
-`Pictures/ScreenshotClassifier/<tag>/`, putting anything still in Needs review into an
-`uncategorized` album. This is non destructive: your originals are kept exactly where
-they are, nothing is moved or deleted, and running it again only copies what is new.
+From **Settings**, the reorganization action files each screenshot into
+`Pictures/<album root>/<tag>/`, putting anything still in Needs review into an
+`uncategorized` album. Running it again only handles what is new.
 
-Because the database keeps tracking files, search and tags keep working regardless of
-how the albums are laid out.
+<img src="images/reorganization.png" width="280" alt="Configurable reorganization options in Settings" />
+
+It is configurable:
+
+- **Copy or move.** By default it copies, so your originals are kept exactly where they
+  are and nothing is deleted. Turn on **Delete originals after copying (move)** to move
+  instead. A move first copies into the album, then asks you to approve deleting the
+  originals in a system dialog, so a deletion never happens without your explicit yes.
+  After a move an **Undo last move** button restores the originals from their copies.
+  Move needs Android 11 or newer; older devices can only copy.
+- **Album folder name.** Rename the root folder from the default "ScreenshotClassifier".
+- **Needs review handling.** Choose whether low-confidence screenshots go to
+  "uncategorized" or are skipped entirely.
+- **Organize automatically after each scan.** When on, new screenshots are copied into
+  albums in the background after each scan. This always copies and never deletes, even
+  if move is selected, because a background pass cannot ask you to confirm a deletion.
+
+Because the database keeps tracking files (and repoints itself when you move one), search
+and tags keep working regardless of how the albums are laid out.

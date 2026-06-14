@@ -364,10 +364,22 @@ flowchart TD
     U --> APP
 ```
 
-- Moves only happen on explicit user action.
-- The gate is margin plus OCR agreement (section 4.3), NOT a raw confidence floor. The spike proved a floor is useless here: CLIP filed a clock as "video" and a file manager as "shopping" at 0.5+ weight, which a 0.4 floor would wave straight through. Ambiguous or contradicted images go to "uncategorized" instead.
-- Files move into an app-managed folder the app has full access to.
-- The DB keeps tracking files by hash and updated path, so search keeps working after a move.
+- Reorganization only happens on explicit user action (or, if the user opts in, a
+  background copy after each scan; the background pass never deletes).
+- **As shipped (configurable, 2026-06-14):** the default is a non-destructive COPY into
+  `Pictures/<root>/<tag>/`. The user can switch to MOVE (copy then delete originals),
+  rename the album root, choose whether needs-review shots go to "uncategorized" or are
+  skipped, and enable automatic copying after each scan. Preferences live in DataStore.
+- The routing gate is the persisted needs_review flag (margin plus OCR agreement, section
+  4.3), NOT a raw confidence floor. The spike proved a floor is useless here: CLIP filed a
+  clock as "video" and a file manager as "shopping" at 0.5+ weight, which a 0.4 floor would
+  wave straight through. Ambiguous or contradicted images go to "uncategorized" instead.
+- MOVE is destructive and scoped storage will not let the app delete media it does not own
+  silently, so a move asks the user to approve the deletion via `MediaStore.createDeleteRequest`
+  (API 30+; below that MOVE degrades to COPY). Every move is recorded in an undo log
+  (`reorg_moves`) so it can be reversed: the album copy is restored to the original location.
+- The album copies are app-managed entries the app has full access to. After a move the DB
+  repoints each screenshot at its album copy, so thumbnails and search keep working.
 
 ## 12. Performance targets (mid-range device)
 

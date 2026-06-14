@@ -12,6 +12,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.EmbeddingEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrEntryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrFtsEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ProcessingStatus
+import com.okapiorbits.sshotclassifier.data.db.entity.ReorgMoveEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import kotlinx.coroutines.flow.Flow
@@ -197,6 +198,27 @@ interface ScreenshotDao {
     @Transaction
     @Query("SELECT * FROM screenshots WHERE id IN (:ids)")
     suspend fun screenshotsByIds(ids: List<Long>): List<ScreenshotWithTags>
+
+    /** Repoints a screenshot at a new file uri (after a move or an undo-restore). */
+    @Query("UPDATE screenshots SET file_path = :uri WHERE id = :id")
+    suspend fun updateFilePath(id: Long, uri: String)
+
+    // ---- Reorganization undo log (records of moved files) ----
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReorgMove(move: ReorgMoveEntity): Long
+
+    @Query("SELECT * FROM reorg_moves ORDER BY moved_at DESC")
+    suspend fun allReorgMoves(): List<ReorgMoveEntity>
+
+    @Query("SELECT COUNT(*) FROM reorg_moves")
+    fun observeReorgMoveCount(): Flow<Int>
+
+    @Query("DELETE FROM reorg_moves WHERE id = :id")
+    suspend fun deleteReorgMove(id: Long)
+
+    @Query("DELETE FROM reorg_moves")
+    suspend fun clearReorgMoves()
 }
 
 data class TagCount(val label: String, val cnt: Int)

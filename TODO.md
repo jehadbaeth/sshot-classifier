@@ -89,11 +89,17 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true in both workflows to opt in now and
       silence the deprecation warning. (It was only a warning; GitHub force-defaults
       to Node 24 on 2026-06-16 and removes Node 20 on 2026-09-16, so CI never broke.)
-- [ ] **Make reorganization behaviour configurable** (requested 2026-06-14). Today
-      reorg is hardcoded to non-destructive COPY into per-tag albums. Expose it as a
-      user setting: at least copy-vs-move, and likely the album-root name and the
-      needs-review handling. Needs DataStore (no persisted prefs yet). Move is
-      destructive, so it needs a clear confirmation + undo story.
+- [x] **Reorganization is configurable (done 2026-06-14).** DataStore-backed prefs
+      (`ReorgPreferencesStore`): copy-vs-move, album root name, needs-review handling
+      (uncategorized vs skip), and auto-run after each scan. Move copies then deletes
+      originals via `MediaStore.createDeleteRequest` (system consent dialog, API 30+;
+      degrades to copy below) and records an undo log (`reorg_moves`, DB v5) so it can
+      be reversed; after a move the DB repoints each screenshot at its album copy. Auto-run
+      always copies (never deletes) since a background worker cannot show the consent dialog.
+      All paths verified on the S20 FE AVD: copy (default + custom root), needs-review
+      routing, move (Allow -> originals deleted + log + repoint), undo (originals restored
+      + log cleared), auto-run (background copy, no deletion). Pure routing + root sanitize
+      unit-tested. needs-review SKIP is unit-tested (not separately device-driven).
 - [ ] Heuristic tuning pass: reduce false positives (see Known issues).
 - [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
 

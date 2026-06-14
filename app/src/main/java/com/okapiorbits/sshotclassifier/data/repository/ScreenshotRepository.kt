@@ -39,6 +39,9 @@ class ScreenshotRepository @Inject constructor(
     /** Count of DONE screenshots lacking a CLIP image embedding (reprocess candidates). */
     fun observeReprocessableCount(): Flow<Int> = dao.observeReprocessableCount()
 
+    /** Count of recorded reorganization moves available to undo. */
+    fun observeReorgMoveCount(): Flow<Int> = dao.observeReorgMoveCount()
+
     /** Screenshots whose auto-tagging was uncertain and wants a human look. */
     fun observeNeedsReview(): Flow<List<ScreenshotWithTags>> = dao.observeNeedsReview()
     fun observeNeedsReviewCount(): Flow<Int> = dao.observeNeedsReviewCount()

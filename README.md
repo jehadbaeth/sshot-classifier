@@ -14,8 +14,9 @@ See the [usage guide](docs/usage.md) for a screen by screen walkthrough, and
 
 Phase 4 done: a Settings tab (library stats, model management, reprocess, scan,
 custom categories), manual per-image tags and user-defined visual auto-categories,
-a "needs review" surface for low-confidence tags, and non-destructive
-reorganization that copies screenshots into per-tag albums. Phase 3: free-text
+a "needs review" surface for low-confidence tags, and configurable
+reorganization into per-tag albums (copy or move, with an undo log for moves and
+a system consent dialog before any deletion). Phase 3: free-text
 semantic search. The CLIP text encoder (TFLite int8) plus
 an on-device byte-level BPE tokenizer embed an arbitrary query and rank stored
 image embeddings by cosine similarity, fused with OCR full-text matches via

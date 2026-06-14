@@ -6,6 +6,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.EmbeddingEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrEntryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrFtsEntity
+import com.okapiorbits.sshotclassifier.data.db.entity.ReorgMoveEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 
@@ -17,8 +18,9 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
         OcrFtsEntity::class,
         EmbeddingEntity::class,
         CustomCategoryEntity::class,
+        ReorgMoveEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

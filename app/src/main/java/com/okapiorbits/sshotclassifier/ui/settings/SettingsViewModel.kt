@@ -1,10 +1,16 @@
 package com.okapiorbits.sshotclassifier.ui.settings
 
 import android.content.Context
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository.AddCategoryResult
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
@@ -42,9 +48,11 @@ class SettingsViewModel @Inject constructor(
     private val modelManager: ClipModelManager,
     private val downloader: ClipModelDownloader,
     private val organizer: ScreenshotOrganizer,
+    private val reorgPrefsStore: ReorgPreferencesStore,
 ) : ViewModel() {
 
     val reorganizeSupported: Boolean = organizer.isSupported
+    val moveSupported: Boolean = organizer.moveSupported
 
     val screenshotCount: StateFlow<Int> =
         repository.observeCount()
@@ -129,19 +137,90 @@ class SettingsViewModel @Inject constructor(
         ScreenshotProcessingWorker.enqueue(context)
     }
 
+    // ---- Reorganization preferences ----
+
+    val reorgPrefs: StateFlow<ReorgPreferences> =
+        reorgPrefsStore.preferences
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ReorgPreferences())
+
+    /** Recorded moves available to undo. */
+    val undoableMoves: StateFlow<Int> =
+        repository.observeReorgMoveCount()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    fun setReorgMode(mode: ReorgMode) = viewModelScope.launch { reorgPrefsStore.setMode(mode) }
+    fun setAlbumRoot(root: String) = viewModelScope.launch { reorgPrefsStore.setAlbumRoot(root) }
+    fun setNeedsReviewToUncategorized(v: Boolean) =
+        viewModelScope.launch { reorgPrefsStore.setNeedsReviewToUncategorized(v) }
+    fun setAutoRun(v: Boolean) = viewModelScope.launch { reorgPrefsStore.setAutoRun(v) }
+
     private val _reorganizeStatus = MutableStateFlow<String?>(null)
     val reorganizeStatus: StateFlow<String?> = _reorganizeStatus.asStateFlow()
 
-    /** Copies processed screenshots into per-tag albums (non-destructive). */
+    /** A delete-consent request the UI must launch (MOVE mode), with its pending copies. */
+    data class DeleteConsent(
+        val request: IntentSenderRequest,
+        val moves: List<ScreenshotOrganizer.PendingMove>,
+        val copied: Int,
+    )
+
+    private val _pendingDelete = MutableStateFlow<DeleteConsent?>(null)
+    val pendingDelete: StateFlow<DeleteConsent?> = _pendingDelete.asStateFlow()
+
+    /**
+     * Runs reorganization with the current preferences. COPY finishes immediately. MOVE
+     * copies, then surfaces a [DeleteConsent] the UI launches; the originals are deleted
+     * only after the user approves (see [onDeleteApproved]).
+     */
     fun reorganize() {
         if (_reorganizeStatus.value == RUNNING) return
         viewModelScope.launch {
             _reorganizeStatus.value = RUNNING
-            val r = organizer.organizeIntoAlbums()
-            _reorganizeStatus.value =
-                "Copied ${r.copied} into albums" +
-                    (if (r.skipped > 0) ", ${r.skipped} already there" else "") +
-                    (if (r.failed > 0) ", ${r.failed} failed" else "")
+            val prefs = reorgPrefsStore.current()
+            val r = organizer.organizeIntoAlbums(prefs)
+            val base = "Copied ${r.copied}" +
+                (if (r.skipped > 0) ", ${r.skipped} already there" else "") +
+                (if (r.failed > 0) ", ${r.failed} failed" else "")
+            if (r.pendingMoves.isEmpty()) {
+                _reorganizeStatus.value = "$base into albums"
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val uris = r.pendingMoves.map { it.sourceUri }
+                val pi = MediaStore.createDeleteRequest(context.contentResolver, uris)
+                _pendingDelete.value = DeleteConsent(
+                    IntentSenderRequest.Builder(pi.intentSender).build(),
+                    r.pendingMoves,
+                    r.copied,
+                )
+                _reorganizeStatus.value = "$base; confirm deleting ${uris.size} originals…"
+            }
+        }
+    }
+
+    /** Called when the user approves the system delete dialog: finalize the move. */
+    fun onDeleteApproved() {
+        val consent = _pendingDelete.value ?: return
+        _pendingDelete.value = null
+        viewModelScope.launch {
+            organizer.commitMoves(consent.moves)
+            _reorganizeStatus.value = "Moved ${consent.moves.size} into albums"
+        }
+    }
+
+    /** Called when the user declines the delete dialog: copies stay, originals kept. */
+    fun onDeleteCancelled() {
+        val consent = _pendingDelete.value ?: return
+        _pendingDelete.value = null
+        _reorganizeStatus.value = "Copied ${consent.copied}; deletion cancelled, originals kept"
+    }
+
+    /** Restores moved originals from their album copies and clears the undo log. */
+    fun undoMoves() {
+        if (_reorganizeStatus.value == RUNNING) return
+        viewModelScope.launch {
+            _reorganizeStatus.value = RUNNING
+            val u = organizer.undoMoves()
+            _reorganizeStatus.value = "Restored ${u.restored} originals" +
+                (if (u.failed > 0) ", ${u.failed} failed" else "")
         }
     }
 

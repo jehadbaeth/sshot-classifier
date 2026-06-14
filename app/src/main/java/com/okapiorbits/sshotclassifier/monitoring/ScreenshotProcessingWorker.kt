@@ -15,6 +15,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
+import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.pipeline.ImageProcessor
 import dagger.assisted.Assisted
@@ -34,6 +37,8 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val repository: ScreenshotRepository,
     private val processor: ImageProcessor,
+    private val organizer: ScreenshotOrganizer,
+    private val reorgPrefsStore: ReorgPreferencesStore,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -43,18 +48,32 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
         repository.syncFromMediaStore()
 
         val pending = repository.pendingScreenshots()
-        if (pending.isEmpty()) return Result.success()
-
-        val total = pending.size
-        runCatching { setForeground(foregroundInfo(0, total)) }
-        var done = 0
-        for (shot in pending) {
-            processor.process(shot)
-            done++
-            Notifications.progress(applicationContext, done, total)
+        if (pending.isNotEmpty()) {
+            val total = pending.size
+            runCatching { setForeground(foregroundInfo(0, total)) }
+            var done = 0
+            for (shot in pending) {
+                processor.process(shot)
+                done++
+                Notifications.progress(applicationContext, done, total)
+            }
+            Notifications.clear(applicationContext)
         }
-        Notifications.clear(applicationContext)
+
+        maybeAutoReorganize()
         return Result.success()
+    }
+
+    /**
+     * If the user enabled auto-run, copy newly-tagged screenshots into albums. This is
+     * always a COPY even when MOVE is the selected mode: deleting originals needs a
+     * user-facing consent dialog that a background worker cannot show, so destructive
+     * moves stay a deliberate manual action.
+     */
+    private suspend fun maybeAutoReorganize() {
+        val prefs = reorgPrefsStore.current()
+        if (!prefs.autoRun || !organizer.isSupported) return
+        runCatching { organizer.organizeIntoAlbums(prefs.copy(mode = ReorgMode.COPY)) }
     }
 
     /** Used both for expedited fallback on API < 31 and the dataSync foreground run. */
