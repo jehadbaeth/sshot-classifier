@@ -41,12 +41,23 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       (search hardening, reprocess, Node 24, Settings, manual tags, custom categories)
       with versionCode still 4. Per our cadence we release at phase end; cut v0.5.0 once
       the remaining Phase 4 items land, or sooner on request.
-- [~] **Device-matrix testing.** Everything so far verified on Pixel/API 35 only. Adding
-      a Samsung Galaxy S20 FE profile (6.5", 1080x2400, ~407 dpi) on Android 13 / API 33.
-      NOTE: the stock emulator cannot run Samsung firmware / One UI — this is an S20-FE-
-      shaped AVD on a Google system image, useful for screen + API-level coverage, not a
-      literal Samsung OS. Legacy permission path (<API 33, READ_EXTERNAL_STORAGE) still
-      untested; candidate follow-up (e.g. an API 30 run).
+- [x] **Device-matrix + real-model validation (done 2026-06-14).** Created a Galaxy
+      S20 FE-shaped AVD (1080x2400, 420 dpi) on Android 13 / API 33 (galaxy_s20fe_api33).
+      NOTE: the stock emulator cannot run Samsung firmware / One UI — S20-FE-shaped AVD on
+      a Google system image; useful for screen + API-level coverage, not literal Samsung
+      OS. Results: full instrumented suite (14 tests) passes; UI smoke-tested. Then drove
+      the REAL models on it and closed several gaps at once:
+        * two-file model download via the production downloader (image 89.5MB + text
+          65.2MB, sha256-verified + renamed) — gap closed.
+        * built-in CLIP tagging correct: map->map 0.85, receipt->receipt 1.0,
+          code->code editor 0.79, city->other.
+        * custom auto-category e2e: added "street map" in Settings -> embedded on-device
+          -> auto-tagged ONLY the map (cosine 0.281); receipt/code/city stayed below the
+          0.24 threshold. Clean separation; 0.24 looks reasonable on this sample.
+      Caveat: emulator JobScheduler wedged mid-test ("Job didn't exist in JobStore");
+      indexing only worked after an `adb reboot` (harness flakiness, not app — API 35
+      indexed fine earlier). Legacy permission path (<API 33, READ_EXTERNAL_STORAGE)
+      still untested; candidate follow-up (API 30 run).
 - [x] **Reprocess action (done 2026-06-14).** Gallery banner appears when the image
       model is installed and there are DONE screenshots with no embedding; tapping it
       resets those rows to PENDING and enqueues the worker, which re-runs them through
