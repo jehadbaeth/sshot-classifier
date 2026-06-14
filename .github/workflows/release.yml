@@ -2,6 +2,11 @@ name: Release
 
 # Tag a commit with v* (for example v0.1.0) to build the APK and publish a
 # GitHub Release with the APK attached for direct download.
+
+# Opt the JS-based actions onto Node 24 now (forced by default after 2026-06-16).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     tags: ['v*']

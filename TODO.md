@@ -44,7 +44,10 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       encoded stays counted, so the banner persists until dismissed by success; not a
       retry loop (user-initiated only). Worker enqueue uses KEEP, so a reprocess tapped
       while a scan is mid-run waits for the next trigger.
-- [ ] Bump GitHub Actions to Node 24 builds before 2026-06-16 deprecation.
+- [x] Node 24 for GitHub Actions (done 2026-06-14): set
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true in both workflows to opt in now and
+      silence the deprecation warning. (It was only a warning; GitHub force-defaults
+      to Node 24 on 2026-06-16 and removes Node 20 on 2026-09-16, so CI never broke.)
 - [ ] Heuristic tuning pass: reduce false positives (see Known issues).
 - [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
 

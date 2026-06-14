@@ -1,5 +1,11 @@
 name: CI
 
+# Opt the JS-based actions onto Node 24 now. After 2026-06-16 GitHub forces this
+# by default; setting it here silences the deprecation warning and de-risks the
+# transition early. Drop once all actions ship Node 24 natively.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [main]
