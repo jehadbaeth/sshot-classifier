@@ -6,30 +6,64 @@ import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
+import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
+import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class GalleryViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     repository: ScreenshotRepository,
+    private val modelManager: ClipModelManager,
+    private val downloader: ClipModelDownloader,
 ) : ViewModel() {
 
     val screenshots: StateFlow<List<ScreenshotWithTags>> =
         repository.observeGallery()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** Number of screenshots still waiting to be processed (OCR + tags). */
     val pendingCount: StateFlow<Int> =
         repository.observePendingCount()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    /** Manual trigger: sync MediaStore and process new screenshots in the background. */
+    private val _modelState = MutableStateFlow(
+        if (modelManager.isModelInstalled()) ModelState.Installed else ModelState.Missing
+    )
+    val modelState: StateFlow<ModelState> = _modelState.asStateFlow()
+
     fun scan() {
         ScreenshotProcessingWorker.enqueue(context)
     }
+
+    fun refreshModelState() {
+        if (modelManager.isModelInstalled()) _modelState.value = ModelState.Installed
+    }
+
+    fun downloadModel() {
+        if (_modelState.value is ModelState.Downloading) return
+        viewModelScope.launch {
+            _modelState.value = ModelState.Downloading(0f)
+            val result = downloader.download { p -> _modelState.value = ModelState.Downloading(p) }
+            _modelState.value = when (result) {
+                is ClipModelDownloader.State.Done -> ModelState.Installed
+                is ClipModelDownloader.State.Failed -> ModelState.Error(result.message)
+                else -> ModelState.Missing
+            }
+        }
+    }
+}
+
+sealed interface ModelState {
+    data object Missing : ModelState
+    data class Downloading(val progress: Float) : ModelState
+    data object Installed : ModelState
+    data class Error(val message: String) : ModelState
 }

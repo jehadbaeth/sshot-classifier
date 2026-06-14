@@ -2,56 +2,69 @@ package com.okapiorbits.sshotclassifier.pipeline
 
 import android.net.Uri
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
+import com.okapiorbits.sshotclassifier.data.db.entity.EmbeddingEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrEntryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrFtsEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ProcessingStatus
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
+import com.okapiorbits.sshotclassifier.pipeline.clip.ClipEncoder
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
+import com.okapiorbits.sshotclassifier.pipeline.clip.TagFuser
+import com.okapiorbits.sshotclassifier.pipeline.clip.ZeroShotClassifier
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Phase 1 per-screenshot pipeline: OCR -> persist text (+ FTS) -> OCR heuristic
- * tags -> mark DONE. CLIP embedding and zero-shot tagging arrive in Phase 2 and
- * will fuse with the heuristic tags here.
+ * Per-screenshot pipeline: OCR -> persist text (+ FTS) -> OCR heuristic signals,
+ * then (if the CLIP model is installed) image embedding -> zero-shot scores ->
+ * fuse with OCR behind the margin gate -> weighted tags. Without CLIP it degrades
+ * to OCR-only heuristic tags.
  */
 @Singleton
 class ImageProcessor @Inject constructor(
     private val dao: ScreenshotDao,
     private val ocr: OcrExtractor,
     private val heuristics: OcrHeuristics,
+    private val clipEncoder: ClipEncoder,
+    private val zeroShot: ZeroShotClassifier,
+    private val fuser: TagFuser,
 ) {
-    /** Returns true if the screenshot was processed, false if it failed. */
     suspend fun process(screenshot: ScreenshotEntity): Boolean {
         dao.updateStatus(screenshot.id, ProcessingStatus.PROCESSING.name, null)
+        val uri = Uri.parse(screenshot.file_path)
 
-        val result = ocr.extract(Uri.parse(screenshot.file_path))
-        if (result == null) {
+        val ocrResult = ocr.extract(uri)
+        if (ocrResult == null) {
             dao.updateStatus(screenshot.id, ProcessingStatus.FAILED.name, System.currentTimeMillis())
             return false
         }
 
-        dao.insertOcr(
-            OcrEntryEntity(
-                screenshot_id = screenshot.id,
-                full_text = result.text,
-                language = result.language,
-            )
-        )
-        dao.insertFts(OcrFtsEntity(rowid = screenshot.id, text = result.text))
+        dao.insertOcr(OcrEntryEntity(screenshot_id = screenshot.id, full_text = ocrResult.text, language = ocrResult.language))
+        dao.insertFts(OcrFtsEntity(rowid = screenshot.id, text = ocrResult.text))
 
-        // Re-tag idempotently: clear prior heuristic tags before writing new ones.
-        dao.deleteTagsBySource(screenshot.id, TagSource.OCR_HEURISTIC.name)
-        val tags = heuristics.classify(result.text).map {
-            TagEntity(
-                screenshot_id = screenshot.id,
-                label = it.label,
-                weight = it.weight,
-                source = TagSource.OCR_HEURISTIC.name,
-            )
+        val ocrCandidates = heuristics.classify(ocrResult.text)
+
+        // CLIP path: image embedding + zero-shot, fused with OCR. Falls back to
+        // OCR-only tags when the model is not installed or encoding fails.
+        val embedding = if (clipEncoder.isReady()) clipEncoder.encode(uri) else null
+
+        dao.deleteAutoTags(screenshot.id)
+        if (embedding != null) {
+            dao.insertEmbedding(EmbeddingEntity(screenshot_id = screenshot.id, vector = EmbeddingCodec.toBytes(embedding)))
+            val clipScores = zeroShot.classify(embedding)
+            val fused = fuser.fuse(clipScores, ocrCandidates)
+            val tags = fused.tags.map {
+                TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.FUSED.name)
+            }
+            if (tags.isNotEmpty()) dao.insertTags(tags)
+        } else {
+            val tags = ocrCandidates.map {
+                TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.OCR_HEURISTIC.name)
+            }
+            if (tags.isNotEmpty()) dao.insertTags(tags)
         }
-        if (tags.isNotEmpty()) dao.insertTags(tags)
 
         dao.updateStatus(screenshot.id, ProcessingStatus.DONE.name, System.currentTimeMillis())
         return true

@@ -1,0 +1,90 @@
+[
+  {
+    "internal": "a social media app feed",
+    "tag": "social media"
+  },
+  {
+    "internal": "a receipt or invoice",
+    "tag": "receipt"
+  },
+  {
+    "internal": "a map",
+    "tag": "map"
+  },
+  {
+    "internal": "program source code",
+    "tag": "code editor"
+  },
+  {
+    "internal": "a chat conversation",
+    "tag": "chat / messaging"
+  },
+  {
+    "internal": "a text document",
+    "tag": "document"
+  },
+  {
+    "internal": "a web browser page",
+    "tag": "browser / web"
+  },
+  {
+    "internal": "a video game",
+    "tag": "game"
+  },
+  {
+    "internal": "an online shopping product page",
+    "tag": "shopping"
+  },
+  {
+    "internal": "a news article",
+    "tag": "news"
+  },
+  {
+    "internal": "a video streaming app",
+    "tag": "video / streaming"
+  },
+  {
+    "internal": "an error message dialog",
+    "tag": "error / crash"
+  },
+  {
+    "internal": "a calendar",
+    "tag": "calendar"
+  },
+  {
+    "internal": "a banking or finance app",
+    "tag": "finance"
+  },
+  {
+    "internal": "a photo or picture",
+    "tag": "other"
+  },
+  {
+    "internal": "a clock app",
+    "tag": "other"
+  },
+  {
+    "internal": "a contacts list",
+    "tag": "other"
+  },
+  {
+    "internal": "a phone dialer",
+    "tag": "other"
+  },
+  {
+    "internal": "a file manager",
+    "tag": "other"
+  },
+  {
+    "internal": "a phone settings screen",
+    "tag": "other"
+  },
+  {
+    "internal": "a music player",
+    "tag": "video / streaming"
+  },
+  {
+    "internal": "an email inbox",
+    "tag": "document"
+  }
+]

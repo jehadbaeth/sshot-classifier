@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
+import com.okapiorbits.sshotclassifier.data.db.entity.EmbeddingEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrEntryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrFtsEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ProcessingStatus
@@ -36,8 +37,14 @@ interface ScreenshotDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFts(entry: OcrFtsEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEmbedding(entry: EmbeddingEntity)
+
     @Query("DELETE FROM tags WHERE screenshot_id = :screenshotId AND source = :source")
     suspend fun deleteTagsBySource(screenshotId: Long, source: String)
+
+    @Query("DELETE FROM tags WHERE screenshot_id = :screenshotId AND source != 'USER'")
+    suspend fun deleteAutoTags(screenshotId: Long)
 
     @Query("SELECT EXISTS(SELECT 1 FROM screenshots WHERE file_hash = :hash)")
     suspend fun existsByHash(hash: String): Boolean

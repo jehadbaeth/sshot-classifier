@@ -16,3 +16,6 @@ build/
 
 # ML model files are downloaded at runtime, never committed
 /app/src/main/assets/models/
+
+# Spike model artifacts (large, regenerated)
+spikes/clip/out/

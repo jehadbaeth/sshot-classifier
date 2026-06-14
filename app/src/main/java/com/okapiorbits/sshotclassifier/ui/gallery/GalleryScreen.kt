@@ -12,11 +12,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,6 +39,7 @@ import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 fun GalleryScreen(viewModel: GalleryViewModel) {
     val screenshots by viewModel.screenshots.collectAsStateWithLifecycle()
     val pending by viewModel.pendingCount.collectAsStateWithLifecycle()
+    val modelState by viewModel.modelState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -53,7 +58,9 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
             )
         },
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            ModelBanner(modelState, onDownload = viewModel::downloadModel)
+        Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {
                 EmptyState()
             } else {
@@ -67,6 +74,32 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
                     items(screenshots, key = { it.screenshot.id }) { item ->
                         GalleryCell(item)
                     }
+                }
+            }
+        }
+        }
+    }
+}
+
+@Composable
+private fun ModelBanner(state: ModelState, onDownload: () -> Unit) {
+    when (state) {
+        is ModelState.Installed -> Unit
+        is ModelState.Downloading -> Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text("Downloading AI model… ${(state.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+                LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            }
+        }
+        else -> Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    if (state is ModelState.Error) "AI model download failed: ${state.message}"
+                    else "Visual AI tagging is off. Tags come from text only until the model is installed.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Button(onClick = onDownload, modifier = Modifier.padding(top = 6.dp)) {
+                    Text("Install AI model")
                 }
             }
         }

@@ -12,10 +12,13 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Current state (snapshot)
 
-- **2026-06-14:** Phase 1 done and verified on emulator (OCR + FTS text search +
-  OCR heuristic tagging + background processing). Phase 0 before it. Repo on
-  `git@github.com:jehadbaeth/sshot-classifier.git` (private), CI green.
-- Latest tag: `v0.2.0` (target). Branch: `main`.
+- **2026-06-14:** Phase 2 code done and verified on emulator: on-device CLIP image
+  encoder (int8, 89.5 MB, converted from open_clip ViT-B/32 LAION-2B) + zero-shot
+  scoring against bundled label embeddings + fusion with OCR behind a margin gate.
+  Verified tags: OpenStreetMap->map 0.85, code->code editor, settings->other,
+  receipts article->receipt. Phases 0/1 before it. Repo private, CI green.
+- Latest released tag: `v0.2.0`. Phase 2 NOT yet released (blocked on model
+  hosting decision, see Known issues).
 
 ---
 
@@ -56,13 +59,19 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [ ] Foreground service for very large backfills (deferred; normal notification for now)
 - [ ] Heuristic tuning is ongoing, not "done" — see Known issues
 
-### Phase 2 — CLIP integration
-- [ ] Pick + pin a TFLite CLIP ViT-B/32 port (LAION-2B weights), image + text encoders
-- [ ] First-launch model download with checksum verify + progress screen (design sec 9)
-- [ ] Image embedding generation -> persist EmbeddingEntity
-- [ ] Zero-shot scoring with prompt ensembling + concrete internal label set
-- [ ] Fusion of CLIP scores with OCR signals + margin gate (design sec 4.3)
-- [ ] Validate on-device quality vs the host spike (quantization impact)
+### Phase 2 — CLIP integration (code done + verified 2026-06-14; release pending hosting)
+- [x] Convert CLIP image encoder to TFLite (int8 weight-only, 89.5 MB, cos >= 0.998)
+- [x] Precompute + bundle label embeddings (prompt-ensembled, concrete labels)
+- [x] ClipEncoder (preprocess + TFLite run + L2 normalize), ClipModelManager
+- [x] Image embedding generation -> persist EmbeddingEntity
+- [x] Zero-shot scoring (softmax, aggregate internal->user-facing tags)
+- [x] Fusion of CLIP scores with OCR signals + margin gate (TagFuser)
+- [x] Verified on-device: map/code/settings/receipt tags correct, no TFLite errors
+- [x] Text encoder NOT needed on-device for tagging (label embeddings precomputed)
+- [ ] Model delivery to a public host so the shipped APK works out of the box
+      (download URL is a placeholder; repo is private). BLOCKS v0.3.0 release.
+- [ ] First-launch download: checksum verify (downloader exists, no checksum yet)
+- [ ] Tune fusion (receipts-article -> receipt is a soft false positive)
 
 ### Phase 3 — Semantic search
 - [ ] CLIP text-encode query -> in-memory brute-force cosine over embeddings
@@ -106,6 +115,12 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Known issues / tech debt
 
+- **CLIP model has no public host yet (blocks Phase 2 release).** The 89.5 MB
+  int8 model is gitignored and the download URL is a placeholder. On the emulator
+  it is pushed via adb. To ship a working APK we need a public host (Hugging Face
+  Hub, or a public GitHub mirror repo + release). The repo is private, so its own
+  release assets are not publicly downloadable. Until resolved, a released APK does
+  OCR-only tagging and shows the "Install AI model" banner (download fails).
 - **OCR heuristics are a first pass and over-fire.** Fixed the worst (status-bar
   clock -> chat on everything; `#include` -> social on all code). Remaining: rules
   trigger on a single weak keyword with no minimum-score floor; calendar time
