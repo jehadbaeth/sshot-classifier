@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.okapiorbits.sshotclassifier.data.db.entity.EmbeddingEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.OcrEntryEntity
+import com.okapiorbits.sshotclassifier.data.db.entity.OcrFtsEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 
@@ -12,9 +13,10 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
         ScreenshotEntity::class,
         TagEntity::class,
         OcrEntryEntity::class,
+        OcrFtsEntity::class,
         EmbeddingEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

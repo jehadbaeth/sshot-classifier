@@ -11,8 +11,11 @@ See [docs/design.md](docs/design.md) for the full design and roadmap.
 
 ## Status
 
-Phase 0: project scaffold, Room schema, permissions, MediaStore-backed gallery.
-The ML pipeline (OCR, CLIP, semantic search) lands in later phases per the design doc.
+Phase 1 done: on-device OCR (ML Kit), full-text search over extracted text, OCR
+keyword/pattern tagging, and background processing (WorkManager + MediaStore
+ContentObserver). Phase 0 before it: scaffold, Room schema, permissions,
+MediaStore-backed gallery. CLIP embeddings and semantic visual search land in
+Phase 2 per the design doc.
 
 ## Requirements
 

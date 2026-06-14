@@ -12,11 +12,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,6 +36,8 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryScreen
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryViewModel
+import com.okapiorbits.sshotclassifier.ui.search.SearchScreen
+import com.okapiorbits.sshotclassifier.ui.search.SearchViewModel
 import com.okapiorbits.sshotclassifier.ui.theme.ScreenshotClassifierTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -70,10 +80,47 @@ private fun AppRoot() {
     ) { isGranted -> granted = isGranted }
 
     if (granted) {
-        val viewModel: GalleryViewModel = hiltViewModel()
-        GalleryScreen(viewModel)
+        MainScaffold()
     } else {
         PermissionGate(onRequest = { launcher.launch(permission) })
+    }
+}
+
+private enum class Tab(val label: String) { Gallery("Gallery"), Search("Search") }
+
+@Composable
+private fun MainScaffold() {
+    var tab by remember { mutableIntStateOf(0) }
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = tab == 0,
+                    onClick = { tab = 0 },
+                    icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                    label = { Text(Tab.Gallery.label) },
+                )
+                NavigationBarItem(
+                    selected = tab == 1,
+                    onClick = { tab = 1 },
+                    icon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    label = { Text(Tab.Search.label) },
+                )
+            }
+        },
+    ) { padding ->
+        Surface(modifier = Modifier.fillMaxSize().padding(padding)) {
+            when (tab) {
+                0 -> {
+                    val vm: GalleryViewModel = hiltViewModel()
+                    GalleryScreen(vm)
+                }
+                else -> {
+                    val vm: SearchViewModel = hiltViewModel()
+                    SearchScreen(vm)
+                }
+            }
+        }
     }
 }
 

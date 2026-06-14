@@ -12,24 +12,20 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Current state (snapshot)
 
-- **2026-06-14:** Phase 0 done and verified on emulator. Repo pushed to
-  `git@github.com:jehadbaeth/sshot-classifier.git` (private). CI green on runner.
-  Release `v0.1.0` published with a downloadable APK. CLIP spike done; design
-  revised to make OCR a co-classifier.
-- Latest tag: `v0.1.0`. Branch: `main`.
+- **2026-06-14:** Phase 1 done and verified on emulator (OCR + FTS text search +
+  OCR heuristic tagging + background processing). Phase 0 before it. Repo on
+  `git@github.com:jehadbaeth/sshot-classifier.git` (private), CI green.
+- Latest tag: `v0.2.0` (target). Branch: `main`.
 
 ---
 
 ## Now / next up
 
-- [ ] Decide Phase 1 entry point: build the OCR + FTS5 text-search pipeline
-      (processing queue + WorkManager + ML Kit OCR + FTS5). This is the agreed
-      next phase and de-risks background work before the heavy CLIP dependency.
-- [ ] Design the OCR-derived classification signals now (not just raw text for
-      search), since the spike made OCR a co-classifier. Define keyword/pattern
-      rules per category (currency/totals -> receipt, stack-trace shapes ->
-      error, monospace + language tokens -> code, etc.).
-- [ ] Shrink the APK (currently ~117 MB debug). See Known issues.
+- [ ] Phase 2: CLIP integration (pick TFLite LAION-2B port, model download,
+      embeddings, zero-shot scoring, fuse with OCR heuristics + margin gate).
+- [ ] Heuristic tuning pass: reduce false positives (see Known issues), consider
+      requiring a minimum total score before attaching a tag.
+- [ ] Shrink the APK (still ~117 MB debug). See Known issues.
 
 ---
 
@@ -46,16 +42,19 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] CI (build + unit tests) and Release (tagged APK) workflows
 - [x] Initial release v0.1.0
 
-### Phase 1 — OCR + text search
-- [ ] Processing queue abstraction (status: PENDING/PROCESSING/DONE/FAILED already in schema)
-- [ ] WorkManager: periodic catch-up scan + expedited single-item processing
-- [ ] FileObserver on the screenshots dir for low-latency live detection
-- [ ] ML Kit OCR extraction -> persist OcrEntry
-- [ ] FTS5 virtual table + triggers, BM25 text search
-- [ ] OCR-derived classification signals (keyword/pattern rules per category)
-- [ ] Search UI (text query -> ranked results)
-- [ ] Foreground notification + progress for batch backfill
-- [ ] Instrumented test on emulator with generated screenshots
+### Phase 1 — OCR + text search (DONE 2026-06-14, v0.2.0)
+- [x] Processing status lifecycle (PENDING/PROCESSING/DONE/FAILED)
+- [x] WorkManager: expedited one-off processing + 6h periodic catch-up
+- [x] Live detection via ContentObserver on MediaStore (NOT FileObserver — see deviations)
+- [x] ML Kit OCR extraction -> persist OcrEntry
+- [x] FTS4 (not FTS5) text search, recency-ranked -> see deviations
+- [x] OCR-derived classification signals (OcrHeuristics, source = ocr_heuristic)
+- [x] Search UI: text query + tag filter chips, bottom-nav Gallery/Search
+- [x] Progress notification (normal, not foreground service yet)
+- [x] Verified on emulator: OCR + FTS search ("linux" -> code shot) + tags
+- [x] Unit tests for heuristics (regressions: status-bar clock, #include)
+- [ ] Foreground service for very large backfills (deferred; normal notification for now)
+- [ ] Heuristic tuning is ongoing, not "done" — see Known issues
 
 ### Phase 2 — CLIP integration
 - [ ] Pick + pin a TFLite CLIP ViT-B/32 port (LAION-2B weights), image + text encoders
@@ -93,8 +92,26 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ---
 
+## Deviations from design.md (intentional)
+
+- **FTS4, not FTS5.** Room natively supports only FTS3/FTS4; FTS5 (and its bm25
+  ranking) needs hand-rolled SQL and has uneven OEM availability. Phase 1 uses
+  `@Fts4` with recency-ranked MATCH and prefix queries. Revisit FTS5 if ranking
+  quality demands it.
+- **ContentObserver, not FileObserver.** FileObserver is unreliable under scoped
+  storage. We watch the MediaStore images URI instead (live while app alive) plus
+  the WorkManager periodic backstop.
+- **Normal progress notification, not a foreground service.** Avoids Android 14
+  foreground-service-type requirements for now. Large backfills want a real FGS.
+
 ## Known issues / tech debt
 
+- **OCR heuristics are a first pass and over-fire.** Fixed the worst (status-bar
+  clock -> chat on everything; `#include` -> social on all code). Remaining: rules
+  trigger on a single weak keyword with no minimum-score floor; calendar time
+  pattern could false-positive on 12h status-bar clocks; currency pattern is
+  shared by receipt/finance/shopping. These are signals for Phase 2 fusion, not
+  final tags, but a min-score floor and better disambiguation are wanted.
 - **APK size ~117 MB (debug).** Bulk is ML Kit OCR + TFLite native libs across 4
   ABIs. CLIP model is NOT in the APK (downloaded at runtime). Mitigate later with
   abiFilters / per-ABI splits / app bundle. Tracked in backlog.
@@ -109,6 +126,10 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Decisions log (newest first)
 
+- **2026-06-14 — Phase 1 tech choices:** FTS4 over FTS5 (Room support +
+  reliability), ContentObserver over FileObserver (scoped storage), normal
+  notification over foreground service (Android 14 FGS-type cost). OCR heuristic
+  tags are signals feeding Phase 2 fusion, not authoritative tags. See deviations.
 - **2026-06-14 — Release strategy:** v* tags publish debug-signed APKs via GitHub
   Releases for sideloading/sharing. Signed release builds deferred. CI on Linux
   runners only (1x billing) to stay within the Free plan 2,000 min/month.

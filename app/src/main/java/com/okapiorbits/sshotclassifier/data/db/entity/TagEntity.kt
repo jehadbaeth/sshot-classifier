@@ -29,4 +29,4 @@ data class TagEntity(
     val source: String,
 )
 
-enum class TagSource { CLIP_ZERO_SHOT, USER }
+enum class TagSource { CLIP_ZERO_SHOT, OCR_HEURISTIC, USER }

@@ -19,6 +19,8 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "sshot_classifier.db")
+            // Pre-release: no real user data to preserve, so destructive recreate is fine.
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
