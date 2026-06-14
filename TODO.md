@@ -34,8 +34,8 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       (no model files). 5/5 pass on emulator. Remaining gaps: two-file download not
       re-run e2e (low risk, loop logic is simple), and the on-device CLIP test set is
       small/partly synthetic (backlog).
-- [~] Phase 4 (started). Done: reprocess action (below). Next: custom user tags,
-      "needs review" surface, user-triggered file reorganization, a Settings screen.
+- [~] Phase 4 (started). Done: reprocess action, Settings screen (below). Next:
+      custom user tags, "needs review" surface, user-triggered file reorganization.
 - [x] **Reprocess action (done 2026-06-14).** Gallery banner appears when the image
       model is installed and there are DONE screenshots with no embedding; tapping it
       resets those rows to PENDING and enqueues the worker, which re-runs them through
@@ -111,7 +111,10 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [ ] User-triggered file reorganization into app-managed folder (margin/OCR gate, not raw floor)
 - [ ] Custom user tags (new prompt-ensembled label embeddings)
 - [ ] "Needs review" surface for low-confidence/contradicted tags
-- [ ] Settings: scan interval, manage tags, model management
+- [x] Settings screen (done 2026-06-14): third bottom-nav tab. Library stats, AI
+      model status + install/update, reprocess + scan-now, About/version. Smoke-tested
+      on emulator (renders, navigates, no crash). Deferred (need DataStore / tag CRUD,
+      not stubbed): configurable scan interval, manage/edit tags.
 
 ---
 

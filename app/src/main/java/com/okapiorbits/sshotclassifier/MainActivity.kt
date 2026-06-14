@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -38,6 +39,8 @@ import com.okapiorbits.sshotclassifier.ui.gallery.GalleryScreen
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryViewModel
 import com.okapiorbits.sshotclassifier.ui.search.SearchScreen
 import com.okapiorbits.sshotclassifier.ui.search.SearchViewModel
+import com.okapiorbits.sshotclassifier.ui.settings.SettingsScreen
+import com.okapiorbits.sshotclassifier.ui.settings.SettingsViewModel
 import com.okapiorbits.sshotclassifier.ui.theme.ScreenshotClassifierTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -86,7 +89,7 @@ private fun AppRoot() {
     }
 }
 
-private enum class Tab(val label: String) { Gallery("Gallery"), Search("Search") }
+private enum class Tab(val label: String) { Gallery("Gallery"), Search("Search"), Settings("Settings") }
 
 @Composable
 private fun MainScaffold() {
@@ -106,6 +109,12 @@ private fun MainScaffold() {
                     icon = { Icon(Icons.Default.Search, contentDescription = null) },
                     label = { Text(Tab.Search.label) },
                 )
+                NavigationBarItem(
+                    selected = tab == 2,
+                    onClick = { tab = 2 },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                    label = { Text(Tab.Settings.label) },
+                )
             }
         },
     ) { padding ->
@@ -115,9 +124,13 @@ private fun MainScaffold() {
                     val vm: GalleryViewModel = hiltViewModel()
                     GalleryScreen(vm)
                 }
-                else -> {
+                1 -> {
                     val vm: SearchViewModel = hiltViewModel()
                     SearchScreen(vm)
+                }
+                else -> {
+                    val vm: SettingsViewModel = hiltViewModel()
+                    SettingsScreen(vm)
                 }
             }
         }
