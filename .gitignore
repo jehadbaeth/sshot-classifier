@@ -19,3 +19,5 @@ build/
 
 # Spike model artifacts (large, regenerated)
 spikes/clip/out/
+.testdata/
+__pycache__/

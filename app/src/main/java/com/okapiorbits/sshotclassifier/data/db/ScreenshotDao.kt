@@ -94,6 +94,37 @@ interface ScreenshotDao {
 
     @Query("SELECT label, COUNT(*) AS cnt FROM tags GROUP BY label ORDER BY cnt DESC")
     fun observeTagCounts(): Flow<List<TagCount>>
+
+    /** All stored image embeddings, for in-memory brute-force cosine search. */
+    @Query("SELECT screenshot_id, vector FROM embeddings")
+    suspend fun allEmbeddings(): List<EmbeddingRow>
+
+    /** OCR full-text match -> screenshot ids, recency-ordered, for hybrid fusion. */
+    @Query(
+        """
+        SELECT s.id FROM screenshots s
+        JOIN ocr_fts ON ocr_fts.rowid = s.id
+        WHERE ocr_fts.text MATCH :ftsQuery
+        ORDER BY s.date_added DESC
+        """
+    )
+    suspend fun searchIdsByText(ftsQuery: String): List<Long>
+
+    /** Fetch screenshots (with tags) by id; caller re-orders to the ranked sequence. */
+    @Transaction
+    @Query("SELECT * FROM screenshots WHERE id IN (:ids)")
+    suspend fun screenshotsByIds(ids: List<Long>): List<ScreenshotWithTags>
 }
 
 data class TagCount(val label: String, val cnt: Int)
+
+/** Lightweight projection of an embedding row (no entity id) for search. */
+data class EmbeddingRow(val screenshot_id: Long, val vector: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is EmbeddingRow) return false
+        return screenshot_id == other.screenshot_id && vector.contentEquals(other.vector)
+    }
+
+    override fun hashCode(): Int = 31 * screenshot_id.hashCode() + vector.contentHashCode()
+}

@@ -11,17 +11,19 @@ See [docs/design.md](docs/design.md) for the full design and roadmap.
 
 ## Status
 
-Phase 2 done: on-device CLIP image encoder (TFLite int8, downloaded on first
-launch) produces image embeddings and zero-shot tags against bundled label
-embeddings, fused with OCR signals behind a margin gate. Phase 1: on-device OCR,
-full-text search, OCR tagging, background processing. Phase 0: scaffold, Room,
-permissions, gallery. Free-text semantic visual search (CLIP text encoder) is
-Phase 3.
+Phase 3 done: free-text semantic search. The CLIP text encoder (TFLite int8) plus
+an on-device byte-level BPE tokenizer embed an arbitrary query and rank stored
+image embeddings by cosine similarity, fused with OCR full-text matches via
+reciprocal rank fusion. So you can search by what a screenshot *looks like*, not
+just the text in it. Phase 2: on-device CLIP image encoder, image embeddings, and
+zero-shot tags fused with OCR behind a margin gate. Phase 1: OCR, full-text search,
+OCR tagging, background processing. Phase 0: scaffold, Room, permissions, gallery.
 
-The ~90 MB CLIP model is hosted on a public mirror repo
+The two CLIP models (~90 MB image encoder, ~65 MB text encoder) are hosted on a
+public mirror repo
 ([sshot-classifier-models](https://github.com/jehadbaeth/sshot-classifier-models))
-and downloaded on first launch with sha256 verification. Until it is installed the
-app tags from OCR text only.
+and downloaded on first launch with sha256 verification. Until they are installed
+the app tags and searches from OCR text only.
 
 ## Requirements
 

@@ -299,25 +299,28 @@ sequenceDiagram
 - A batch scan (manual trigger, or periodic WorkManager) drains the queue with a progress notification.
 - The CLIP text encoder is not needed during image processing. Label embeddings are precomputed once at taxonomy setup and cached.
 
-## 8. Semantic search
+## 8. Semantic search (implemented in Phase 3)
 
 ```mermaid
 flowchart TD
-    Q[User query:<br/>'Python error traceback'] --> TE[CLIP text encoder]
+    Q[User query:<br/>'a map of streets and roads'] --> TOK[BPE tokenizer<br/>on-device]
+    TOK --> TE[CLIP text encoder<br/>TFLite int8w]
     TE --> QV[512-dim query vector]
     QV --> COS[cosine vs all image vectors]
-    COS --> VS[visual score]
-    Q --> FTS[FTS5 BM25 on OCR text]
-    FTS --> TS[text score]
-    VS --> MERGE[weighted merge<br/>0.6 visual + 0.4 text]
-    TS --> MERGE
-    MERGE --> R[ranked results]
+    COS --> VR[visual ranking]
+    Q --> FTS[FTS4 MATCH on OCR text]
+    FTS --> TR[text ranking]
+    VR --> RRF[reciprocal rank fusion]
+    TR --> RRF
+    RRF --> R[ranked results]
 ```
 
-- Visual search uses the CLIP text encoder to embed the query, then brute force cosine similarity against the in-memory vector cache.
-- Text search uses FTS5 with BM25 ranking over OCR text.
-- The two scores are normalized and merged. The 0.6 / 0.4 split is a starting point to tune.
-- Brute force is fine up to roughly 20k images (about 20 MB of vectors, a few milliseconds per query). Above that, move to an HNSW index. Most users will not hit this, so brute force ships first.
+- Visual search embeds the query with the on-device CLIP text encoder, then runs brute-force cosine similarity against the stored, L2-normalized image vectors (loaded from Room). Same 512-dim space as the image encoder, so cosine is meaningful.
+- The query is tokenized by a faithful Kotlin port of open_clip's byte-level BPE tokenizer (`BpeTokenizer`), proven byte-identical to the Python reference by unit tests. The BPE merges are bundled (~1.3 MB).
+- Text search uses FTS4 MATCH over OCR text (FTS5/BM25 was not available through Room, see deviations in the TODO).
+- **Fusion is reciprocal rank fusion (RRF)**, not the weighted-score merge originally sketched. RRF combines the two rankings by rank position, which sidesteps the incompatible score scales (CLIP cosine ~0.2-0.35 vs a binary FTS hit). It degrades gracefully: no text model installed -> pure OCR results; no OCR match -> pure visual results.
+- Brute force is fine up to roughly 20k images (about 40 MB of vectors, a few milliseconds per query). Above that, move to an HNSW index. Most users will not hit this, so brute force ships first.
+- **On-device verification (emulator, int8 models):** "a map of streets and roads" -> map 0.274 (next 0.129); "program source code in an editor" -> code 0.234 (next 0.181); "a store receipt with prices and total" -> receipt 0.300 (next 0.111). Clear top-1 separation against distractors.
 
 ## 9. Model delivery
 
@@ -381,17 +384,17 @@ These are estimates to validate early on real hardware. The vision encode domina
 ## 13. Open risks
 
 1. ~~On-device CLIP quality on screenshots.~~ **Tested (spike, 2026-06-14).** Confirmed out of distribution on text-heavy UI. Mitigated by the OCR co-classifier and margin gating (sections 4.3, 6, 11). Residual: the fusion and gate logic itself is unbuilt and unproven, and the spike set was small (11 images, several categories stood in by web consent walls).
-2. TFLite CLIP port quality and availability. Need a reliable LAION-2B ViT-B/32 port (image and text encoders) and to pin it. Not tested by the spike, which ran host-side. Quantization may cost a little more accuracy on device.
+2. ~~TFLite CLIP port quality and availability.~~ **Resolved (Phases 2-3, 2026-06-14).** Both encoders converted from open_clip ViT-B/32 LAION-2B via litert-torch, int8 weight-only. Image encoder cosine >=0.998 vs PyTorch; text encoder min cosine 0.9993. Both verified running in Android's TFLite runtime, and cross-modal retrieval confirmed on-device (section 8). Quantization cost is negligible for ranking.
 3. FileObserver reliability across OEMs. Mitigated by the WorkManager backstop.
 4. Battery and thermal during large initial backfill (first scan of an existing screenshot library of thousands of images).
 5. A UI-domain model (SigLIP, or CLIP fine-tuned on RICO / Screen2Words) would likely beat generic CLIP on the screens where it failed. Candidate for a follow-up spike; costs more on-device size and complexity.
 
 ## 14. Phased plan
 
-- **Phase 0**: Project scaffold, Room schema, permissions, basic gallery reading from MediaStore.
-- **Phase 1**: OCR pipeline + FTS5 text search. Useful on its own and validates the queue and background work.
-- **Phase 2**: CLIP integration, model download, embeddings, zero-shot tagging.
-- **Phase 3**: Visual + hybrid semantic search.
+- **Phase 0 (done, v0.1.0)**: Project scaffold, Room schema, permissions, basic gallery reading from MediaStore.
+- **Phase 1 (done, v0.2.0)**: OCR pipeline + FTS4 text search. Useful on its own and validates the queue and background work.
+- **Phase 2 (done, v0.3.0)**: CLIP image encoder, model download, embeddings, zero-shot tagging fused with OCR.
+- **Phase 3 (done, v0.4.0)**: Free-text visual + hybrid semantic search (CLIP text encoder + on-device BPE tokenizer + RRF fusion).
 - **Phase 4**: Reorganization, custom taxonomy, settings polish.
 
 Phase 1 ships value without the heavy CLIP dependency and de-risks the background processing machinery before adding the big model.

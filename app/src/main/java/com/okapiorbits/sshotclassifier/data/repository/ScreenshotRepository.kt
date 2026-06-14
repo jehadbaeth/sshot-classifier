@@ -6,6 +6,7 @@ import com.okapiorbits.sshotclassifier.data.db.TagCount
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
+import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
@@ -16,6 +17,7 @@ class ScreenshotRepository @Inject constructor(
     private val dao: ScreenshotDao,
     private val scanner: MediaStoreScanner,
     private val hasher: ImageHasher,
+    private val semanticSearcher: SemanticSearcher,
 ) {
     fun observeGallery(): Flow<List<ScreenshotWithTags>> = dao.observeAllWithTags()
 
@@ -33,6 +35,43 @@ class ScreenshotRepository @Inject constructor(
     fun search(query: String): Flow<List<ScreenshotWithTags>> {
         val fts = toFtsPrefixQuery(query) ?: return flowOf(emptyList())
         return dao.searchByText(fts)
+    }
+
+    /**
+     * Hybrid search: free-text visual search (CLIP text encoder -> cosine over
+     * stored image embeddings) merged with OCR full-text matches via reciprocal
+     * rank fusion. RRF avoids comparing the two incompatible score scales (CLIP
+     * cosine ~0.2-0.35 vs a binary FTS hit) by fusing ranks, not raw scores.
+     *
+     * Degrades gracefully: if the text model is absent, visual ranking is empty
+     * and this returns pure OCR results; if there are no OCR matches, it returns
+     * pure visual results. Empty/blank query returns nothing.
+     */
+    suspend fun hybridSearch(query: String, limit: Int = 100): List<ScreenshotWithTags> {
+        if (query.isBlank()) return emptyList()
+
+        val visualRanking = semanticSearcher.search(query, limit).map { it.screenshotId }
+        val textRanking = toFtsPrefixQuery(query)
+            ?.let { dao.searchIdsByText(it) }
+            ?: emptyList()
+
+        val fused = reciprocalRankFusion(listOf(visualRanking, textRanking))
+            .take(limit)
+        if (fused.isEmpty()) return emptyList()
+
+        val byId = dao.screenshotsByIds(fused).associateBy { it.screenshot.id }
+        return fused.mapNotNull { byId[it] }
+    }
+
+    /** Reciprocal rank fusion over multiple ranked id lists. Returns ids by score desc. */
+    private fun reciprocalRankFusion(rankings: List<List<Long>>, k: Int = 60): List<Long> {
+        val scores = HashMap<Long, Double>()
+        for (ranking in rankings) {
+            ranking.forEachIndexed { rank, id ->
+                scores[id] = (scores[id] ?: 0.0) + 1.0 / (k + rank + 1)
+            }
+        }
+        return scores.entries.sortedByDescending { it.value }.map { it.key }
     }
 
     /**

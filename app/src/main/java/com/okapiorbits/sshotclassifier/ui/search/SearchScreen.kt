@@ -42,7 +42,12 @@ fun SearchScreen(viewModel: SearchViewModel) {
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            placeholder = { Text("Search text in screenshots") },
+            placeholder = {
+                Text(
+                    if (viewModel.semanticReady) "Search by text or visual concept"
+                    else "Search text in screenshots"
+                )
+            },
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
         )
 
@@ -75,7 +80,11 @@ fun SearchScreen(viewModel: SearchViewModel) {
                         }
                     }
                 }
-                query.isBlank() && selectedTag == null -> Hint("Type to search OCR text, or pick a tag")
+                query.isBlank() && selectedTag == null -> Hint(
+                    if (viewModel.semanticReady)
+                        "Search by what's written in a screenshot or what it looks like, or pick a tag"
+                    else "Type to search OCR text, or pick a tag"
+                )
                 else -> Hint("No matches")
             }
         }

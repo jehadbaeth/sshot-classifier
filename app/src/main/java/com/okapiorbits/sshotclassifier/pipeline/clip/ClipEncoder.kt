@@ -45,11 +45,14 @@ class ClipEncoder @Inject constructor(
 
     /** Returns the L2-normalized image embedding, or null if model missing or decode fails. */
     fun encode(uri: Uri): FloatArray? {
-        val interp = ensureInterpreter() ?: return null
         val bitmap = decode(uri) ?: return null
-        val input = preprocess(bitmap)
-        bitmap.recycle()
+        return encode(bitmap).also { bitmap.recycle() }
+    }
 
+    /** Returns the L2-normalized image embedding for an already-decoded bitmap. */
+    fun encode(bitmap: Bitmap): FloatArray? {
+        val interp = ensureInterpreter() ?: return null
+        val input = preprocess(bitmap)
         val output = Array(1) { FloatArray(ClipModelManager.EMBED_DIM) }
         return try {
             interp.run(input, output)

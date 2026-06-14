@@ -50,3 +50,44 @@ rankings are unchanged.
 by download to app internal storage on first launch (design section 9). For dev/test
 the model is pushed via adb. Public hosting for the download URL is still an open item
 (repo is private). The model file is gitignored (`spikes/clip/out/`).
+
+## Text encoder (Phase 3, 2026-06-14)
+
+Same pipeline for the CLIP text tower (free-text semantic search). Wrap
+`model.encode_text(tokens, normalize=False)` in a module so the exported graph
+takes int32 token ids `(1, 77)` and returns a 512-d vector
+(`spikes/clip/convert_text_encoder.py`).
+
+| recipe | size | min cos vs PyTorch |
+|--------|------|--------------------|
+| int8 weight-only | 65.2 MB | 0.9993 (mean 0.9996) |
+| fp16 | 127.3 MB | 1.0000 |
+
+Shipped int8w to match the image encoder. The token-embedding table (49408 x 512)
+dominates the size. sha256 of the shipped file:
+`322c79491743246b38e00cbd9ce26cd915d1042ab642602ea9db04da009d52d4`.
+
+Cross-check: single-prompt text embeddings have cosine 0.83-0.95 with the bundled,
+prompt-ensembled label embeddings (same image-comparable space), confirming the
+text tower lands where the image vectors live.
+
+### Tokenizer
+
+open_clip's `SimpleTokenizer` (byte-level BPE, 49408 vocab, context 77) is ported to
+Kotlin (`BpeTokenizer`), proven byte-identical to the Python reference by unit tests.
+The vocab is reconstructed from the bundled BPE merges in the exact open_clip order, so
+only the merges file is bundled. Gotcha: aapt auto-gunzips and renames any `.gz` asset
+at build time, so the merges ship as plain `clip/bpe_merges.txt` (aapt still DEFLATEs
+it inside the APK). Cleaning simplification: we skip ftfy/HTML-unescape and only
+lowercase + collapse whitespace, which is identity for plain search queries.
+
+### On-device end-to-end (emulator, int8 image + text)
+
+Cross-modal retrieval over 5 distractor images, real Android TFLite runtime:
+- "a map of streets and roads" -> map 0.274 (next 0.129)
+- "program source code in an editor" -> code 0.234 (next 0.181)
+- "a store receipt with prices and total" -> receipt 0.300 (next 0.111)
+
+SELinux note: pushing the model into app internal storage as root mislabels the file's
+per-app MLS category after a reinstall; `chcon` it to the app's category (or download it
+the normal way) or the app gets `avc: denied { open }`.

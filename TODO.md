@@ -12,23 +12,28 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Current state (snapshot)
 
-- **2026-06-14:** Phase 2 code done and verified on emulator: on-device CLIP image
-  encoder (int8, 89.5 MB, converted from open_clip ViT-B/32 LAION-2B) + zero-shot
-  scoring against bundled label embeddings + fusion with OCR behind a margin gate.
-  Verified tags: OpenStreetMap->map 0.85, code->code editor, settings->other,
-  receipts article->receipt. Phases 0/1 before it. Repo private, CI green.
-- Latest released tag: `v0.2.0`. Phase 2 NOT yet released (blocked on model
-  hosting decision, see Known issues).
+- **2026-06-14:** Phase 3 done and verified on emulator: free-text semantic search.
+  On-device CLIP text encoder (int8, 65.2 MB, min cos 0.9993 vs PyTorch) + a faithful
+  Kotlin BPE tokenizer (byte-identical to open_clip, unit-tested) embed a query and
+  rank stored image embeddings by cosine, fused with OCR FTS matches via reciprocal
+  rank fusion. Cross-modal retrieval proven on-device via an instrumented test:
+  "a map of streets and roads"->map 0.274, "program source code in an editor"->code
+  0.234, "a store receipt with prices and total"->receipt 0.300, each clearly ahead
+  of distractors. Phases 0/1/2 before it. Repo private, CI green.
+- Latest released tag target: `v0.4.0` (Phase 3). v0.3.0 = Phase 2, v0.2.0 = Phase 1.
 
 ---
 
 ## Now / next up
 
-- [ ] Phase 2: CLIP integration (pick TFLite LAION-2B port, model download,
-      embeddings, zero-shot scoring, fuse with OCR heuristics + margin gate).
-- [ ] Heuristic tuning pass: reduce false positives (see Known issues), consider
-      requiring a minimum total score before attaching a tag.
-- [ ] Shrink the APK (still ~117 MB debug). See Known issues.
+- [ ] Phase 4: user-triggered reorganization into app-managed folder (margin/OCR
+      gate), custom user tags, "needs review" surface, settings.
+- [ ] Reprocess action to re-tag/re-embed already-DONE screenshots after model
+      install (still open from Phase 2; old screenshots stay OCR-only and have no
+      image embedding, so semantic search misses them).
+- [ ] Bump GitHub Actions to Node 24 builds before 2026-06-16 deprecation.
+- [ ] Heuristic tuning pass: reduce false positives (see Known issues).
+- [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
 
 ---
 
@@ -74,11 +79,15 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [ ] Reprocess action to re-tag already-DONE screenshots after model install
       (currently only new screenshots get CLIP tags; old ones stay OCR-only)
 
-### Phase 3 — Semantic search
-- [ ] CLIP text-encode query -> in-memory brute-force cosine over embeddings
-- [ ] Hybrid merge of visual score + FTS5 BM25 (tune the 0.6/0.4 split)
-- [ ] Search UX for visual + text + tag filters
+### Phase 3 — Semantic search (DONE 2026-06-14, v0.4.0)
+- [x] CLIP text encoder -> TFLite int8w (65.2 MB, min cos 0.9993); hosted on mirror
+- [x] On-device BPE tokenizer (Kotlin port of open_clip SimpleTokenizer, byte-identical, unit-tested)
+- [x] Text-encode query -> in-memory brute-force cosine over stored image embeddings (SemanticSearcher)
+- [x] Hybrid merge of visual + OCR rankings via reciprocal rank fusion (RRF over FTS4, not BM25 weighting)
+- [x] Search UX: query embeds visual+text, graceful fallback if text model absent
+- [x] Verified on-device cross-modal retrieval (instrumented test, map/code/receipt)
 - [ ] HNSW index only if libraries exceed ~20k images (defer)
+- [ ] Tune RRF k / cap; consider showing a per-result "visual vs text" provenance hint
 
 ### Phase 4 — Reorg, taxonomy, polish
 - [ ] User-triggered file reorganization into app-managed folder (margin/OCR gate, not raw floor)
@@ -139,6 +148,22 @@ Mirrors docs/design.md section 14, with task-level detail.
 ---
 
 ## Decisions log (newest first)
+
+- **2026-06-14 — Phase 3 fusion = reciprocal rank fusion, not weighted scores.**
+  CLIP text-image cosine (~0.2-0.35) and a binary FTS hit live on incompatible
+  scales; normalizing them is fiddly and fragile. RRF fuses by rank position, is
+  parameter-light (k=60), and degrades gracefully when one source is empty (no text
+  model -> pure OCR; no OCR match -> pure visual). Replaces the design's 0.6/0.4
+  weighted merge.
+- **2026-06-14 — Tokenizer ported in-app, not bundled as data.** Only the BPE merges
+  are bundled (~1.3 MB); the 49408-token vocab is reconstructed in Kotlin in the exact
+  open_clip order. A unit test pins it byte-identical to open_clip. aapt auto-gunzips
+  `.gz` assets, so merges ship as plain `clip/bpe_merges.txt`.
+- **2026-06-14 — On-device verification via instrumented test.** Cross-modal retrieval
+  (text query -> ranks matching image highest among distractors) is the gold-standard
+  proof and is committed as `SemanticSearchInstrumentedTest`. Test images are downloaded
+  /generated into a gitignored `.testdata/` and bundled in androidTest assets. CI stays
+  Linux-only (no emulator), so this test is run locally, not in CI.
 
 - **2026-06-14 — Phase 1 tech choices:** FTS4 over FTS5 (Room support +
   reliability), ContentObserver over FileObserver (scoped storage), normal

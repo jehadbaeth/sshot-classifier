@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.data.db.TagCount
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
+import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
@@ -23,7 +25,11 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repository: ScreenshotRepository,
+    modelManager: ClipModelManager,
 ) : ViewModel() {
+
+    /** Whether free-text visual search is available (text model installed). */
+    val semanticReady: Boolean = modelManager.isTextModelInstalled()
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -40,7 +46,7 @@ class SearchViewModel @Inject constructor(
             .flatMapLatest { (q, tag) ->
                 when {
                     tag != null -> repository.observeByTag(tag)
-                    q.isNotBlank() -> repository.search(q)
+                    q.isNotBlank() -> flow { emit(repository.hybridSearch(q)) }
                     else -> flowOf(emptyList())
                 }
             }

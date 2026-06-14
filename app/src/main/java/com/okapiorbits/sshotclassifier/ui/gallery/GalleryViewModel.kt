@@ -35,7 +35,7 @@ class GalleryViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     private val _modelState = MutableStateFlow(
-        if (modelManager.isModelInstalled()) ModelState.Installed else ModelState.Missing
+        if (modelManager.areAllModelsInstalled()) ModelState.Installed else ModelState.Missing
     )
     val modelState: StateFlow<ModelState> = _modelState.asStateFlow()
 
@@ -44,7 +44,7 @@ class GalleryViewModel @Inject constructor(
     }
 
     fun refreshModelState() {
-        if (modelManager.isModelInstalled()) _modelState.value = ModelState.Installed
+        if (modelManager.areAllModelsInstalled()) _modelState.value = ModelState.Installed
     }
 
     fun downloadModel() {
