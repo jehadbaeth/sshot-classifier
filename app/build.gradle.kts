@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +8,18 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
+
+// Release signing credentials come from keystore.properties (gitignored) when
+// present, otherwise from environment variables (CI). When neither is configured
+// the release build falls back to debug signing: fine for a sideload APK, but a
+// debug-signed AAB cannot be uploaded to Play, so we warn loudly below.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) FileInputStream(f).use { load(it) }
+}
+fun signingValue(propKey: String, envKey: String): String? =
+    keystoreProps.getProperty(propKey) ?: System.getenv(envKey)
+val releaseStoreFile: String? = signingValue("storeFile", "RELEASE_STORE_FILE")
 
 android {
     namespace = "com.okapiorbits.sshotclassifier"
@@ -21,8 +36,29 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("release") {
+            if (releaseStoreFile != null) {
+                storeFile = file(releaseStoreFile)
+                storePassword = signingValue("storePassword", "RELEASE_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "RELEASE_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = if (releaseStoreFile != null) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "RELEASE SIGNING: no keystore configured (keystore.properties / " +
+                        "RELEASE_STORE_FILE). Falling back to DEBUG signing. The APK is " +
+                        "sideloadable but the AAB is NOT uploadable to Play."
+                )
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

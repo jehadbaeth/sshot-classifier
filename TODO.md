@@ -195,12 +195,19 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 - [ ] Follow-up spike: UI-domain model (SigLIP or CLIP fine-tuned on RICO /
       Screen2Words) to beat generic CLIP on text-heavy screens. Costs size.
-- [ ] Per-ABI APK splits or app bundle to cut download size.
+- [x] App bundle (AAB) to cut download size. `bundleRelease` produces a 49 MB AAB
+      vs the 101 MB universal release APK; Play serves per-ABI/density splits. See
+      docs/publishing.md. (Per-ABI APK splits not needed once shipping the AAB.)
 - [ ] Duplicate / near-duplicate screenshot detection (hash already stored).
 - [ ] Export/import of the tag database.
 - [ ] Widen the spike test set (real game, calendar, receipt, shopping screens;
       the v1 spike leaned on web consent walls for several categories).
-- [ ] Signed release builds (keystore in CI secrets) instead of debug-signed.
+- [x] Signed release builds (keystore in CI secrets) instead of debug-signed.
+      build.gradle signingConfig reads keystore.properties / env (debug fallback +
+      loud warning); Release workflow builds signed APK + AAB from secrets. The
+      minified R8 release build was verified on device: OCR (ML Kit) + CLIP image
+      and query encoding (TFLite) all run, worker SUCCESS, no stripping crashes.
+      CI release path is wired but unexercised until the keystore secrets exist.
 - [ ] On-device benchmark harness for CLIP encode time (design sec 12 targets).
 
 ---
@@ -231,10 +238,11 @@ Mirrors docs/design.md section 14, with task-level detail.
   corroboration does. Covered by a labeled corpus test. Calendar from OCR stays weak
   (abbreviated day grids do not match full day names); acceptable since CLIP is not the
   calendar path anyway.
-- **APK size ~124 MB (debug).** Bulk is ML Kit OCR + TFLite native libs across 4
-  ABIs. CLIP models are NOT in the APK (downloaded at runtime). This is an
-  optimization, not a defect: address with an app bundle / per-ABI splits at Play
-  time (Phase 5+), not now. Tracked in backlog.
+- ~~**APK size ~124 MB (debug).**~~ **Addressed 2026-06-14:** bulk is ML Kit OCR +
+  TFLite native libs across 4 ABIs (CLIP models are NOT in the APK, downloaded at
+  runtime). The minified universal release APK is 101 MB; the AAB is 49 MB and Play
+  serves only each device's ABI/density split, so real download is far smaller. Ship
+  the AAB. See docs/publishing.md.
 - ~~**Design doc sec 14 stale.**~~ Updated 2026-06-14 to current phase reality.
 - ~~**GitHub Actions Node 20 deprecation.**~~ **Done 2026-06-14:** opted into Node 24
   via FORCE_JAVASCRIPT_ACTIONS_TO_NODE24; CI runs the actions on Node 24.
