@@ -34,11 +34,16 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       (no model files). 5/5 pass on emulator. Remaining gaps: two-file download not
       re-run e2e (low risk, loop logic is simple), and the on-device CLIP test set is
       small/partly synthetic (backlog).
-- [ ] Phase 4: user-triggered reorganization into app-managed folder (margin/OCR
-      gate), custom user tags, "needs review" surface, settings.
-- [ ] Reprocess action to re-tag/re-embed already-DONE screenshots after model
-      install (still open from Phase 2; old screenshots stay OCR-only and have no
-      image embedding, so semantic search misses them).
+- [~] Phase 4 (started). Done: reprocess action (below). Next: custom user tags,
+      "needs review" surface, user-triggered file reorganization, a Settings screen.
+- [x] **Reprocess action (done 2026-06-14).** Gallery banner appears when the image
+      model is installed and there are DONE screenshots with no embedding; tapping it
+      resets those rows to PENDING and enqueues the worker, which re-runs them through
+      the now-CLIP-capable pipeline. DAO `NOT IN (embeddings)` queries verified on real
+      SQLite (ReprocessDaoInstrumentedTest). Edge: an image that genuinely cannot be
+      encoded stays counted, so the banner persists until dismissed by success; not a
+      retry loop (user-initiated only). Worker enqueue uses KEEP, so a reprocess tapped
+      while a scan is mid-run waits for the next trigger.
 - [ ] Bump GitHub Actions to Node 24 builds before 2026-06-16 deprecation.
 - [ ] Heuristic tuning pass: reduce false positives (see Known issues).
 - [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
@@ -84,8 +89,8 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Model delivery: public mirror repo + first-launch download with sha256
       verify; verified end to end on emulator (download -> checksum -> install)
 - [ ] Tune fusion (receipts-article -> receipt is a soft false positive)
-- [ ] Reprocess action to re-tag already-DONE screenshots after model install
-      (currently only new screenshots get CLIP tags; old ones stay OCR-only)
+- [x] Reprocess action to re-tag/re-embed already-DONE screenshots after model
+      install (done 2026-06-14, see Phase 4)
 
 ### Phase 3 — Semantic search (DONE 2026-06-14, v0.4.0)
 - [x] CLIP text encoder -> TFLite int8w (65.2 MB, min cos 0.9993); hosted on mirror
@@ -98,6 +103,8 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [ ] Tune RRF k / cap; consider showing a per-result "visual vs text" provenance hint
 
 ### Phase 4 — Reorg, taxonomy, polish
+- [x] Reprocess already-DONE-but-unembedded screenshots after model install
+      (gallery banner -> reset to PENDING -> worker re-embeds; DAO tested on device)
 - [ ] User-triggered file reorganization into app-managed folder (margin/OCR gate, not raw floor)
 - [ ] Custom user tags (new prompt-ensembled label embeddings)
 - [ ] "Needs review" surface for low-confidence/contradicted tags

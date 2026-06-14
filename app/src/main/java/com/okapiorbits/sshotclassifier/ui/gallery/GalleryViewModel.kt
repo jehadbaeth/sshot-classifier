@@ -21,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GalleryViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    repository: ScreenshotRepository,
+    private val repository: ScreenshotRepository,
     private val modelManager: ClipModelManager,
     private val downloader: ClipModelDownloader,
 ) : ViewModel() {
@@ -34,6 +34,11 @@ class GalleryViewModel @Inject constructor(
         repository.observePendingCount()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    /** Screenshots tagged before the visual model was installed (no embedding yet). */
+    val reprocessableCount: StateFlow<Int> =
+        repository.observeReprocessableCount()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
     private val _modelState = MutableStateFlow(
         if (modelManager.areAllModelsInstalled()) ModelState.Installed else ModelState.Missing
     )
@@ -41,6 +46,18 @@ class GalleryViewModel @Inject constructor(
 
     fun scan() {
         ScreenshotProcessingWorker.enqueue(context)
+    }
+
+    /**
+     * Re-runs already-tagged screenshots that have no image embedding through the
+     * pipeline so they gain CLIP tags and become visible to visual search. Only
+     * meaningful once the image model is installed.
+     */
+    fun reprocessMissing() {
+        viewModelScope.launch {
+            val count = repository.markForReprocessing()
+            if (count > 0) ScreenshotProcessingWorker.enqueue(context)
+        }
     }
 
     fun refreshModelState() {

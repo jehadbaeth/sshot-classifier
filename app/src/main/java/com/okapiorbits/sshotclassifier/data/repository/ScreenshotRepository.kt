@@ -29,6 +29,12 @@ class ScreenshotRepository @Inject constructor(
 
     fun observeTagCounts(): Flow<List<TagCount>> = dao.observeTagCounts()
 
+    /** Count of DONE screenshots lacking a CLIP image embedding (reprocess candidates). */
+    fun observeReprocessableCount(): Flow<Int> = dao.observeReprocessableCount()
+
+    /** Resets DONE-but-unembedded screenshots to PENDING. Returns how many. */
+    suspend fun markForReprocessing(): Int = dao.markMissingEmbeddingsForReprocessing()
+
     suspend fun pendingScreenshots(): List<ScreenshotEntity> = dao.pending()
 
     /** Full-text OCR search. Empty/blank query returns nothing. */

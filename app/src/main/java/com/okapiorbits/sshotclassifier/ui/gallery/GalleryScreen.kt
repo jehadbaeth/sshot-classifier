@@ -40,6 +40,7 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
     val screenshots by viewModel.screenshots.collectAsStateWithLifecycle()
     val pending by viewModel.pendingCount.collectAsStateWithLifecycle()
     val modelState by viewModel.modelState.collectAsStateWithLifecycle()
+    val reprocessable by viewModel.reprocessableCount.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -60,6 +61,9 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ModelBanner(modelState, onDownload = viewModel::downloadModel)
+            if (modelState is ModelState.Installed && reprocessable > 0 && pending == 0) {
+                ReprocessBanner(reprocessable, onReprocess = viewModel::reprocessMissing)
+            }
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {
                 EmptyState()
@@ -101,6 +105,22 @@ private fun ModelBanner(state: ModelState, onDownload: () -> Unit) {
                 Button(onClick = onDownload, modifier = Modifier.padding(top = 6.dp)) {
                     Text("Install AI model")
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReprocessBanner(count: Int, onReprocess: () -> Unit) {
+    Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                "$count screenshot${if (count == 1) "" else "s"} tagged before the visual " +
+                    "model was installed. Reprocess to add visual tags and search.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Button(onClick = onReprocess, modifier = Modifier.padding(top = 6.dp)) {
+                Text("Reprocess $count")
             }
         }
     }

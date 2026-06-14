@@ -99,6 +99,33 @@ interface ScreenshotDao {
     @Query("SELECT screenshot_id, vector FROM embeddings")
     suspend fun allEmbeddings(): List<EmbeddingRow>
 
+    /**
+     * Screenshots already processed (DONE) but with no image embedding. These were
+     * tagged before the CLIP model was installed, so they have OCR-only tags and
+     * are invisible to visual search. Drives the "reprocess" affordance.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM screenshots
+        WHERE status = 'DONE' AND id NOT IN (SELECT screenshot_id FROM embeddings)
+        """
+    )
+    fun observeReprocessableCount(): Flow<Int>
+
+    /**
+     * Resets DONE-but-unembedded screenshots back to PENDING so the processing
+     * worker re-runs them through the full (now CLIP-capable) pipeline. The
+     * pipeline is idempotent (OCR REPLACE, deleteAutoTags before re-tagging).
+     * Returns the number of rows reset.
+     */
+    @Query(
+        """
+        UPDATE screenshots SET status = 'PENDING'
+        WHERE status = 'DONE' AND id NOT IN (SELECT screenshot_id FROM embeddings)
+        """
+    )
+    suspend fun markMissingEmbeddingsForReprocessing(): Int
+
     /** OCR full-text match -> screenshot ids, recency-ordered, for hybrid fusion. */
     @Query(
         """
