@@ -21,70 +21,83 @@ class OcrHeuristics @Inject constructor() {
 
     private data class Rule(
         val label: String,
-        val keywords: List<String> = emptyList(),
-        val patterns: List<Regex> = emptyList(),
-        val perHit: Float = 0.34f,
         /**
-         * Pattern hits count for less than keyword hits. Patterns like a currency
-         * amount or a decimal number are shared across receipt/finance/shopping, so
-         * on their own (below MIN_EMIT) they must not emit a tag; they only add
-         * confidence when a category keyword is also present.
+         * Specific, category-defining signals: one alone clears [MIN_EMIT] and emits
+         * the tag (e.g. "subtotal", "stacktrace", "add to cart"). Use sparingly, only
+         * for terms that are rare outside this category.
          */
-        val patternHit: Float = 0.14f,
+        val strong: List<String> = emptyList(),
+        /**
+         * Generic signals that also appear on unrelated screens ("total", "account",
+         * "order", "message"). One weak hit, or even two, stays below the floor; they
+         * only emit a tag when corroborated by a strong hit or several signals. This is
+         * the main false-positive guard: a Settings "Account" row no longer reads as
+         * finance, a fitness "Total steps" no longer reads as a receipt.
+         */
+        val weak: List<String> = emptyList(),
+        val patterns: List<Regex> = emptyList(),
     )
 
     private val rules = listOf(
         Rule(
             label = "receipt",
-            keywords = listOf("subtotal", "total", "tax", "vat", "receipt", "invoice", "amount due", "change due", "qty"),
+            strong = listOf("subtotal", "receipt", "invoice", "amount due", "change due"),
+            weak = listOf("total", "tax", "vat", "qty"),
             patterns = listOf(Regex("""[$€£]\s?\d"""), Regex("""\b\d+\.\d{2}\b""")),
         ),
         Rule(
             label = "error / crash",
-            keywords = listOf("exception", "stack trace", "stacktrace", "traceback", "fatal", "nullpointer", "segmentation fault", "error:", "errno", "unhandled"),
+            strong = listOf("exception", "stack trace", "stacktrace", "traceback", "segmentation fault", "nullpointer", "errno", "unhandled", "error:"),
+            weak = listOf("fatal"),
             patterns = listOf(Regex("""\bat\s+[\w.$]+\([\w.]+:\d+\)"""), Regex("""[\w.]+(Error|Exception)\b""")),
         ),
         Rule(
             label = "code editor",
-            keywords = listOf("import ", "public ", "private ", "function ", "def ", "class ", "return ", "const ", "void ", "#include", "println", "console.log", "var ", "val "),
+            // Tokens that are almost always code; one is enough.
+            strong = listOf("#include", "console.log", "println", "def ", "function "),
+            // Words that also occur in prose ("public transport", "return ticket");
+            // need a couple together (or a code pattern) to count.
+            weak = listOf("import ", "public ", "private ", "class ", "return ", "const ", "void ", "var ", "val "),
             patterns = listOf(Regex("""[{};]\s*$""", RegexOption.MULTILINE), Regex("""=>|::|->|!=|==""")),
-            perHit = 0.22f,
         ),
         Rule(
             label = "finance",
-            keywords = listOf("balance", "account", "transaction", "transfer", "iban", "deposit", "withdraw", "credit", "debit", "statement", "routing"),
+            strong = listOf("iban", "routing", "transaction"),
+            weak = listOf("balance", "account", "transfer", "deposit", "withdraw", "credit", "debit", "statement"),
             patterns = listOf(Regex("""[$€£]\s?\d""")),
         ),
         Rule(
             label = "calendar",
-            keywords = listOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january", "february", "march", "april", "june", "july", "august", "september", "october", "november", "december", "event", "all day"),
+            // Day and month names are individually weak (a single "Monday" is not a
+            // calendar); a real calendar shows several, or names plus a time.
+            weak = listOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "january", "february", "march", "april", "june", "july", "august", "september", "october", "november", "december", "event", "all day"),
             patterns = listOf(Regex("""\b\d{1,2}:\d{2}\s?(am|pm)\b""")),
-            perHit = 0.25f,
         ),
         Rule(
             label = "chat / messaging",
             // No bare-time pattern: the status bar clock appears on every
-            // screenshot and would tag them all as chat. Rely on chat keywords.
-            keywords = listOf("typing", "online", "last seen", "delivered", "message", "reply", "forwarded", "sent a", "is typing"),
-            perHit = 0.34f,
+            // screenshot and would tag them all as chat.
+            strong = listOf("is typing", "last seen", "delivered", "forwarded"),
+            weak = listOf("typing", "online", "message", "reply", "sent a"),
         ),
         Rule(
             label = "shopping",
-            keywords = listOf("add to cart", "buy now", "checkout", "free shipping", "in stock", "out of stock", "price", "order", "wishlist", "delivery"),
+            strong = listOf("add to cart", "buy now", "checkout", "free shipping", "out of stock", "wishlist"),
+            weak = listOf("in stock", "price", "order", "delivery"),
             patterns = listOf(Regex("""[$€£]\s?\d""")),
         ),
         Rule(
             label = "social media",
             // No bare @/# pattern: "#include", "#define" etc. tag every code
-            // screenshot as social. Rely on social keywords instead.
-            keywords = listOf("likes", "comments", "shares", "followers", "following", "retweet", "repost", "your story", "view profile", "reels"),
-            perHit = 0.34f,
+            // screenshot as social.
+            strong = listOf("followers", "following", "retweet", "repost", "your story", "view profile", "reels"),
+            weak = listOf("likes", "comments", "shares"),
         ),
         Rule(
             label = "browser / web",
-            keywords = listOf("http://", "https://", "www.", "sign in", "search"),
+            strong = listOf("http://", "https://", "www."),
+            weak = listOf("sign in", "search"),
             patterns = listOf(Regex("""\b[\w-]+\.(com|org|net|io|gov|edu)\b""")),
-            perHit = 0.25f,
         ),
     )
 
@@ -93,14 +106,19 @@ class OcrHeuristics @Inject constructor() {
         val text = rawText.lowercase()
         val out = mutableListOf<TagCandidate>()
         for (rule in rules) {
-            var keywordHits = 0
-            for (kw in rule.keywords) if (text.contains(kw)) keywordHits++
+            var strongHits = 0
+            for (kw in rule.strong) if (text.contains(kw)) strongHits++
+            var weakHits = 0
+            for (kw in rule.weak) if (text.contains(kw)) weakHits++
             var patternHits = 0
             for (re in rule.patterns) if (re.containsMatchIn(text)) patternHits++
 
-            val weight = minOf(1f, keywordHits * rule.perHit + patternHits * rule.patternHit)
-            // Minimum-score floor: a single weak keyword, or a lone shared pattern
-            // (e.g. a currency amount), is just noise for fusion, so do not emit it.
+            val weight = minOf(
+                1f,
+                strongHits * STRONG_HIT + weakHits * WEAK_HIT + patternHits * PATTERN_HIT,
+            )
+            // Floor: one strong hit clears it; generic signals must corroborate. With
+            // WEAK_HIT below half the floor, two generic words alone still don't emit.
             if (weight >= MIN_EMIT) out += TagCandidate(rule.label, weight)
         }
         return out.sortedByDescending { it.weight }
@@ -109,5 +127,14 @@ class OcrHeuristics @Inject constructor() {
     companion object {
         /** A candidate must reach this confidence to be emitted at all. */
         const val MIN_EMIT = 0.30f
+
+        /** A specific, category-defining keyword. One clears the floor. */
+        private const val STRONG_HIT = 0.34f
+
+        /** A generic keyword. Below half the floor, so two alone still do not emit. */
+        private const val WEAK_HIT = 0.14f
+
+        /** A shared structural pattern (currency, decimal, domain). Same weight as weak. */
+        private const val PATTERN_HIT = 0.14f
     }
 }

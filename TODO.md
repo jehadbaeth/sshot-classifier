@@ -102,7 +102,15 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       routing, move (Allow -> originals deleted + log + repoint), undo (originals restored
       + log cleared), auto-run (background copy, no deletion). Pure routing + root sanitize
       unit-tested. needs-review SKIP is unit-tested (not separately device-driven).
-- [ ] Heuristic tuning pass: reduce false positives (see Known issues).
+- [x] **Heuristic tuning pass (done 2026-06-14).** Split OcrHeuristics keywords into
+      strong (specific, one clears the floor) and weak (generic, WEAK_HIT 0.14 < half the
+      0.30 floor, so two generic words alone still do not emit). Kills the single-generic-
+      keyword false positives: a Settings "Account" no longer reads finance, "Total steps"
+      no longer receipt, "Send us a message" no longer chat, "Sort order" no longer
+      shopping. Added a labeled corpus test (10 true-positive + 8 false-positive realistic
+      OCR snippets) so the rules are measured, not just asserted. All green. Caveat: hand-
+      labeled cases, not a sample of real screenshots, so this validates the logic, not
+      field precision. Fusion tuning (TagFuser receipts-article soft FP) is still separate.
 - [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
 
 ---
@@ -216,10 +224,13 @@ Mirrors docs/design.md section 14, with task-level detail.
   App downloads from there on first launch with sha256 verification. End-to-end
   download verified on emulator. The 89.5 MB model stays gitignored in the app repo.
 - ~~**OCR heuristics over-fire on a single weak keyword / shared currency pattern.**~~
-  **Addressed 2026-06-14.** Pattern hits now weigh less than keyword hits and a
-  MIN_EMIT=0.30 floor drops single weak signals and lone shared patterns (a price no
-  longer tags receipt/finance/shopping by itself). Remaining nuance (calendar time vs
-  12h clock) is minor; revisit only if it shows up in practice.
+  **Addressed 2026-06-14, hardened later same day.** First a MIN_EMIT=0.30 floor dropped
+  lone shared patterns. Then keywords were split into strong (specific) and weak (generic):
+  WEAK_HIT=0.14 is below half the floor, so even two generic words ("account", "total",
+  "order", "message") alone no longer emit a tag, while one strong term or real
+  corroboration does. Covered by a labeled corpus test. Calendar from OCR stays weak
+  (abbreviated day grids do not match full day names); acceptable since CLIP is not the
+  calendar path anyway.
 - **APK size ~124 MB (debug).** Bulk is ML Kit OCR + TFLite native libs across 4
   ABIs. CLIP models are NOT in the APK (downloaded at runtime). This is an
   optimization, not a defect: address with an app bundle / per-ABI splits at Play
