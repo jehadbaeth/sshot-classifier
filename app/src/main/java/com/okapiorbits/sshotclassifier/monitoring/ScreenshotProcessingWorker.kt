@@ -1,11 +1,14 @@
 package com.okapiorbits.sshotclassifier.monitoring
 
 import android.content.Context
+import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
+import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -34,13 +37,16 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        // Run in the foreground so a long backfill survives the app being backgrounded.
+        runCatching { setForeground(foregroundInfo(0, 0)) }
+
         repository.syncFromMediaStore()
 
         val pending = repository.pendingScreenshots()
         if (pending.isEmpty()) return Result.success()
 
         val total = pending.size
-        Notifications.progress(applicationContext, 0, total)
+        runCatching { setForeground(foregroundInfo(0, total)) }
         var done = 0
         for (shot in pending) {
             processor.process(shot)
@@ -49,6 +55,18 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
         }
         Notifications.clear(applicationContext)
         return Result.success()
+    }
+
+    /** Used both for expedited fallback on API < 31 and the dataSync foreground run. */
+    override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(0, 0)
+
+    private fun foregroundInfo(done: Int, total: Int): ForegroundInfo {
+        val notification = Notifications.buildProgress(applicationContext, done, total)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(Notifications.ID_PROGRESS, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(Notifications.ID_PROGRESS, notification)
+        }
     }
 
     companion object {

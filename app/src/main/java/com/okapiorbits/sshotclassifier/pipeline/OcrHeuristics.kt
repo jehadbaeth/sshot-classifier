@@ -24,6 +24,13 @@ class OcrHeuristics @Inject constructor() {
         val keywords: List<String> = emptyList(),
         val patterns: List<Regex> = emptyList(),
         val perHit: Float = 0.34f,
+        /**
+         * Pattern hits count for less than keyword hits. Patterns like a currency
+         * amount or a decimal number are shared across receipt/finance/shopping, so
+         * on their own (below MIN_EMIT) they must not emit a tag; they only add
+         * confidence when a category keyword is also present.
+         */
+        val patternHit: Float = 0.14f,
     )
 
     private val rules = listOf(
@@ -86,14 +93,21 @@ class OcrHeuristics @Inject constructor() {
         val text = rawText.lowercase()
         val out = mutableListOf<TagCandidate>()
         for (rule in rules) {
-            var hits = 0
-            for (kw in rule.keywords) if (text.contains(kw)) hits++
-            for (re in rule.patterns) if (re.containsMatchIn(text)) hits++
-            if (hits > 0) {
-                val weight = minOf(1f, hits * rule.perHit)
-                out += TagCandidate(rule.label, weight)
-            }
+            var keywordHits = 0
+            for (kw in rule.keywords) if (text.contains(kw)) keywordHits++
+            var patternHits = 0
+            for (re in rule.patterns) if (re.containsMatchIn(text)) patternHits++
+
+            val weight = minOf(1f, keywordHits * rule.perHit + patternHits * rule.patternHit)
+            // Minimum-score floor: a single weak keyword, or a lone shared pattern
+            // (e.g. a currency amount), is just noise for fusion, so do not emit it.
+            if (weight >= MIN_EMIT) out += TagCandidate(rule.label, weight)
         }
         return out.sortedByDescending { it.weight }
+    }
+
+    companion object {
+        /** A candidate must reach this confidence to be emitted at all. */
+        const val MIN_EMIT = 0.30f
     }
 }

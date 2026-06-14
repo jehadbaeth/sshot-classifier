@@ -1,5 +1,6 @@
 package com.okapiorbits.sshotclassifier.monitoring
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -23,17 +24,22 @@ object Notifications {
         }
     }
 
-    /** Posts or updates the batch progress notification. No-ops if not permitted. */
-    fun progress(context: Context, done: Int, total: Int) {
+    /** Builds the batch progress notification (also used as the foreground-service notification). */
+    fun buildProgress(context: Context, done: Int, total: Int): Notification {
         ensureChannel(context)
-        val notif = NotificationCompat.Builder(context, CHANNEL_PROCESSING)
+        return NotificationCompat.Builder(context, CHANNEL_PROCESSING)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle("Classifying screenshots")
-            .setContentText("$done of $total")
+            .setContentText(if (total > 0) "$done of $total" else "Looking for screenshots…")
             .setProgress(total, done, total == 0)
             .setOngoing(done < total)
             .setOnlyAlertOnce(true)
             .build()
+    }
+
+    /** Posts or updates the batch progress notification. No-ops if not permitted. */
+    fun progress(context: Context, done: Int, total: Int) {
+        val notif = buildProgress(context, done, total)
         try {
             NotificationManagerCompat.from(context).notify(ID_PROGRESS, notif)
         } catch (e: SecurityException) {

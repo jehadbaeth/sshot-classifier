@@ -27,6 +27,8 @@ data class ScreenshotEntity(
     val height: Int,
     /** Processing lifecycle: PENDING -> PROCESSING -> DONE / FAILED. */
     val status: String = ProcessingStatus.PENDING.name,
+    /** True when auto-tagging was low-confidence/contradicted and wants a human look. */
+    val needs_review: Boolean = false,
 )
 
 enum class ProcessingStatus { PENDING, PROCESSING, DONE, FAILED }

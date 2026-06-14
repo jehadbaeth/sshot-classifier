@@ -52,6 +52,7 @@ class ImageProcessor @Inject constructor(
         val embedding = if (clipEncoder.isReady()) clipEncoder.encode(uri) else null
 
         dao.deleteAutoTags(screenshot.id)
+        var needsReview: Boolean
         if (embedding != null) {
             dao.insertEmbedding(EmbeddingEntity(screenshot_id = screenshot.id, vector = EmbeddingCodec.toBytes(embedding)))
             val clipScores = zeroShot.classify(embedding)
@@ -60,6 +61,10 @@ class ImageProcessor @Inject constructor(
                 TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.FUSED.name)
             }
             if (tags.isNotEmpty()) dao.insertTags(tags)
+
+            // Flag for human review when tagging is weak: nothing stuck, the top tag
+            // failed the margin/OCR gate, or it only landed on the catch-all "other".
+            needsReview = tags.isEmpty() || !fused.primaryConfident || tags.first().label == "other"
 
             // User-defined auto-categories (additive; independent of the built-in tags).
             val categories = dao.allCategories().map {
@@ -76,8 +81,12 @@ class ImageProcessor @Inject constructor(
                 TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.OCR_HEURISTIC.name)
             }
             if (tags.isNotEmpty()) dao.insertTags(tags)
+            // OCR-only (no visual model): only flag the truly untagged. The reprocess
+            // banner separately nudges installing the model.
+            needsReview = tags.isEmpty()
         }
 
+        dao.updateNeedsReview(screenshot.id, needsReview)
         dao.updateStatus(screenshot.id, ProcessingStatus.DONE.name, System.currentTimeMillis())
         return true
     }

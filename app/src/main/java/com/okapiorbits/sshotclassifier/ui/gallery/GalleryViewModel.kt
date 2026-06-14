@@ -10,10 +10,12 @@ import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,8 +28,14 @@ class GalleryViewModel @Inject constructor(
     private val downloader: ClipModelDownloader,
 ) : ViewModel() {
 
+    /** When true, the grid shows only screenshots flagged for review. */
+    private val _reviewOnly = MutableStateFlow(false)
+    val reviewOnly: StateFlow<Boolean> = _reviewOnly.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     val screenshots: StateFlow<List<ScreenshotWithTags>> =
-        repository.observeGallery()
+        _reviewOnly
+            .flatMapLatest { only -> if (only) repository.observeNeedsReview() else repository.observeGallery() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val pendingCount: StateFlow<Int> =
@@ -38,6 +46,15 @@ class GalleryViewModel @Inject constructor(
     val reprocessableCount: StateFlow<Int> =
         repository.observeReprocessableCount()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Count flagged for human review (uncertain auto-tagging). */
+    val needsReviewCount: StateFlow<Int> =
+        repository.observeNeedsReviewCount()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    fun toggleReviewOnly() {
+        _reviewOnly.value = !_reviewOnly.value
+    }
 
     private val _modelState = MutableStateFlow(
         if (modelManager.areAllModelsInstalled()) ModelState.Installed else ModelState.Missing

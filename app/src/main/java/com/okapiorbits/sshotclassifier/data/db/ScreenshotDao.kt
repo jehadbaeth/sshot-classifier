@@ -93,6 +93,16 @@ interface ScreenshotDao {
     @Query("UPDATE screenshots SET status = :status, date_processed = :processedAt WHERE id = :id")
     suspend fun updateStatus(id: Long, status: String, processedAt: Long?)
 
+    @Query("UPDATE screenshots SET needs_review = :needsReview WHERE id = :id")
+    suspend fun updateNeedsReview(id: Long, needsReview: Boolean)
+
+    @Query("SELECT COUNT(*) FROM screenshots WHERE needs_review = 1")
+    fun observeNeedsReviewCount(): Flow<Int>
+
+    @Transaction
+    @Query("SELECT * FROM screenshots WHERE needs_review = 1 ORDER BY date_added DESC")
+    fun observeNeedsReview(): Flow<List<ScreenshotWithTags>>
+
     @Query("SELECT * FROM screenshots WHERE status = :status ORDER BY date_added ASC")
     suspend fun pending(status: String = ProcessingStatus.PENDING.name): List<ScreenshotEntity>
 

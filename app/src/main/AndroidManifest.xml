@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Android 13+ scoped media access -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -9,6 +10,10 @@
         android:maxSdkVersion="32" />
     <!-- Foreground progress notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Foreground service so large backfills survive the app being backgrounded.
+         dataSync type: we are processing on-device user content, not networking. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Sole network use: one-time download of the on-device CLIP model. All
          inference is local; no other network calls. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -37,13 +42,19 @@
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
-            tools:node="merge"
-            xmlns:tools="http://schemas.android.com/tools">
+            tools:node="merge">
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+
+        <!-- Declare the foreground-service type on WorkManager's service so the
+             processing worker can run as a dataSync foreground service. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
     </application>
 

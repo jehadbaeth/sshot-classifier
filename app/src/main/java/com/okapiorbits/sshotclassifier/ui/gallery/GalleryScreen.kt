@@ -13,9 +13,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -50,6 +52,8 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
     val pending by viewModel.pendingCount.collectAsStateWithLifecycle()
     val modelState by viewModel.modelState.collectAsStateWithLifecycle()
     val reprocessable by viewModel.reprocessableCount.collectAsStateWithLifecycle()
+    val needsReview by viewModel.needsReviewCount.collectAsStateWithLifecycle()
+    val reviewOnly by viewModel.reviewOnly.collectAsStateWithLifecycle()
 
     // In-tab navigation to a screenshot's tag editor; no NavHost needed.
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -88,6 +92,15 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
             ModelBanner(modelState, onDownload = viewModel::downloadModel)
             if (modelState is ModelState.Installed && reprocessable > 0 && pending == 0) {
                 ReprocessBanner(reprocessable, onReprocess = viewModel::reprocessMissing)
+            }
+            if (needsReview > 0 || reviewOnly) {
+                FilterChip(
+                    selected = reviewOnly,
+                    onClick = { viewModel.toggleReviewOnly() },
+                    label = { Text(if (reviewOnly) "Showing needs review · tap to clear" else "Needs review ($needsReview)") },
+                    leadingIcon = { Icon(Icons.Default.Flag, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
             }
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {

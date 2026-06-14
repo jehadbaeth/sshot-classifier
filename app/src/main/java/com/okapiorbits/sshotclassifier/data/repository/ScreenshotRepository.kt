@@ -39,6 +39,10 @@ class ScreenshotRepository @Inject constructor(
     /** Count of DONE screenshots lacking a CLIP image embedding (reprocess candidates). */
     fun observeReprocessableCount(): Flow<Int> = dao.observeReprocessableCount()
 
+    /** Screenshots whose auto-tagging was uncertain and wants a human look. */
+    fun observeNeedsReview(): Flow<List<ScreenshotWithTags>> = dao.observeNeedsReview()
+    fun observeNeedsReviewCount(): Flow<Int> = dao.observeNeedsReviewCount()
+
     /** Resets DONE-but-unembedded screenshots to PENDING. Returns how many. */
     suspend fun markForReprocessing(): Int = dao.markMissingEmbeddingsForReprocessing()
 
@@ -65,11 +69,15 @@ class ScreenshotRepository @Inject constructor(
                 source = TagSource.USER.name,
             )
         )
+        dao.updateNeedsReview(screenshotId, false) // a human edited it -> reviewed
         return true
     }
 
-    /** Removes any single tag (user-added or a wrong auto tag) by row id. */
-    suspend fun removeTag(tagId: Long) = dao.deleteTag(tagId)
+    /** Removes any single tag (user-added or a wrong auto tag); editing counts as reviewed. */
+    suspend fun removeTag(tagId: Long, screenshotId: Long) {
+        dao.deleteTag(tagId)
+        dao.updateNeedsReview(screenshotId, false)
+    }
 
     // ---- User-defined auto-tag categories ----
 

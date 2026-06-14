@@ -26,7 +26,7 @@ class ScreenshotDetailViewModel @Inject constructor(
         viewModelScope.launch { repository.addUserTag(screenshotId, label) }
     }
 
-    fun removeTag(tagId: Long) {
-        viewModelScope.launch { repository.removeTag(tagId) }
+    fun removeTag(tag: TagEntity) {
+        viewModelScope.launch { repository.removeTag(tag.id, tag.screenshot_id) }
     }
 }

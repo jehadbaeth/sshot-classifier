@@ -89,12 +89,20 @@ class TagEditingInstrumentedTest {
     }
 
     @Test
+    fun addingUserTag_clearsNeedsReview() = runBlocking {
+        dao.updateNeedsReview(1L, true)
+        assertEquals(1, dao.observeNeedsReviewCount().first())
+        repo.addUserTag(1L, "reviewed")
+        assertEquals(0, dao.observeNeedsReviewCount().first())
+    }
+
+    @Test
     fun removeTag_deletesAnyTagIncludingAuto() = runBlocking {
         dao.insertTag(
             TagEntity(screenshot_id = 1L, label = "map", weight = 0.9f, source = TagSource.FUSED.name),
         )
         val auto = repo.observeTags(1L).first().single()
-        repo.removeTag(auto.id)
+        repo.removeTag(auto.id, 1L)
         assertTrue(repo.observeTags(1L).first().isEmpty())
     }
 }

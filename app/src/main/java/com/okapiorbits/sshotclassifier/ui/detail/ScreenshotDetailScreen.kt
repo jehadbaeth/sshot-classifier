@@ -91,7 +91,7 @@ fun ScreenshotDetailScreen(
                 )
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    tags.forEach { tag -> TagChip(tag, onRemove = { viewModel.removeTag(tag.id) }) }
+                    tags.forEach { tag -> TagChip(tag, onRemove = { viewModel.removeTag(tag) }) }
                 }
             }
 

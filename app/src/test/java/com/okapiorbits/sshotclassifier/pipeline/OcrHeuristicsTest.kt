@@ -59,4 +59,27 @@ class OcrHeuristicsTest {
     fun `blank text yields no tags`() {
         assertEquals(emptyList<String>(), labels("   "))
     }
+
+    @Test
+    fun `a lone currency amount does not tag receipt finance or shopping`() {
+        // Min-score floor: a single shared pattern hit (here a price) is below the
+        // emit threshold, so it must not by itself produce any of these categories.
+        val text = "Acme Widget\n$12.50\nView details"
+        val l = labels(text)
+        assertFalse("receipt" in l)
+        assertFalse("finance" in l)
+        assertFalse("shopping" in l)
+    }
+
+    @Test
+    fun `a single weak code keyword is dropped`() {
+        // One "import " (perHit 0.22) is below the 0.30 floor.
+        assertFalse("code editor" in labels("import the groceries from the car"))
+    }
+
+    @Test
+    fun `currency plus a category keyword does emit`() {
+        // Pattern + keyword clears the floor.
+        assertTrue("finance" in labels("Account balance\n$1,240.00"))
+    }
 }
