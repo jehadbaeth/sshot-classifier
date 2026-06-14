@@ -35,6 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.okapiorbits.sshotclassifier.ui.AppearanceViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryScreen
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryViewModel
 import com.okapiorbits.sshotclassifier.ui.search.SearchScreen
@@ -50,7 +52,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ScreenshotClassifierTheme {
+            val appearance: AppearanceViewModel = hiltViewModel()
+            val dynamicColor by appearance.dynamicColor.collectAsStateWithLifecycle()
+            ScreenshotClassifierTheme(dynamicColor = dynamicColor) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppRoot()
                 }

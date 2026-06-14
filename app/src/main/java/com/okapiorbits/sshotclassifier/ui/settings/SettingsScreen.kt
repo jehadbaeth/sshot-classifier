@@ -63,6 +63,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val pendingDelete by viewModel.pendingDelete.collectAsStateWithLifecycle()
     val watchedFolders by viewModel.watchedFolders.collectAsStateWithLifecycle()
     val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
+    val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.loadFolders() }
 
@@ -175,6 +176,19 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 onAdd = viewModel::addCategory,
                 onRemove = viewModel::removeCategory,
                 onDismissStatus = viewModel::clearCategoryStatus,
+            )
+
+            Section("Appearance")
+            LabeledSwitch(
+                label = "Use Material You colors",
+                subtitle = if (viewModel.dynamicColorSupported) {
+                    "Match the app palette to your wallpaper. Off uses the app's own colors."
+                } else {
+                    "Needs Android 12 or newer. The app uses its own colors here."
+                },
+                checked = dynamicColor,
+                enabled = viewModel.dynamicColorSupported,
+                onCheckedChange = viewModel::setDynamicColor,
             )
 
             Section("About")

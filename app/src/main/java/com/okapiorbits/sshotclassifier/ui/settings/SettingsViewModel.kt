@@ -12,6 +12,7 @@ import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
+import com.okapiorbits.sshotclassifier.data.prefs.UiPreferencesStore
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository.AddCategoryResult
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
@@ -50,7 +51,19 @@ class SettingsViewModel @Inject constructor(
     private val downloader: ClipModelDownloader,
     private val organizer: ScreenshotOrganizer,
     private val reorgPrefsStore: ReorgPreferencesStore,
+    private val uiPrefsStore: UiPreferencesStore,
 ) : ViewModel() {
+
+    /** Material You opt-in. Default false = fixed brand palette. */
+    val dynamicColor: StateFlow<Boolean> =
+        uiPrefsStore.dynamicColor
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setDynamicColor(enabled: Boolean) =
+        viewModelScope.launch { uiPrefsStore.setDynamicColor(enabled) }
+
+    /** True on Android 12+ where Material You (wallpaper-based colour) is available. */
+    val dynamicColorSupported: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val reorganizeSupported: Boolean = organizer.isSupported
     val moveSupported: Boolean = organizer.moveSupported
