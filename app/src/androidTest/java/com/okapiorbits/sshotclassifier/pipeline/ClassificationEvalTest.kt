@@ -64,6 +64,8 @@ class ClassificationEvalTest {
         val file: String,
         val truth: String,
         val predicted: String,
+        /** CLIP-only argmax (no OCR/fusion) — lets us see when the fix flipped the call. */
+        val clipTop: String,
         val needsReview: Boolean,
         val topTags: String,
     )
@@ -97,17 +99,19 @@ class ClassificationEvalTest {
                 val ocrCandidates = heuristics.classify(ocrText)
                 val embedding = encoder.encode(uri)
                 if (embedding == null) {
-                    rows += Row(img.name, truth, ENCODE_FAILED, false, "")
+                    rows += Row(img.name, truth, ENCODE_FAILED, ENCODE_FAILED, false, "")
                     continue
                 }
                 val clipScores = zeroShot.classify(embedding)
+                val clipTop = clipScores.maxByOrNull { it.value }?.key ?: NONE
                 val decision = fuser.decide(fuser.fuse(clipScores, ocrCandidates))
                 val predicted = decision.primary ?: NONE
                 val topTags = decision.tags.joinToString("; ") { "%s %.2f".format(it.label, it.weight) }
-                rows += Row(img.name, truth, predicted, decision.needsReview, topTags)
+                rows += Row(img.name, truth, predicted, clipTop, decision.needsReview, topTags)
                 android.util.Log.i(
                     TAG,
-                    "${dir.name}/${img.name} truth=$truth pred=$predicted review=${decision.needsReview} [$topTags]",
+                    "${dir.name}/${img.name} truth=$truth clipOnly=$clipTop pred=$predicted " +
+                        "review=${decision.needsReview} [$topTags]",
                 )
             }
         }
@@ -120,9 +124,9 @@ class ClassificationEvalTest {
     }
 
     private fun writeCsv(rows: List<Row>) {
-        val sb = StringBuilder("file,truth,predicted,needs_review,top_tags\n")
+        val sb = StringBuilder("file,truth,predicted,clip_only,needs_review,top_tags\n")
         for (r in rows) {
-            sb.append("\"${r.file}\",\"${r.truth}\",\"${r.predicted}\",${r.needsReview},\"${r.topTags}\"\n")
+            sb.append("\"${r.file}\",\"${r.truth}\",\"${r.predicted}\",\"${r.clipTop}\",${r.needsReview},\"${r.topTags}\"\n")
         }
         File(ctx.getExternalFilesDir(null), CSV_NAME).writeText(sb.toString())
     }
@@ -137,6 +141,21 @@ class ClassificationEvalTest {
         sb.append("Overall accuracy: $correct/$total = ${pct(correct, total)}\n")
         sb.append("Predicted \"other\": $otherCount/$total = ${pct(otherCount, total)}\n")
         sb.append("Flagged needs-review: $reviewCount/$total = ${pct(reviewCount, total)}\n\n")
+
+        // Fix impact: where OCR+fusion changed the call vs CLIP alone, and whether that
+        // helped (matched truth) or hurt. This is what isolates the OCR-rule fix from
+        // CLIP getting it right on its own.
+        val flipped = rows.filter { it.clipTop != it.predicted }
+        val flipToTruth = flipped.count { it.predicted == it.truth }
+        val flipFromTruth = flipped.count { it.clipTop == it.truth }
+        val clipAcc = rows.count { it.clipTop == it.truth }
+        sb.append("CLIP-only accuracy: $clipAcc/$total = ${pct(clipAcc, total)} (vs fused above)\n")
+        sb.append("Fusion changed the call on ${flipped.size}/$total; helped $flipToTruth, hurt $flipFromTruth\n")
+        for (r in flipped) {
+            val mark = when { r.predicted == r.truth -> "FIX"; r.clipTop == r.truth -> "REGRESS"; else -> "neutral" }
+            sb.append("  [$mark] ${r.file}: clip=${r.clipTop} -> fused=${r.predicted} (truth=${r.truth})\n")
+        }
+        sb.append("\n")
 
         val classes = rows.map { it.truth }.toSortedSet()
         sb.append("Per-class (truth): support  recall  | most-common prediction\n")

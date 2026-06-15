@@ -3,6 +3,14 @@ Overall accuracy: 56/100 = 56%
 Predicted "other": 21/100 = 21%
 Flagged needs-review: 49/100 = 49%
 
+CLIP-only accuracy: 59/100 = 59% (vs fused above)
+Fusion changed the call on 5/100; helped 0, hurt 3
+  [REGRESS] 30767.jpg: clip=chat / messaging -> fused=email (truth=chat / messaging)
+  [REGRESS] 15393.jpg: clip=document -> fused=finance (truth=document)
+  [REGRESS] 20147.jpg: clip=document -> fused=other (truth=document)
+  [neutral] 2526.jpg: clip=news -> fused=map (truth=document)
+  [neutral] 14085.jpg: clip=error / crash -> fused=other (truth=map)
+
 Per-class (truth): support  recall  | most-common prediction
   chat / messaging     11      64% | chat / messaging (7)
   document             20      30% | document (6)

@@ -3,6 +3,13 @@ Overall accuracy: 10/16 = 63%
 Predicted "other": 3/16 = 19%
 Flagged needs-review: 7/16 = 44%
 
+CLIP-only accuracy: 6/16 = 38% (vs fused above)
+Fusion changed the call on 4/16; helped 4, hurt 0
+  [FIX] Evolution_36_mail.png: clip=document -> fused=email (truth=email)
+  [FIX] KMail-features.png: clip=code editor -> fused=email (truth=email)
+  [FIX] Spam.png: clip=document -> fused=email (truth=email)
+  [FIX] Thunderbird_1.0.6_en.jpg: clip=browser / web -> fused=email (truth=email)
+
 Per-class (truth): support  recall  | most-common prediction
   document              5      80% | document (4)
   email                 6      83% | email (5)

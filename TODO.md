@@ -35,12 +35,16 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       eval) so they cannot drift. Datasets (fetch scripts in `scripts/eval/`, images
       gitignored, manifests + results in `docs/eval/`): Enrico (MIT, 100-image regression
       slice) + a small Wikimedia-Commons FOSS field slice (16: email/social/document).
-      **Findings** (`docs/eval/results.md`): email fix VALIDATED — email screens now
-      predict `email` (5/6, weights 0.60-0.63) not `document`; documents not cannibalized
-      (4/5); the fix is well contained on Enrico (3 stray email/social preds in 100, zero
-      from document). Enrico overall 56% (hard OOD 2017 app crawls, approximate mapping —
-      regression baseline only). Residual misses are the CLIP ceiling on dense text +
-      a desktop-vs-mobile distribution gap, not a taxonomy bug.
+      **Findings** (`docs/eval/results.md`): email fix CAUSALLY confirmed — the harness
+      logs CLIP-only argmax next to fused, and on the field set fusion flips 4/6 email
+      images (3 of them straight from CLIP's `document`, the reported bug) to `email`,
+      0 regressions; documents not cannibalized (4/5). Honest tradeoff: on the hard OOD
+      Enrico slice fusion is marginally net-NEGATIVE (CLIP-only 59% vs fused 56%; 3 OCR
+      misfires incl. one chat→email in 100), but the bug's direction (document→email)
+      never reverses and weak calls are flagged needs-review, so net-positive where it
+      matters. Enrico is a regression baseline only (2017 app crawls, approximate
+      mapping). Residual misses are the CLIP ceiling on dense text + a desktop-vs-mobile
+      distribution gap, not a taxonomy bug.
 - [ ] **Social-media generalization beyond Reddit (open, needs data).** The OCR social
       rule keys on Reddit markers (upvote/subreddit/`r/`); generic web-social screens
       (Diaspora/Friendica in the field slice) score 1/5, drifting to `browser/web`.
