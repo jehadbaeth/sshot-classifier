@@ -59,15 +59,13 @@ class ImageProcessor @Inject constructor(
             dao.insertEmbedding(EmbeddingEntity(screenshot_id = screenshot.id, vector = EmbeddingCodec.toBytes(embedding)))
             embeddingCache.invalidate() // the new vector must show up in search
             val clipScores = zeroShot.classify(embedding)
-            val fused = fuser.fuse(clipScores, ocrCandidates)
-            val tags = fused.tags.map {
+            val decision = fuser.decide(fuser.fuse(clipScores, ocrCandidates))
+            val tags = decision.tags.map {
                 TagEntity(screenshot_id = screenshot.id, label = it.label, weight = it.weight, source = TagSource.FUSED.name)
             }
             if (tags.isNotEmpty()) dao.insertTags(tags)
 
-            // Flag for human review when tagging is weak: nothing stuck, the top tag
-            // failed the margin/OCR gate, or it only landed on the catch-all "other".
-            needsReview = tags.isEmpty() || !fused.primaryConfident || tags.first().label == "other"
+            needsReview = decision.needsReview
 
             // User-defined auto-categories (additive; independent of the built-in tags).
             val categories = dao.allCategories().map {

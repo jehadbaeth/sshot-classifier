@@ -1,0 +1,37 @@
+Classification eval — 100 images
+Overall accuracy: 56/100 = 56%
+Predicted "other": 21/100 = 21%
+Flagged needs-review: 49/100 = 49%
+
+Per-class (truth): support  recall  | most-common prediction
+  chat / messaging     11      64% | chat / messaging (7)
+  document             20      30% | document (6)
+  map                   9      56% | map (5)
+  news                 20      65% | news (13)
+  other                20      55% | other (11)
+  video / streaming    20      70% | video / streaming (14)
+
+Per-predicted precision:
+  browser / web         1       0%
+  calendar              1       0%
+  chat / messaging      9      78%
+  document              6     100%
+  email                 1       0%
+  error / crash         4       0%
+  finance               5       0%
+  game                  1       0%
+  map                   7      71%
+  news                 20      65%
+  other                21      52%
+  receipt               1       0%
+  shopping              5       0%
+  social media          2       0%
+  video / streaming    16      88%
+
+Confusion (truth -> predicted, counts):
+  chat / messaging   -> chat / messaging:7, error / crash:1, social media:1, email:1, browser / web:1
+  document           -> document:6, news:6, shopping:2, other:2, finance:1, chat / messaging:1, map:1, error / crash:1
+  map                -> map:5, other:3, error / crash:1
+  news               -> news:13, shopping:2, other:1, game:1, finance:1, video / streaming:1, map:1
+  other              -> other:11, finance:3, social media:1, error / crash:1, shopping:1, video / streaming:1, receipt:1, calendar:1
+  video / streaming  -> video / streaming:14, other:4, chat / messaging:1, news:1

@@ -26,3 +26,7 @@ build/
 spikes/clip/out/
 .testdata/
 __pycache__/
+
+# Eval datasets (downloaded, not committed — see scripts/eval/)
+.evaldata/
+eval-out/

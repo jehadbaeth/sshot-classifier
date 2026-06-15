@@ -1,0 +1,22 @@
+Classification eval — 16 images
+Overall accuracy: 10/16 = 63%
+Predicted "other": 3/16 = 19%
+Flagged needs-review: 7/16 = 44%
+
+Per-class (truth): support  recall  | most-common prediction
+  document              5      80% | document (4)
+  email                 6      83% | email (5)
+  social media          5      20% | browser / web (2)
+
+Per-predicted precision:
+  browser / web         2       0%
+  chat / messaging      1       0%
+  document              4     100%
+  email                 5     100%
+  other                 3       0%
+  social media          1     100%
+
+Confusion (truth -> predicted, counts):
+  document           -> document:4, other:1
+  email              -> email:5, other:1
+  social media       -> browser / web:2, social media:1, chat / messaging:1, other:1

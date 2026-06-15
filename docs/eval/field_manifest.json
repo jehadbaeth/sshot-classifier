@@ -1,0 +1,130 @@
+[
+ {
+  "file": "Spam.png",
+  "class": "email",
+  "source": "wikimedia_commons",
+  "title": "File:Spam.png",
+  "license": "MPL 1.1",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Spam.png"
+ },
+ {
+  "file": "Tbubuntu.png",
+  "class": "email",
+  "source": "wikimedia_commons",
+  "title": "File:Tbubuntu.png",
+  "license": "MPL 1.1",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Tbubuntu.png"
+ },
+ {
+  "file": "Thunderbird_1.0.6_en.jpg",
+  "class": "email",
+  "source": "wikimedia_commons",
+  "title": "File:Thunderbird 1.0.6 en.jpg",
+  "license": "MPL 1.1",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Thunderbird_1.0.6_en.jpg"
+ },
+ {
+  "file": "Evolution_36_mail.png",
+  "class": "email",
+  "source": "wikimedia_commons",
+  "title": "File:Evolution 36 mail.png",
+  "license": "CC BY-SA 3.0",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/e/ed/Evolution_36_mail.png"
+ },
+ {
+  "file": "Evolution_on_KDE.png",
+  "class": "email",
+  "source": "wikimedia_commons",
+  "title": "File:Evolution on KDE.png",
+  "license": "GPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Evolution_on_KDE.png"
+ },
+ {
+  "file": "KMail-features.png",
+  "class": "email",
+  "source": "wikimedia_commons",
+  "title": "File:KMail-features.png",
+  "license": "GPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/9/96/KMail-features.png"
+ },
+ {
+  "file": "Diaspora_Screenshot_Deutsch.png",
+  "class": "social_media",
+  "source": "wikimedia_commons",
+  "title": "File:Diaspora Screenshot Deutsch.png",
+  "license": "AGPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Diaspora_Screenshot_Deutsch.png"
+ },
+ {
+  "file": "Diaspora_alpha.png",
+  "class": "social_media",
+  "source": "wikimedia_commons",
+  "title": "File:Diaspora alpha.png",
+  "license": "CC BY-SA 3.0",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Diaspora_alpha.png"
+ },
+ {
+  "file": "Screenshot_-_Spyurk.png",
+  "class": "social_media",
+  "source": "wikimedia_commons",
+  "title": "File:Screenshot - Spyurk.png",
+  "license": "CC BY-SA 3.0",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Screenshot_-_Spyurk.png"
+ },
+ {
+  "file": "Friendica-1.png",
+  "class": "social_media",
+  "source": "wikimedia_commons",
+  "title": "File:Friendica-1.png",
+  "license": "CC BY-SA 4.0",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/0/01/Friendica-1.png"
+ },
+ {
+  "file": "Screenshot_of_Friendica.jpg",
+  "class": "social_media",
+  "source": "wikimedia_commons",
+  "title": "File:Screenshot of Friendica.jpg",
+  "license": "CC BY-SA 3.0",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Screenshot_of_Friendica.jpg"
+ },
+ {
+  "file": "English_screenshot_of_LibreOffice_Writer_June_2011.png",
+  "class": "document",
+  "source": "wikimedia_commons",
+  "title": "File:English screenshot of LibreOffice Writer June 2011.png",
+  "license": "LGPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/English_screenshot_of_LibreOffice_Writer_June_2011.png"
+ },
+ {
+  "file": "LibreOffice_Writer-Windows.png",
+  "class": "document",
+  "source": "wikimedia_commons",
+  "title": "File:LibreOffice Writer-Windows.png",
+  "license": "GFDL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/4/4a/LibreOffice_Writer-Windows.png"
+ },
+ {
+  "file": "LibreOffice_Writer_3.3.png",
+  "class": "document",
+  "source": "wikimedia_commons",
+  "title": "File:LibreOffice Writer 3.3.png",
+  "license": "LGPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/3/34/LibreOffice_Writer_3.3.png"
+ },
+ {
+  "file": "LibreOffice_Writer_3.3_blank_page.png",
+  "class": "document",
+  "source": "wikimedia_commons",
+  "title": "File:LibreOffice Writer 3.3 blank page.png",
+  "license": "LGPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/LibreOffice_Writer_3.3_blank_page.png"
+ },
+ {
+  "file": "CentOS_Stream_9_GNOME_gedit_40.0_-_English.png",
+  "class": "document",
+  "source": "wikimedia_commons",
+  "title": "File:CentOS Stream 9 GNOME gedit 40.0 - English.png",
+  "license": "GPL",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/CentOS_Stream_9_GNOME_gedit_40.0_-_English.png/1280px-CentOS_Stream_9_GNOME_gedit_40.0_-_English.png"
+ }
+]

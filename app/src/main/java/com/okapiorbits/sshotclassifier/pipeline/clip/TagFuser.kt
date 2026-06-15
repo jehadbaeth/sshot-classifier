@@ -26,6 +26,24 @@ class TagFuser @Inject constructor() {
     /** Result of fusion: weighted tags plus whether the top tag cleared the gate. */
     data class Result(val tags: List<TagCandidate>, val primaryConfident: Boolean)
 
+    /**
+     * The user-visible outcome derived from a [Result]: the primary tag (or null),
+     * the kept tags, and whether the screen should be flagged for human review.
+     * Single-sourced here so [ImageProcessor] and the eval harness agree exactly on
+     * what "the predicted label" and "needs review" mean.
+     */
+    data class Decision(val tags: List<TagCandidate>, val primary: String?, val needsReview: Boolean)
+
+    /**
+     * Tagging is weak (needs review) when nothing stuck, the top tag failed the
+     * margin/OCR gate, or it only landed on the catch-all "other".
+     */
+    fun decide(result: Result): Decision {
+        val primary = result.tags.firstOrNull()?.label
+        val needsReview = result.tags.isEmpty() || !result.primaryConfident || primary == "other"
+        return Decision(result.tags, primary, needsReview)
+    }
+
     fun fuse(
         clipScores: Map<String, Float>,
         ocrCandidates: List<TagCandidate>,

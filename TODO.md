@@ -26,6 +26,29 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Now / next up
 
+- [x] **Classification accuracy eval against datasets (done 2026-06-15).** Built an
+      on-device eval harness (`app/src/androidTest/.../pipeline/ClassificationEvalTest.kt`)
+      that runs the EXACT production path (OCR + heuristics + CLIP + `TagFuser.fuse` +
+      `TagFuser.decide`) over labeled images and emits a confusion matrix + per-class
+      recall/precision + "other"/needs-review rates. Single-sourced the primary-tag/
+      needs-review decision into `TagFuser.decide` (used by both `ImageProcessor` and the
+      eval) so they cannot drift. Datasets (fetch scripts in `scripts/eval/`, images
+      gitignored, manifests + results in `docs/eval/`): Enrico (MIT, 100-image regression
+      slice) + a small Wikimedia-Commons FOSS field slice (16: email/social/document).
+      **Findings** (`docs/eval/results.md`): email fix VALIDATED — email screens now
+      predict `email` (5/6, weights 0.60-0.63) not `document`; documents not cannibalized
+      (4/5); the fix is well contained on Enrico (3 stray email/social preds in 100, zero
+      from document). Enrico overall 56% (hard OOD 2017 app crawls, approximate mapping —
+      regression baseline only). Residual misses are the CLIP ceiling on dense text +
+      a desktop-vs-mobile distribution gap, not a taxonomy bug.
+- [ ] **Social-media generalization beyond Reddit (open, needs data).** The OCR social
+      rule keys on Reddit markers (upvote/subreddit/`r/`); generic web-social screens
+      (Diaspora/Friendica in the field slice) score 1/5, drifting to `browser/web`.
+      Do NOT tune against the desktop FOSS proxy — overfit risk. Needs representative
+      MOBILE social screenshots (Reddit/Twitter/Instagram app captures) before any change.
+- [ ] **Document/dense-text drift (open, CLIP ceiling).** Terms/long-text screens drift
+      to `news`/`other` (Enrico document recall 30%). Pre-existing visual ambiguity, not
+      caused by the email fix. Candidate for the UI-domain-model spike, not a quick tune.
 - [x] **Close the search-path test gap (done 2026-06-14).** The repository fusion
       glue was previously unverified at runtime. Extracted RRF + FTS sanitization +
       result reordering into a pure `SearchFusion` object with JVM unit tests (run in
