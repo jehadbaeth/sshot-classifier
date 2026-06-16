@@ -22,8 +22,9 @@ import csv, os, shutil, collections, json
 rows=list(csv.DictReader(open('design_topics.csv')))
 # our-slug : (enrico topic, sample cap). Only confidently mappable topics.
 # terms = full-screen legal text -> a fair genuine-"document" proxy.
-plan={'chat':('chat',99),'map':('maps',99),'news':('news',20),
-      'video':('mediaplayer',20),'other':('settings',20),'document':('terms',20)}
+# Caps are high enough to take ALL images of each topic (full regression slice).
+plan={'chat':('chat',9999),'map':('maps',9999),'news':('news',9999),
+      'video':('mediaplayer',9999),'other':('settings',9999),'document':('terms',9999)}
 by=collections.defaultdict(list)
 for r in rows: by[r['topic']].append(r['screen_id'])
 src='enrico_imgs/screenshots'; dst='enrico_slice'

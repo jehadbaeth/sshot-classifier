@@ -1,45 +1,59 @@
-Classification eval — 100 images
-Overall accuracy: 56/100 = 56%
-Predicted "other": 21/100 = 21%
-Flagged needs-review: 49/100 = 49%
+Classification eval — 240 images
+Overall accuracy: 144/240 = 60%
+Predicted "other": 83/240 = 35%
+Flagged needs-review: 127/240 = 53%
 
-CLIP-only accuracy: 59/100 = 59% (vs fused above)
-Fusion changed the call on 5/100; helped 0, hurt 3
+CLIP-only accuracy: 146/240 = 61% (vs fused above)
+Fusion changed the call on 18/240; helped 6, hurt 8
   [REGRESS] 30767.jpg: clip=chat / messaging -> fused=email (truth=chat / messaging)
   [REGRESS] 15393.jpg: clip=document -> fused=finance (truth=document)
   [REGRESS] 20147.jpg: clip=document -> fused=other (truth=document)
   [neutral] 2526.jpg: clip=news -> fused=map (truth=document)
+  [REGRESS] 46146.jpg: clip=document -> fused=browser / web (truth=document)
+  [REGRESS] 65433.jpg: clip=document -> fused=other (truth=document)
+  [neutral] 67146.jpg: clip=browser / web -> fused=video / streaming (truth=document)
+  [REGRESS] 70706.jpg: clip=document -> fused=other (truth=document)
   [neutral] 14085.jpg: clip=error / crash -> fused=other (truth=map)
+  [REGRESS] 30358.jpg: clip=news -> fused=social media (truth=news)
+  [REGRESS] 58961.jpg: clip=news -> fused=video / streaming (truth=news)
+  [neutral] 68494.jpg: clip=email -> fused=browser / web (truth=news)
+  [FIX] 11088.jpg: clip=chat / messaging -> fused=other (truth=other)
+  [FIX] 47708.jpg: clip=document -> fused=other (truth=other)
+  [FIX] 50225.jpg: clip=browser / web -> fused=other (truth=other)
+  [FIX] 59360.jpg: clip=chat / messaging -> fused=other (truth=other)
+  [FIX] 63092.jpg: clip=social media -> fused=other (truth=other)
+  [FIX] 72164.jpg: clip=document -> fused=other (truth=other)
 
 Per-class (truth): support  recall  | most-common prediction
   chat / messaging     11      64% | chat / messaging (7)
-  document             20      30% | document (6)
+  document             39      31% | document (12)
   map                   9      56% | map (5)
-  news                 20      65% | news (13)
-  other                20      55% | other (11)
-  video / streaming    20      70% | video / streaming (14)
+  news                 59      61% | news (36)
+  other                90      70% | other (63)
+  video / streaming    32      66% | video / streaming (21)
 
 Per-predicted precision:
-  browser / web         1       0%
-  calendar              1       0%
-  chat / messaging      9      78%
-  document              6     100%
-  email                 1       0%
-  error / crash         4       0%
-  finance               5       0%
-  game                  1       0%
-  map                   7      71%
-  news                 20      65%
-  other                21      52%
-  receipt               1       0%
-  shopping              5       0%
-  social media          2       0%
-  video / streaming    16      88%
+  browser / web         6       0%
+  calendar              2       0%
+  chat / messaging     12      58%
+  code editor           1       0%
+  document             16      75%
+  email                 3       0%
+  error / crash         6       0%
+  finance               7       0%
+  game                  4       0%
+  map                  10      50%
+  news                 46      78%
+  other                83      76%
+  receipt               3       0%
+  shopping              9       0%
+  social media          5       0%
+  video / streaming    27      78%
 
 Confusion (truth -> predicted, counts):
   chat / messaging   -> chat / messaging:7, error / crash:1, social media:1, email:1, browser / web:1
-  document           -> document:6, news:6, shopping:2, other:2, finance:1, chat / messaging:1, map:1, error / crash:1
+  document           -> document:12, other:8, news:7, shopping:4, map:2, finance:1, chat / messaging:1, error / crash:1, browser / web:1, email:1, video / streaming:1
   map                -> map:5, other:3, error / crash:1
-  news               -> news:13, shopping:2, other:1, game:1, finance:1, video / streaming:1, map:1
-  other              -> other:11, finance:3, social media:1, error / crash:1, shopping:1, video / streaming:1, receipt:1, calendar:1
-  video / streaming  -> video / streaming:14, other:4, chat / messaging:1, news:1
+  news               -> news:36, other:5, video / streaming:4, game:3, map:3, social media:3, shopping:2, finance:1, chat / messaging:1, browser / web:1
+  other              -> other:63, finance:5, document:4, shopping:3, receipt:3, error / crash:3, browser / web:2, calendar:2, social media:1, email:1, video / streaming:1, code editor:1, news:1
+  video / streaming  -> video / streaming:21, other:4, chat / messaging:3, news:2, browser / web:1, game:1

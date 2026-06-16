@@ -1,0 +1,1442 @@
+[
+ {
+  "file": "492.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "2322.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "3722.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "18483.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "20164.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "29704.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "30259.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "30767.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "40361.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "61906.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "65259.jpg",
+  "class": "chat",
+  "source": "enrico",
+  "enrico_topic": "chat"
+ },
+ {
+  "file": "4008.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "14085.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "15287.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "18975.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "23301.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "30929.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "48236.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "49936.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "66171.jpg",
+  "class": "map",
+  "source": "enrico",
+  "enrico_topic": "maps"
+ },
+ {
+  "file": "1411.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "3381.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "4584.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "6015.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "6401.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "6713.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "7169.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "7410.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "7745.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "8243.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "8875.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "8877.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "10180.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "10636.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "12209.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "13189.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "13565.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "15109.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "16741.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "17587.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "18942.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "19293.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "21413.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "21777.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "21780.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "22622.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "23788.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "24117.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "26246.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "26922.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "30358.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "33407.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "34116.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "34952.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "34978.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "34981.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "36745.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "36999.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "37096.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "37325.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "41976.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "41981.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "49897.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "50105.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "50109.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "50124.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "50609.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "52844.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "58958.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "58961.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "58984.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "59635.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "60834.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "64480.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "67983.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "68494.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "70304.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "71700.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "72201.jpg",
+  "class": "news",
+  "source": "enrico",
+  "enrico_topic": "news"
+ },
+ {
+  "file": "6105.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "7831.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "9248.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "11730.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "11746.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "12804.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "15194.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "19089.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "19094.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "20437.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "23266.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "23622.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "27733.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "27777.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "29190.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "30780.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "34521.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "35591.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "39504.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "41458.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "44706.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "51565.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "51831.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "54046.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "54638.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "54963.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "55150.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "55388.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "56790.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "56982.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "62483.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "64417.jpg",
+  "class": "video",
+  "source": "enrico",
+  "enrico_topic": "mediaplayer"
+ },
+ {
+  "file": "388.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "758.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "865.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "1460.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "2128.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "2170.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "2525.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "3196.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "3258.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "3291.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "3462.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "3545.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "4950.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "5092.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "6311.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "6423.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "6697.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "7265.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "9479.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "9828.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "10352.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "11049.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "11088.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "12954.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "16112.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "16717.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "19337.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "19449.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "19758.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "20178.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "21230.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "21598.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "22347.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "24195.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "25022.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "27138.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "27772.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "28292.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "31033.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "33138.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "33395.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "33423.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "34351.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "34352.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "35342.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "35762.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "36020.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "36504.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "39096.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "39241.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "41463.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "41937.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "44823.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "45182.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "46019.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "46609.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "47708.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "48733.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "49080.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "49520.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "49846.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "50225.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "50721.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "51913.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "53470.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "54650.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "55033.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "55824.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "56362.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "57450.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "58072.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "58405.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "58608.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "59360.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "59580.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "59851.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "60556.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "60796.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "61678.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "62574.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "63070.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "63092.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "65428.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "65887.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "66599.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "66876.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "68572.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "69465.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "69845.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "72164.jpg",
+  "class": "other",
+  "source": "enrico",
+  "enrico_topic": "settings"
+ },
+ {
+  "file": "2192.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "2526.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "4508.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "8120.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "10966.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "15393.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "15449.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "15452.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "15668.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "17576.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "20147.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "23823.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "25581.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "26442.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "28593.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "31905.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "38390.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "38393.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "39023.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "39647.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "41068.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "41292.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "41932.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "46146.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "46705.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "46714.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "48709.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "49581.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "54874.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "57954.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "62331.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "64461.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "65433.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "66584.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "67146.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "68580.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "68720.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "69351.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ },
+ {
+  "file": "70706.jpg",
+  "class": "document",
+  "source": "enrico",
+  "enrico_topic": "terms"
+ }
+]
