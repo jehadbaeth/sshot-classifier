@@ -86,5 +86,37 @@
   {
     "internal": "an email inbox",
     "tag": "email"
+  },
+  {
+    "internal": "a storefront or shop front",
+    "tag": "storefront"
+  },
+  {
+    "internal": "a billboard or outdoor advertisement",
+    "tag": "advertisement"
+  },
+  {
+    "internal": "a street sign or signboard",
+    "tag": "street sign"
+  },
+  {
+    "internal": "a business card",
+    "tag": "business card"
+  },
+  {
+    "internal": "product packaging or a product label",
+    "tag": "product"
+  },
+  {
+    "internal": "a restaurant menu",
+    "tag": "menu"
+  },
+  {
+    "internal": "a poster or flyer",
+    "tag": "poster"
+  },
+  {
+    "internal": "a QR code",
+    "tag": "qr code"
   }
 ]

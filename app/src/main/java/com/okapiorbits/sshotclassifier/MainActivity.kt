@@ -34,9 +34,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.okapiorbits.sshotclassifier.ui.AppearanceViewModel
+import com.okapiorbits.sshotclassifier.ui.camera.CameraCaptureScreen
+import com.okapiorbits.sshotclassifier.ui.camera.CameraCaptureViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryScreen
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryViewModel
 import com.okapiorbits.sshotclassifier.ui.search.SearchScreen
@@ -125,8 +128,14 @@ private fun MainScaffold() {
         Surface(modifier = Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
                 0 -> {
-                    val vm: GalleryViewModel = hiltViewModel()
-                    GalleryScreen(vm)
+                    var showCamera by rememberSaveable { mutableStateOf(false) }
+                    if (showCamera) {
+                        val camVm: CameraCaptureViewModel = hiltViewModel()
+                        CameraCaptureScreen(camVm, onClose = { showCamera = false })
+                    } else {
+                        val vm: GalleryViewModel = hiltViewModel()
+                        GalleryScreen(vm, onOpenCamera = { showCamera = true })
+                    }
                 }
                 1 -> {
                     val vm: SearchViewModel = hiltViewModel()

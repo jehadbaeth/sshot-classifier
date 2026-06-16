@@ -21,6 +21,10 @@ reciprocal rank fusion; then a Settings tab, manual and custom-category tags, a 
 surface, and configurable reorganization into per-tag albums). Recent work since v0.5.0: an
 email/reddit OCR fix, configurable multi-folder watching, a new icon and brand, release
 signing, a large classification eval, and the error/crash classification fix in v0.6.1.
+In development: in-app **camera capture** of real-world things (storefronts, signs, ads,
+QR codes) classified into the same inventory as screenshots, with on-device QR decoding and
+an optional, off-by-default QR link-preview resolver (the only networked, fully configurable
+part). See [docs/design.md](docs/design.md) section 15.
 
 On classification quality, be realistic: the app is reliable where it commits confidently to
 a visually distinctive class (game, finance, map, video all measured at 68-88% precision on

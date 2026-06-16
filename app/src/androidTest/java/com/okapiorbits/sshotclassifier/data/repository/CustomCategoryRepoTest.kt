@@ -55,6 +55,9 @@ class CustomCategoryRepoTest {
         semanticSearcher = SemanticSearcher(EmbeddingCache(dao), noText),
         categoryEmbedder = embedder,
         watchedFoldersStore = com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore(context),
+        capturePreferencesStore = com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore(context),
+        linkPreviewResolver = com.okapiorbits.sshotclassifier.data.network.LinkPreviewResolver(),
+        networkChecker = com.okapiorbits.sshotclassifier.data.network.NetworkChecker(context),
     )
 
     @Before

@@ -64,6 +64,20 @@ interface ScreenshotDao {
     @Query("SELECT * FROM screenshots WHERE id = :id")
     fun observeScreenshot(id: Long): Flow<ScreenshotEntity?>
 
+    /** One-shot fetch by id (for QR link resolution); null if it was removed. */
+    @Query("SELECT * FROM screenshots WHERE id = :id")
+    suspend fun getById(id: Long): ScreenshotEntity?
+
+    /** Stores a resolved QR link preview on a capture. */
+    @Query(
+        """
+        UPDATE screenshots
+        SET qr_title = :title, qr_description = :description, qr_image_url = :imageUrl, qr_resolved_at = :resolvedAt
+        WHERE id = :id
+        """
+    )
+    suspend fun updateLinkPreview(id: Long, title: String?, description: String?, imageUrl: String?, resolvedAt: Long)
+
     /** Removes all tags with a given label and source (used when a custom category is deleted). */
     @Query("DELETE FROM tags WHERE label = :label AND source = :source")
     suspend fun deleteTagsByLabelAndSource(label: String, source: String)
@@ -96,6 +110,10 @@ interface ScreenshotDao {
 
     @Query("UPDATE screenshots SET needs_review = :needsReview WHERE id = :id")
     suspend fun updateNeedsReview(id: Long, needsReview: Boolean)
+
+    /** Stores the composed description and decoded QR/barcode payload for a camera capture. */
+    @Query("UPDATE screenshots SET description = :description, qr_payload = :qrPayload WHERE id = :id")
+    suspend fun updateCaptureMeta(id: Long, description: String?, qrPayload: String?)
 
     @Query("SELECT COUNT(*) FROM screenshots WHERE needs_review = 1")
     fun observeNeedsReviewCount(): Flow<Int>
@@ -132,6 +150,9 @@ interface ScreenshotDao {
 
     @Query("SELECT COUNT(*) FROM screenshots")
     fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM screenshots WHERE source_type = :source")
+    fun observeSourceCount(source: String): Flow<Int>
 
     /**
      * Full-text search over OCR text. The FTS rowid equals the screenshot id.

@@ -14,9 +14,19 @@
          dataSync type: we are processing on-device user content, not networking. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <!-- Sole network use: one-time download of the on-device CLIP model. All
-         inference is local; no other network calls. -->
+    <!-- Network use: the one-time CLIP model download, and the optional, off-by-default,
+         user-initiated QR link-preview resolution. All inference is local. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Read connectivity so QR resolution can honor the Wi-Fi-only preference. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- In-app camera capture for the real-world inventory feature. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- Pre-Android 10 (no scoped storage): writing a capture into shared MediaStore
+         needs this. On API 29+ MediaStore insert needs no storage write permission. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:name=".ScreenshotClassifierApp"

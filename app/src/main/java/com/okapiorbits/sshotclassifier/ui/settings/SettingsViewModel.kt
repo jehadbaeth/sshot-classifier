@@ -9,6 +9,10 @@ import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
 import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
+import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferences
+import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore
+import com.okapiorbits.sshotclassifier.data.prefs.DescriptionSource
+import com.okapiorbits.sshotclassifier.data.prefs.ResolveTrigger
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
@@ -52,6 +56,7 @@ class SettingsViewModel @Inject constructor(
     private val organizer: ScreenshotOrganizer,
     private val reorgPrefsStore: ReorgPreferencesStore,
     private val uiPrefsStore: UiPreferencesStore,
+    private val capturePrefsStore: CapturePreferencesStore,
 ) : ViewModel() {
 
     /** Material You opt-in. Default false = fixed brand palette. */
@@ -261,6 +266,27 @@ class SettingsViewModel @Inject constructor(
                 (if (u.failed > 0) ", ${u.failed} failed" else "")
         }
     }
+
+    // ---- Camera-capture preferences ----
+
+    val capturePrefs: StateFlow<CapturePreferences> =
+        capturePrefsStore.preferences
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CapturePreferences())
+
+    /**
+     * Whether the generative description option can be selected. False for now: no
+     * on-device vision-language model is bundled (Phase B item). The radio is shown but
+     * disabled so the seam is visible without pretending the model exists.
+     */
+    val generativeDescriptionAvailable: Boolean = false
+
+    fun setResolveQrLinks(v: Boolean) = viewModelScope.launch { capturePrefsStore.setResolveQrLinks(v) }
+    fun setResolveTrigger(t: ResolveTrigger) = viewModelScope.launch { capturePrefsStore.setResolveTrigger(t) }
+    fun setResolveOnWifiOnly(v: Boolean) = viewModelScope.launch { capturePrefsStore.setResolveOnWifiOnly(v) }
+    fun setDownloadPreviewImages(v: Boolean) = viewModelScope.launch { capturePrefsStore.setDownloadPreviewImages(v) }
+    fun setDescriptionSource(s: DescriptionSource) = viewModelScope.launch { capturePrefsStore.setDescriptionSource(s) }
+    fun setDecodeQrCodes(v: Boolean) = viewModelScope.launch { capturePrefsStore.setDecodeQrCodes(v) }
+    fun setCaptureAlbumRoot(root: String) = viewModelScope.launch { capturePrefsStore.setCaptureAlbumRoot(root) }
 
     companion object {
         const val RUNNING = "Organizing…"

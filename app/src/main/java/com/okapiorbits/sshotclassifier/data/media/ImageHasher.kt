@@ -1,6 +1,7 @@
 package com.okapiorbits.sshotclassifier.data.media
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
@@ -24,6 +25,19 @@ class ImageHasher @Inject constructor(
                     read = stream.read(buffer)
                 }
                 digest.digest().joinToString("") { "%02x".format(it) }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Pixel dimensions of an image without fully decoding it, or null on failure. */
+    fun dimensions(uri: Uri): Pair<Int, Int>? {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeStream(stream, null, opts)
+                if (opts.outWidth > 0 && opts.outHeight > 0) opts.outWidth to opts.outHeight else null
             }
         } catch (e: Exception) {
             null

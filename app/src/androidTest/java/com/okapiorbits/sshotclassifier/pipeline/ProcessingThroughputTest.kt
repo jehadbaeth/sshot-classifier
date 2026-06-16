@@ -114,6 +114,8 @@ class ProcessingThroughputTest {
             zeroShot = ZeroShotClassifier(ClipLabels(appContext)),
             fuser = TagFuser(),
             embeddingCache = EmbeddingCache(dao),
+            barcode = BarcodeExtractor(appContext),
+            describer = StructuredCaptureDescriber(),
         )
 
         val runtime = Runtime.getRuntime()

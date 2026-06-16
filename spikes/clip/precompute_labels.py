@@ -13,7 +13,26 @@ Concrete "decoy" labels (clock, settings, dialer, ...) absorb probability mass
 so utility screens are not forced into a wrong real category. They map to the
 user-facing tag "other". (See docs/spikes/clip-findings.md.)
 
-Usage: python precompute_labels.py
+There are two label groups:
+  - SCREENSHOT_LABELS  : on-screen UI categories, embedded with screenshot-style
+                         prompt templates.
+  - REALWORLD_LABELS   : physical-world things a hand camera captures (storefront,
+                         street sign, ...), embedded with photo-style prompts. Added
+                         for the camera-capture inventory feature (Phase A).
+
+IMPORTANT — how the committed assets were actually produced:
+This script is the canonical, reproducible spec for the WHOLE label set. But the
+committed label_embeddings.f32 was NOT regenerated from scratch when the real-world
+labels were added. The real-world rows were APPENDED to the existing file by
+add_realworld_labels.py, leaving the 22 screenshot rows byte-identical, so the
+validated screenshot classification eval (docs/eval/performance-and-accuracy.md)
+could not drift. Running this script from scratch will recompute every row and may
+differ from the committed bytes at the floating-point noise level if the local
+torch/open_clip versions differ from those used originally. Prefer the append path
+for incremental label additions; use a full regen only when you intend to re-run
+the eval.
+
+Usage: python precompute_labels.py        # full regenerate (overwrites both files)
 """
 import os, json, struct
 import torch
@@ -27,15 +46,24 @@ ASSETS = os.path.join(
     "app", "src", "main", "assets", "clip",
 )
 
-TEMPLATES = [
+# Screenshot-style templates: the subject is something on a phone screen.
+SCREENSHOT_TEMPLATES = [
     "a screenshot of {}.",
     "a phone screenshot showing {}.",
     "an image of {}.",
     "{} on a smartphone screen.",
 ]
 
+# Photo-style templates: the subject is a real-world thing in front of a camera.
+PHOTO_TEMPLATES = [
+    "a photo of {}.",
+    "a picture of {}.",
+    "a phone photo of {}.",
+    "{} photographed with a phone camera.",
+]
+
 # (internal concept phrase, user-facing tag)
-LABELS = [
+SCREENSHOT_LABELS = [
     ("a social media app feed", "social media"),
     ("a receipt or invoice", "receipt"),
     ("a map", "map"),
@@ -65,27 +93,56 @@ LABELS = [
     ("a file manager", "other"),
     ("a phone settings screen", "other"),
     ("a music player", "video / streaming"),
-    ("an email inbox", "document"),
+    ("an email inbox", "email"),
 ]
+
+# Real-world capture labels (Phase A). Embedded with PHOTO_TEMPLATES. These add new
+# user-facing tags; they do not change any screenshot tag. A "qr code" CLIP label is
+# included as a visual backstop, but the authoritative QR signal is the on-device
+# barcode decoder (BarcodeExtractor), not CLIP.
+REALWORLD_LABELS = [
+    ("a storefront or shop front", "storefront"),
+    ("a billboard or outdoor advertisement", "advertisement"),
+    ("a street sign or signboard", "street sign"),
+    ("a business card", "business card"),
+    ("product packaging or a product label", "product"),
+    ("a restaurant menu", "menu"),
+    ("a poster or flyer", "poster"),
+    ("a QR code", "qr code"),
+]
+
+
+def load_model():
+    model, _, _ = open_clip.create_model_and_transforms(ARCH, pretrained=PRETRAINED)
+    model.eval()
+    tokenizer = open_clip.get_tokenizer(ARCH)
+    return model, tokenizer
+
+
+def embed_label(model, tokenizer, concept, templates):
+    """Prompt-ensemble one concept over the given templates -> one L2-normalized vector."""
+    with torch.no_grad():
+        toks = tokenizer([t.format(concept) for t in templates])
+        f = model.encode_text(toks)
+        f /= f.norm(dim=-1, keepdim=True)
+        f = f.mean(dim=0)
+        f /= f.norm()
+        return f.numpy().astype("float32")
 
 
 def main():
     os.makedirs(ASSETS, exist_ok=True)
-    model, _, _ = open_clip.create_model_and_transforms(ARCH, pretrained=PRETRAINED)
-    model.eval()
-    tokenizer = open_clip.get_tokenizer(ARCH)
+    model, tokenizer = load_model()
 
     vectors = []
-    with torch.no_grad():
-        for concept, _tag in LABELS:
-            toks = tokenizer([t.format(concept) for t in TEMPLATES])
-            f = model.encode_text(toks)
-            f /= f.norm(dim=-1, keepdim=True)
-            f = f.mean(dim=0)
-            f /= f.norm()
-            vectors.append(f.numpy().astype("float32"))
+    labels_json = []
+    for concept, tag in SCREENSHOT_LABELS:
+        vectors.append(embed_label(model, tokenizer, concept, SCREENSHOT_TEMPLATES))
+        labels_json.append({"internal": concept, "tag": tag})
+    for concept, tag in REALWORLD_LABELS:
+        vectors.append(embed_label(model, tokenizer, concept, PHOTO_TEMPLATES))
+        labels_json.append({"internal": concept, "tag": tag})
 
-    labels_json = [{"internal": c, "tag": t} for c, t in LABELS]
     with open(os.path.join(ASSETS, "labels.json"), "w") as fh:
         json.dump(labels_json, fh, indent=2)
 

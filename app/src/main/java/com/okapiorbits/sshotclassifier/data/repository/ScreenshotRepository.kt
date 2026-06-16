@@ -1,15 +1,23 @@
 package com.okapiorbits.sshotclassifier.data.repository
 
+import android.content.ContentUris
+import android.net.Uri
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.data.db.TagCount
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
+import com.okapiorbits.sshotclassifier.data.db.entity.SourceType
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagSource
 import com.okapiorbits.sshotclassifier.data.media.ImageHasher
 import com.okapiorbits.sshotclassifier.data.media.MediaStoreScanner
 import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
+import com.okapiorbits.sshotclassifier.data.network.LinkPreview
+import com.okapiorbits.sshotclassifier.data.network.LinkPreviewResolver
+import com.okapiorbits.sshotclassifier.data.network.NetworkChecker
+import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore
+import com.okapiorbits.sshotclassifier.data.prefs.ResolveTrigger
 import com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore
 import com.okapiorbits.sshotclassifier.pipeline.clip.CustomCategoryScorer
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
@@ -30,6 +38,9 @@ class ScreenshotRepository @Inject constructor(
     private val semanticSearcher: SemanticSearcher,
     private val categoryEmbedder: LabelEmbedder,
     private val watchedFoldersStore: WatchedFoldersStore,
+    private val capturePreferencesStore: CapturePreferencesStore,
+    private val linkPreviewResolver: LinkPreviewResolver,
+    private val networkChecker: NetworkChecker,
 ) {
     /** Folders the user is watching (reactive), and all folders available to pick. */
     val watchedFolders: Flow<Set<String>> = watchedFoldersStore.folders
@@ -45,6 +56,9 @@ class ScreenshotRepository @Inject constructor(
     fun observeByTag(label: String): Flow<List<ScreenshotWithTags>> = dao.observeByTag(label)
 
     fun observeCount(): Flow<Int> = dao.observeCount()
+
+    /** Number of in-app camera captures (drives whether the gallery shows a source filter). */
+    fun observeCaptureCount(): Flow<Int> = dao.observeSourceCount(SourceType.CAMERA.name)
 
     fun observePendingCount(): Flow<Int> = dao.observeStatusCount()
 
@@ -182,6 +196,90 @@ class ScreenshotRepository @Inject constructor(
 
         val byId = dao.screenshotsByIds(fused).associateBy { it.screenshot.id }
         return SearchFusion.reorderTo(fused, byId)
+    }
+
+    // ---- QR link-preview resolution (Phase B; the only network-touching capture path) ----
+
+    sealed interface ResolveResult {
+        data class Resolved(val preview: LinkPreview) : ResolveResult
+        /** Master switch off. */
+        data object Disabled : ResolveResult
+        data object NotUrl : ResolveResult
+        /** No usable network under the Wi-Fi-only preference. */
+        data object NoNetwork : ResolveResult
+        /** Fetch failed or the page had no usable metadata. */
+        data object Failed : ResolveResult
+        /** The capture row no longer exists. */
+        data object Gone : ResolveResult
+    }
+
+    /** Whether a stored payload is an http(s) URL (recomputed from the raw payload). */
+    private fun isHttpUrl(payload: String?): Boolean =
+        payload != null && (payload.startsWith("http://", true) || payload.startsWith("https://", true))
+
+    /**
+     * Resolves a capture's QR URL into a stored [LinkPreview], honoring the user's
+     * preferences and connectivity via the shared [ResolvePolicy]. Used by both the manual
+     * "Resolve link" button and (for the automatic trigger) the processing worker. Never
+     * throws: failures map to [ResolveResult.Failed].
+     */
+    suspend fun resolveQrLink(screenshotId: Long): ResolveResult {
+        val row = dao.getById(screenshotId) ?: return ResolveResult.Gone
+        val payload = row.qr_payload
+        val prefs = capturePreferencesStore.current()
+        val decision = ResolvePolicy.decide(prefs, isHttpUrl(payload), networkChecker.current())
+        when (decision) {
+            ResolvePolicy.Decision.Disabled -> return ResolveResult.Disabled
+            ResolvePolicy.Decision.NotUrl -> return ResolveResult.NotUrl
+            ResolvePolicy.Decision.NoNetwork -> return ResolveResult.NoNetwork
+            ResolvePolicy.Decision.Resolve -> Unit
+        }
+        val preview = linkPreviewResolver.resolve(payload!!) ?: return ResolveResult.Failed
+        dao.updateLinkPreview(
+            id = screenshotId,
+            title = preview.title,
+            description = preview.description,
+            imageUrl = preview.imageUrl,
+            resolvedAt = System.currentTimeMillis(),
+        )
+        return ResolveResult.Resolved(preview)
+    }
+
+    /**
+     * Worker hook: resolve a freshly processed capture's QR link only when the user chose
+     * the AUTOMATIC trigger. No-ops (returns false) otherwise or on any non-success, so a
+     * resolution problem never disrupts the processing batch.
+     */
+    suspend fun maybeAutoResolve(screenshotId: Long): Boolean {
+        if (capturePreferencesStore.current().resolveTrigger != ResolveTrigger.AUTOMATIC) return false
+        return resolveQrLink(screenshotId) is ResolveResult.Resolved
+    }
+
+    /**
+     * Indexes an in-app camera capture that has already been written to MediaStore.
+     * Inserts it directly (bypassing the watched-folder scan) as a CAMERA-source row in
+     * PENDING state; the processing worker then runs it through the full pipeline (OCR,
+     * QR decode, CLIP, description). Returns the new row id, or null if it was a
+     * duplicate (same content hash) or could not be read.
+     */
+    suspend fun indexCapture(uri: Uri): Long? {
+        val hash = hasher.sha256(uri) ?: return null
+        if (dao.existsByHash(hash)) return null
+        val (w, h) = hasher.dimensions(uri) ?: (0 to 0)
+        val mediaId = try { ContentUris.parseId(uri) } catch (e: Exception) { -1L }
+        val rowId = dao.insert(
+            ScreenshotEntity(
+                file_path = uri.toString(),
+                file_hash = hash,
+                media_store_id = mediaId,
+                date_added = System.currentTimeMillis(),
+                date_processed = null,
+                width = w,
+                height = h,
+                source_type = SourceType.CAMERA.name,
+            )
+        )
+        return if (rowId != -1L) rowId else null
     }
 
     /**

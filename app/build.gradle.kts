@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.6.1"
+        versionCode = 9
+        versionName = "0.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -117,11 +117,18 @@ dependencies {
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)
 
-    // ML (wired up in later phases)
+    // ML
     implementation(libs.mlkit.text.recognition)
     implementation(libs.mlkit.image.labeling)
+    implementation(libs.mlkit.barcode.scanning)
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
+
+    // Camera (in-app capture for the real-world inventory feature)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
     testImplementation("junit:junit:4.13.2")
 

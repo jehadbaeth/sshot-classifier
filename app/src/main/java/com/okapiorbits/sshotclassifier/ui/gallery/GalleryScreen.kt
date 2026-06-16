@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -14,12 +15,14 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -47,13 +50,15 @@ import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GalleryScreen(viewModel: GalleryViewModel) {
+fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val screenshots by viewModel.screenshots.collectAsStateWithLifecycle()
     val pending by viewModel.pendingCount.collectAsStateWithLifecycle()
     val modelState by viewModel.modelState.collectAsStateWithLifecycle()
     val reprocessable by viewModel.reprocessableCount.collectAsStateWithLifecycle()
     val needsReview by viewModel.needsReviewCount.collectAsStateWithLifecycle()
     val reviewOnly by viewModel.reviewOnly.collectAsStateWithLifecycle()
+    val captureCount by viewModel.captureCount.collectAsStateWithLifecycle()
+    val sourceFilter by viewModel.sourceFilter.collectAsStateWithLifecycle()
 
     // In-tab navigation to a screenshot's tag editor; no NavHost needed.
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -81,11 +86,16 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { viewModel.scan() },
-                icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                text = { Text(if (pending > 0) "Processing…" else "Scan") },
-            )
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FloatingActionButton(onClick = onOpenCamera) {
+                    Icon(Icons.Default.PhotoCamera, contentDescription = "Capture a photo")
+                }
+                ExtendedFloatingActionButton(
+                    onClick = { viewModel.scan() },
+                    icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                    text = { Text(if (pending > 0) "Processing…" else "Scan") },
+                )
+            }
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -101,6 +111,30 @@ fun GalleryScreen(viewModel: GalleryViewModel) {
                     leadingIcon = { Icon(Icons.Default.Flag, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 )
+            }
+            // Once there are captures, let the user browse screenshots vs photos separately.
+            if (captureCount > 0) {
+                val (screenshotSource, cameraSource) = viewModel.sourceTypes
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                ) {
+                    FilterChip(
+                        selected = sourceFilter == null,
+                        onClick = { viewModel.setSourceFilter(null) },
+                        label = { Text("All") },
+                    )
+                    FilterChip(
+                        selected = sourceFilter == screenshotSource,
+                        onClick = { viewModel.setSourceFilter(screenshotSource) },
+                        label = { Text("Screenshots") },
+                    )
+                    FilterChip(
+                        selected = sourceFilter == cameraSource,
+                        onClick = { viewModel.setSourceFilter(cameraSource) },
+                        label = { Text("Photos") },
+                    )
+                }
             }
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {

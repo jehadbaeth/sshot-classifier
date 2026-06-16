@@ -54,6 +54,9 @@ class TagEditingInstrumentedTest {
             semanticSearcher = SemanticSearcher(EmbeddingCache(dao), noEmbedder),
             categoryEmbedder = noLabelEmbedder,
             watchedFoldersStore = com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore(context),
+            capturePreferencesStore = com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore(context),
+            linkPreviewResolver = com.okapiorbits.sshotclassifier.data.network.LinkPreviewResolver(),
+            networkChecker = com.okapiorbits.sshotclassifier.data.network.NetworkChecker(context),
         )
         runBlocking {
             dao.insert(

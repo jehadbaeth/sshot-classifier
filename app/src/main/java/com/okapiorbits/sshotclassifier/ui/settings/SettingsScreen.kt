@@ -26,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
+import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferences
+import com.okapiorbits.sshotclassifier.data.prefs.DescriptionSource
+import com.okapiorbits.sshotclassifier.data.prefs.ResolveTrigger
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
 
@@ -64,6 +68,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val watchedFolders by viewModel.watchedFolders.collectAsStateWithLifecycle()
     val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
     val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
+    val capturePrefs by viewModel.capturePrefs.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.loadFolders() }
 
@@ -167,6 +172,19 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     onAutoRunChange = viewModel::setAutoRun,
                 )
             }
+
+            Section("Camera capture")
+            CameraCaptureSection(
+                prefs = capturePrefs,
+                generativeAvailable = viewModel.generativeDescriptionAvailable,
+                onDecodeQrChange = viewModel::setDecodeQrCodes,
+                onResolveQrLinksChange = viewModel::setResolveQrLinks,
+                onTriggerChange = viewModel::setResolveTrigger,
+                onWifiOnlyChange = viewModel::setResolveOnWifiOnly,
+                onDownloadImagesChange = viewModel::setDownloadPreviewImages,
+                onDescriptionSourceChange = viewModel::setDescriptionSource,
+                onAlbumRootChange = viewModel::setCaptureAlbumRoot,
+            )
 
             Section("Custom categories")
             CategoriesSection(
@@ -368,6 +386,133 @@ private fun ReorganizationSection(
         enabled = true,
         onCheckedChange = onAutoRunChange,
     )
+}
+
+@Composable
+private fun CameraCaptureSection(
+    prefs: CapturePreferences,
+    generativeAvailable: Boolean,
+    onDecodeQrChange: (Boolean) -> Unit,
+    onResolveQrLinksChange: (Boolean) -> Unit,
+    onTriggerChange: (ResolveTrigger) -> Unit,
+    onWifiOnlyChange: (Boolean) -> Unit,
+    onDownloadImagesChange: (Boolean) -> Unit,
+    onDescriptionSourceChange: (DescriptionSource) -> Unit,
+    onAlbumRootChange: (String) -> Unit,
+) {
+    Text(
+        "Photograph real-world things (storefronts, signs, products, QR codes) into the same " +
+            "inventory as screenshots. Everything here is offline by default.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    LabeledSwitch(
+        label = "Decode QR codes and barcodes",
+        subtitle = "On-device and offline. Tags a capture 'qr code' and stores the value. " +
+            "Reading the code never opens the link.",
+        checked = prefs.decodeQrCodes,
+        enabled = true,
+        onCheckedChange = onDecodeQrChange,
+    )
+
+    LabeledSwitch(
+        label = "Resolve QR links to previews",
+        subtitle = "Off keeps everything offline. On lets the app fetch a link's title and " +
+            "description over the network so you can preview where it goes.",
+        checked = prefs.resolveQrLinks,
+        enabled = true,
+        onCheckedChange = onResolveQrLinksChange,
+    )
+
+    if (prefs.resolveQrLinks) {
+        LabeledSwitch(
+            label = "Resolve automatically",
+            subtitle = "Off resolves only when you tap 'Resolve link' on a capture. " +
+                "On resolves while a capture is processed.",
+            checked = prefs.resolveTrigger == ResolveTrigger.AUTOMATIC,
+            enabled = true,
+            onCheckedChange = { onTriggerChange(if (it) ResolveTrigger.AUTOMATIC else ResolveTrigger.MANUAL) },
+        )
+        LabeledSwitch(
+            label = "Wi-Fi only",
+            subtitle = "Restrict link resolution to an unmetered connection.",
+            checked = prefs.resolveOnWifiOnly,
+            enabled = true,
+            onCheckedChange = onWifiOnlyChange,
+        )
+        LabeledSwitch(
+            label = "Show preview images",
+            subtitle = "Off shows only the link's text. On loads the link's preview image " +
+                "from its host (a second network fetch).",
+            checked = prefs.downloadPreviewImages,
+            enabled = true,
+            onCheckedChange = onDownloadImagesChange,
+        )
+    }
+
+    Text(
+        "Description source",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(top = 12.dp),
+    )
+    RadioRow(
+        label = "Structured (offline)",
+        subtitle = "Composed on-device from text, tags, and any QR link.",
+        selected = prefs.descriptionSource == DescriptionSource.STRUCTURED,
+        enabled = true,
+        onSelect = { onDescriptionSourceChange(DescriptionSource.STRUCTURED) },
+    )
+    RadioRow(
+        label = if (generativeAvailable) "Generative" else "Generative (needs a model, not available yet)",
+        subtitle = "A vision-language model writes a free-form caption. Not bundled yet.",
+        selected = prefs.descriptionSource == DescriptionSource.GENERATIVE,
+        enabled = generativeAvailable,
+        onSelect = { onDescriptionSourceChange(DescriptionSource.GENERATIVE) },
+    )
+
+    var root by remember(prefs.captureAlbumRoot) { mutableStateOf(prefs.captureAlbumRoot) }
+    OutlinedTextField(
+        value = root,
+        onValueChange = { root = it },
+        label = { Text("Capture album folder name") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { onAlbumRootChange(root) }),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    )
+    Text(
+        "Photos are saved to Pictures/${prefs.captureAlbumRoot}/Captures.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun RadioRow(
+    label: String,
+    subtitle: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onSelect: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onSelect)
+            .padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onSelect, enabled = enabled)
+        Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable

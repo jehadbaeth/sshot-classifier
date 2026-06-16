@@ -30,7 +30,7 @@ The mental model is similar to Immich's machine learning classification, but loc
 
 | Constraint | Decision |
 |---|---|
-| Network | Fully offline for all inference. The only network use is the one time CLIP model download on first launch. |
+| Network | Fully offline for all inference and tagging. Network is used only for the one-time CLIP model download on first launch and the optional QR link-preview resolution, which is off by default and, when enabled, manual (per tap) by default. No user content (images, OCR text, embeddings) is ever uploaded; resolution only fetches the page a scanned QR code already points to. |
 | Organization model | Tags, not folders. Multiple weighted tags per image. |
 | File handling | Non destructive by default. Physical file moves happen only when the user triggers reorganization. |
 | Search | Both visual concepts and OCR text. |
@@ -48,7 +48,9 @@ The mental model is similar to Immich's machine learning classification, but loc
 - Open vocabulary tagging where the model invents brand new labels on its own. See section 6.4.
 - Cloud sync or multi device.
 - Editing or annotating screenshots.
-- Classifying non screenshot images (general camera roll). Could come later.
+- Bulk auto-classification of the entire camera roll. (In-app *camera capture* of
+  specific real-world things — Phase A, section 15 — is now supported; passive
+  scanning of every photo on the device is still out of scope.)
 
 ## 3. High-level architecture
 
@@ -259,6 +261,12 @@ document, browser / web, game, shopping, news,
 video / streaming, error / crash, calendar, finance, email, other
 ```
 
+The camera-capture feature (section 15) adds real-world tags scored the same zero-shot
+way (embedded with photo-style prompts, not screenshot prompts): `storefront`,
+`advertisement`, `street sign`, `business card`, `product`, `menu`, `poster`, and
+`qr code`. The `qr code` tag is authoritative when the on-device barcode decoder finds a
+code; the CLIP `qr code` label is only a visual backstop.
+
 Internally, classification runs against a finer, concrete label set (for example a
 clock app, a contacts list, a phone dialer, a file manager, a settings screen) that
 maps onto these user-facing tags. The spike showed concrete labels with prompt
@@ -422,6 +430,10 @@ encode still dominates a full re-embed and is the next thing to benchmark.
 - **Phase 4 (done, v0.5.0)**: Settings screen, reprocess action, custom user tags — manual per-image tags + user-defined auto-categories scored by an independent cosine threshold, a "needs review" surface for low-confidence/contradicted tags, and configurable user-triggered reorganization. Also cleared standing debt: OCR min-score floor, foreground-service processing.
 - **v0.6.0**: email/reddit OCR fix, configurable multi-folder watching, new icon + brand, release signing / AAB, and a large on-device classification eval (see below).
 - **v0.6.1**: error/crash classification fix (CLIP error label was firing on any modal dialog; remapped to `other`, error/crash is now OCR-only).
+- **Camera capture, Phase A (in development)**: in-app camera capture of real-world
+  things (storefronts, signs, ads, QR codes) classified into the same inventory as
+  screenshots. Fully offline. See section 15. Phase B (link-preview resolution for QR
+  URLs; optional generative description) is deferred — see TODO.md.
 
 **Measured quality and performance.** A repeatable on-device eval harness
 (`ClassificationEvalTest`) runs the exact production path over ~3,380 real screenshots
@@ -435,3 +447,88 @@ search is ~11 ms warm at 10k images after the embedding cache.
 Phase 1 ships value without the heavy CLIP dependency and de-risks the background processing machinery before adding the big model.
 
 Note on classification: CLIP is one signal, not the sole classifier. Per the spike (docs/spikes/clip-findings.md) it is confidently wrong on text-heavy/ambiguous UI, so OCR co-classifies text-heavy categories and tagging gates on the top1-top2 margin plus OCR agreement rather than a raw confidence floor. Custom user auto-categories are additive (independent cosine threshold) and never alter the built-in scoring.
+
+## 15. Camera capture inventory (real-world things)
+
+Extends the app from screenshots to photos the user takes in-app of real-world things:
+storefronts, street signs, advertisements, business cards, products, menus, posters, and
+QR codes. These land in the same gallery/search/tag inventory as screenshots. The whole
+feature is split so the only network-touching part is isolated and deferred.
+
+**Why this fits the existing pipeline.** `ImageProcessor` was already source-agnostic
+(it runs on any image URI), and CLIP's bundled prompts include photo-style templates, so
+real-world photos reuse OCR + CLIP + the margin gate unchanged. The added pieces are
+small.
+
+### 15.1 Phase A (built, fully offline)
+
+1. **Capture (CameraX).** A full-screen camera (`ui/camera/CameraCaptureScreen`) writes
+   each photo to the user's gallery at `Pictures/ScreenshotClassifier/Captures` via
+   MediaStore (so the user owns the file and it gets a real `media_store_id`), then hands
+   it to `ScreenshotRepository.indexCapture`, which inserts a `source_type = CAMERA` row
+   directly (bypassing the watched-folder scan) and enqueues the existing processing worker.
+2. **`source_type` column.** `ScreenshotEntity` gains `source_type` (`SCREENSHOT` /
+   `CAMERA`), plus `description` and `qr_payload` for captures (DB v6, destructive migration
+   consistent with prior bumps). The gallery shows an All / Screenshots / Photos filter once
+   any capture exists.
+3. **QR / barcode decode (offline).** For camera captures only, `BarcodeExtractor` (ML Kit
+   Barcode Scanning, on-device) decodes any code. A decoded code is treated as ground truth:
+   an authoritative `qr code` tag is attached, the raw payload stored, and the capture is
+   not flagged needs-review. Decoding never fetches what a URL points to.
+4. **Structured description.** `CaptureDescriber` (interface; `StructuredCaptureDescriber`
+   impl) composes a short, deterministic description from OCR text, the top tags, and any QR
+   payload (for a URL it names the host, not the full tracking URL), stored in `description`
+   and shown on the detail screen.
+
+**Why the screenshot eval is preserved (by construction, not by luck).** Adding labels to a
+zero-shot softmax can change the argmax for any image even if no existing embedding moved,
+because the new labels are new competitors. Two things together prevent that for screenshots:
+(1) the 22 original label embedding rows are byte-identical — the real-world rows were
+*appended*, not regenerated (`spikes/clip/add_realworld_labels.py`, verified by sha of the
+file head); and (2) `ZeroShotClassifier.classify` scores screenshots against
+`ClipLabels.screenshotLabels` (the original 22) and only camera captures opt into the full
+30 via `includeRealWorld = true`. So a screenshot's candidate set and softmax denominator
+are exactly what they were, and the eval harness (which calls `classify` with the default)
+is unchanged. Barcode decode and description are likewise gated to captures.
+
+Real-world classification (CLIP visual classes for storefront/sign/etc.) is unvalidated —
+there is no labeled real-world capture dataset and the eval emulator has no CLIP model. The
+QR path is validated end-to-end on device (`CameraCapturePipelineTest`).
+
+### 15.2 Phase B — QR link-preview resolution (built)
+
+The only network-touching part of the feature, and it is **off by default**. When the user
+enables it (Settings > Camera capture), a scanned URL can be resolved into a preview card
+showing the page's OpenGraph metadata (title, description, og:image).
+
+- **Configurable and offline-first.** `CapturePreferences` (DataStore) controls everything:
+  resolve on/off (default off), manual vs automatic trigger (default manual), Wi-Fi-only
+  (default on), and whether the og:image is loaded (default off). Defaults never touch the
+  network on their own.
+- **One shared, pure gate.** `ResolvePolicy.decide(prefs, isUrl, network)` is the single
+  decision point (off → no fetch; non-URL → no fetch; Wi-Fi-only on a metered link → no
+  fetch), used by both the manual "Resolve link" button (`ScreenshotDetailScreen`) and the
+  worker's automatic path. Unit-tested without a network.
+- **Conservative fetch.** `LinkPreviewResolver` uses `HttpURLConnection` (no new dependency)
+  with an http/https allowlist re-checked after each redirect, a LAN-host guard, timeouts, a
+  byte cap, and a content-type check; it swallows all failures so a bad URL never fails a
+  batch. `OgParser` extracts the metadata by regex (no HTML-parser dependency) and is
+  unit-tested. The og:image URL is stored as a string; whether it is actually loaded is gated
+  at the render site by `downloadPreviewImages`, so that toggle genuinely controls the fetch.
+
+> **Correction of a Phase A statement.** Phase A docs said resolution would be "an explicit
+> action you tap, never an automatic fetch." That was too absolute. Resolution is off by
+> default and manual by default, but the comprehensive-config requirement added an opt-in
+> automatic trigger. The default behavior still never reaches the network on its own.
+
+### 15.3 Still deferred
+
+- **Generative description.** A second `CaptureDescriber` impl backed by an on-device
+  vision-language model, swappable without touching the pipeline or the `description` column.
+  The Settings selector exists with Generative shown but disabled until such a model is
+  bundled. The model itself (selection, LiteRT conversion, tokenizer, decode loop, hosting,
+  on-device inference) is a separate large project.
+- **Real-world classification eval.** Validating CLIP accuracy on storefront/sign/product
+  captures needs a labeled real-world dataset and the CLIP model on the eval device.
+
+See TODO.md for the remaining task list.

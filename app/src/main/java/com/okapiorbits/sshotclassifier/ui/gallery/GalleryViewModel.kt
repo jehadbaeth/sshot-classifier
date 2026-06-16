@@ -11,11 +11,14 @@ import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.okapiorbits.sshotclassifier.data.db.entity.SourceType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,11 +35,30 @@ class GalleryViewModel @Inject constructor(
     private val _reviewOnly = MutableStateFlow(false)
     val reviewOnly: StateFlow<Boolean> = _reviewOnly.asStateFlow()
 
+    /** Source filter: null = all, or a [SourceType] name to show only that source. */
+    private val _sourceFilter = MutableStateFlow<String?>(null)
+    val sourceFilter: StateFlow<String?> = _sourceFilter.asStateFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val screenshots: StateFlow<List<ScreenshotWithTags>> =
-        _reviewOnly
-            .flatMapLatest { only -> if (only) repository.observeNeedsReview() else repository.observeGallery() }
+        combine(_reviewOnly, _sourceFilter, ::Pair)
+            .flatMapLatest { (only, source) ->
+                val base = if (only) repository.observeNeedsReview() else repository.observeGallery()
+                if (source == null) base
+                else base.map { list -> list.filter { it.screenshot.source_type == source } }
+            }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Number of camera captures; the source filter chips only appear when there are some. */
+    val captureCount: StateFlow<Int> =
+        repository.observeCaptureCount()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    fun setSourceFilter(source: String?) {
+        _sourceFilter.value = source
+    }
+
+    val sourceTypes: Pair<String, String> = SourceType.SCREENSHOT.name to SourceType.CAMERA.name
 
     val pendingCount: StateFlow<Int> =
         repository.observePendingCount()

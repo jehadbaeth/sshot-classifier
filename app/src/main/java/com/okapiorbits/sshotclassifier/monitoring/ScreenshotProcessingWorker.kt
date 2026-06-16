@@ -15,7 +15,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
+import com.okapiorbits.sshotclassifier.data.db.entity.SourceType
 import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
+import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
@@ -39,6 +41,7 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
     private val processor: ImageProcessor,
     private val organizer: ScreenshotOrganizer,
     private val reorgPrefsStore: ReorgPreferencesStore,
+    private val capturePrefsStore: CapturePreferencesStore,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -49,11 +52,18 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
 
         val pending = repository.pendingScreenshots()
         if (pending.isNotEmpty()) {
+            // Read capture prefs once (not per image): decode toggle drives processing; the
+            // automatic-resolve trigger is re-checked inside maybeAutoResolve.
+            val decodeQrCodes = capturePrefsStore.current().decodeQrCodes
             val total = pending.size
             runCatching { setForeground(foregroundInfo(0, total)) }
             var done = 0
             for (shot in pending) {
-                processor.process(shot)
+                processor.process(shot, decodeQrCodes = decodeQrCodes)
+                // Only camera captures can carry a QR link; auto-resolve when the user opted in.
+                if (shot.source_type == SourceType.CAMERA.name) {
+                    runCatching { repository.maybeAutoResolve(shot.id) }
+                }
                 done++
                 Notifications.progress(applicationContext, done, total)
             }

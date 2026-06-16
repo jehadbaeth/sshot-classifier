@@ -26,6 +26,77 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Now / next up
 
+- [~] **Camera capture inventory — Phase A (built + tested 2026-06-16).** New feature:
+      in-app camera capture of real-world things (storefronts, signs, ads, QR codes)
+      classified into the same gallery/search/tag inventory as screenshots. Fully offline.
+      Design: docs/design.md section 15. Shipped in Phase A:
+      * **CameraX capture** (`ui/camera/CameraCaptureScreen` + VM): full-screen camera, FAB
+        on the gallery; photos written to `Pictures/ScreenshotClassifier/Captures` via
+        MediaStore, indexed directly as `source_type=CAMERA` (`repository.indexCapture`),
+        processed by the existing worker.
+      * **Schema**: `ScreenshotEntity` + `source_type`/`description`/`qr_payload`; DB v5→v6
+        (destructive, consistent with prior bumps). Gallery gains an All/Screenshots/Photos
+        filter once captures exist; detail screen shows description + QR payload.
+      * **QR/barcode decode** (`BarcodeExtractor`, ML Kit, on-device, camera-only): decoded
+        code → authoritative `qr code` tag + stored payload + not-needs-review. No URL fetch.
+      * **Taxonomy**: 8 real-world labels (storefront, advertisement, street sign, business
+        card, product, menu, poster, qr code) **appended** to `label_embeddings.f32` with
+        photo-style prompts via `spikes/clip/add_realworld_labels.py`. Verified the 22
+        screenshot rows stayed BYTE-IDENTICAL (head sha unchanged). NOTE: byte-identical rows
+        alone do NOT prove the screenshot eval is unchanged — a softmax over a bigger label
+        set can flip the argmax. The real guarantee is candidate-set gating:
+        `ZeroShotClassifier.classify` scores screenshots against `ClipLabels.screenshotLabels`
+        (the original 22) and only captures opt into all 30 (`includeRealWorld=true`). So the
+        screenshot candidate set + softmax denominator are unchanged by construction, and the
+        eval harness (default arg) is identical. Also fixed a latent bug: `precompute_labels.py` had email→
+        `document` while labels.json (runtime) correctly had email→`email`; the canonical
+        script now matches.
+      * **Description**: `CaptureDescriber` interface + `StructuredCaptureDescriber` (OCR +
+        tags + QR host, deterministic). Interface lets a generative VLM impl drop in (Phase B).
+      * **Tests**: `CaptureDescriberTest` (6 unit, green) + `CameraCapturePipelineTest`
+        (instrumented, real ML Kit + describer on a real QR image, green on galaxy_s20fe_api33).
+        Build + full unit suite + androidTest compile green.
+      * **NOT validated**: real-world CLIP classification accuracy (no labeled real-world
+        capture set; eval emulator has no CLIP model) and the live CameraX shutter→file flow
+        (hardware/UI path, not automatable headlessly). Honest gap, documented.
+      Remaining to close the task: user smoke-test of the live capture on a device; then mark [x].
+- [~] **Camera capture — Phase B (QR link resolution BUILT + tested 2026-06-17).** User
+      asked to proceed with Step B and make everything fully user-controllable. Shipped:
+      * **All behavior is now a stored preference** (`CapturePreferences` + `CapturePreferencesStore`,
+        DataStore `capture_prefs`, mirrors ReorgPreferencesStore) surfaced in a Settings "Camera
+        capture" section: resolveQrLinks (off), resolveTrigger (manual), resolveOnWifiOnly (on),
+        downloadPreviewImages (off), descriptionSource (structured), decodeQrCodes (on),
+        captureAlbumRoot. Defaults are all offline-private.
+      * **QR link-preview resolution**: `LinkPreviewResolver` (HttpURLConnection, NO new dep) +
+        pure `OgParser` (regex OG/title extraction, no HTML-parser dep). Conservative: http/https
+        allowlist re-checked after each redirect, LAN-host guard, timeouts, 512KB cap, content-type
+        check, swallows all failures. Resolved fields stored as entity columns qr_title/
+        qr_description/qr_image_url/qr_resolved_at (DB v6→v7 destructive). Manual "Resolve link"
+        button on the detail screen; automatic path in the worker (only when trigger=AUTOMATIC).
+      * **Pure `ResolvePolicy.decide(prefs,isUrl,network)`** is the single privacy gate shared by
+        the button and the worker (off→no fetch; non-url→no fetch; wifi-only on metered→no fetch).
+        Unit-tested (ResolvePolicyTest) + OgParserTest. `NetworkChecker` (ConnectivityManager) feeds it.
+      * **downloadPreviewImages gate is at the Coil call site**, not the resolver: the og:image URL
+        is always stored, only handed to AsyncImage when the toggle is on (advisor catch — otherwise
+        Coil fetches regardless and the toggle is a lie).
+      * **Capture flag seam**: `ImageProcessor.process(shot, decodeQrCodes=true)` takes the flag as a
+        param (worker reads prefs once, passes it) so the prefs store stays off the throughput hot
+        path and the existing ImageProcessor test call sites keep working via the default.
+      * **HONEST CORRECTION**: Phase A usage.md §9 said resolution would be "never an automatic
+        fetch." The comprehensive-config requirement added an opt-in automatic trigger, so usage.md §9
+        + design.md §1.2/§15.2 were corrected and the reversal called out. Default is still off +
+        manual; nothing touches the network on its own by default. (advisor catch.)
+      * Also: ACCESS_NETWORK_STATE permission added. Build + unit suite + 2 instrumented camera
+        tests green; the 4 repo-constructing instrumented tests updated for the 3 new repo ctor deps.
+      Remaining to mark [x]: user smoke-test of live resolution against a real link on device, and
+      the live OG fetch path is not auto-tested (needs a live server; the pure parser + policy are).
+- [ ] **Camera capture — still deferred.**
+      * **Generative description**: second `CaptureDescriber` impl backed by an on-device VLM
+        (BLIP/Florence/SmolVLM-class). The Settings selector exists with Generative shown but
+        DISABLED (generativeDescriptionAvailable=false) until a model is bundled. Hundreds of MB;
+        its own LiteRT conversion + tokenizer + decode loop + model-delivery + perf project.
+      * **Real-world classification eval**: build/borrow a labeled real-world capture set
+        (storefronts/signs/products) and run the eval harness with the CLIP model installed.
 - [x] **Classification accuracy eval against datasets (done 2026-06-15, SCALED 2026-06-16).**
       Built an on-device eval harness (`app/src/androidTest/.../pipeline/ClassificationEvalTest.kt`)
       that runs the EXACT production path (OCR + heuristics + CLIP + `TagFuser.fuse` +

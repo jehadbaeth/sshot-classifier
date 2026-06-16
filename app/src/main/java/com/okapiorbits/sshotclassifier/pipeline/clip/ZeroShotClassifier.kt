@@ -16,9 +16,16 @@ class ZeroShotClassifier @Inject constructor(
 ) {
     private val logitScale = 100f // CLIP logit scale; equivalent to softmax temperature 0.01
 
-    /** Returns user-facing tag -> probability (sums to ~1 across tags). */
-    fun classify(imageEmbedding: FloatArray): Map<String, Float> {
-        val all = labels.labels
+    /**
+     * Returns user-facing tag -> probability (sums to ~1 across tags).
+     *
+     * Defaults to the screenshot label set. Camera captures pass
+     * [includeRealWorld] = true to also score real-world capture labels (storefront,
+     * menu, qr code, ...). Screenshots deliberately exclude those so the candidate set
+     * — and the validated screenshot eval — is unchanged by their addition.
+     */
+    fun classify(imageEmbedding: FloatArray, includeRealWorld: Boolean = false): Map<String, Float> {
+        val all = if (includeRealWorld) labels.labels else labels.screenshotLabels
         if (all.isEmpty()) return emptyMap()
 
         val logits = FloatArray(all.size) { i -> dot(imageEmbedding, all[i].embedding) * logitScale }

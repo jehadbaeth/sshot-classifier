@@ -4,16 +4,28 @@ import android.content.Context
 import androidx.room.Room
 import com.okapiorbits.sshotclassifier.data.db.AppDatabase
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
+import com.okapiorbits.sshotclassifier.pipeline.CaptureDescriber
+import com.okapiorbits.sshotclassifier.pipeline.StructuredCaptureDescriber
 import com.okapiorbits.sshotclassifier.pipeline.clip.CategoryEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipTextEncoder
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.TextEmbedder
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+
+/** Binds interface implementations. */
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class BindingsModule {
+    /** Structured describer now; a generative VLM impl can replace this in Phase B. */
+    @Binds
+    abstract fun bindCaptureDescriber(impl: StructuredCaptureDescriber): CaptureDescriber
+}
 
 @Module
 @InstallIn(SingletonComponent::class)

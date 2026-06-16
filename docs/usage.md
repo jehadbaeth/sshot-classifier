@@ -14,6 +14,7 @@ downloads the AI models on first launch.
 6. [Custom categories](#6-custom-categories)
 7. [Needs review](#7-needs-review)
 8. [Reorganizing into albums](#8-reorganizing-into-albums)
+9. [Capturing real-world things with the camera](#9-capturing-real-world-things-with-the-camera)
 
 ---
 
@@ -153,3 +154,41 @@ It is configurable:
 
 Because the database keeps tracking files (and repoints itself when you move one), search
 and tags keep working regardless of how the albums are laid out.
+
+---
+
+## 9. Capturing real-world things with the camera
+
+The app is not only for screenshots. The camera button on the gallery (the round icon
+above **Scan**) opens an in-app camera so you can photograph real-world things and file
+them into the same inventory: storefronts, street signs, advertisements, business cards,
+products, menus, posters, and QR codes.
+
+Tap the shutter to capture. The photo is saved to your gallery under
+`Pictures/ScreenshotClassifier/Captures` (so you keep the original), then it goes through
+the same pipeline as a screenshot: it reads any text (OCR), classifies what it looks like,
+and writes tags. The camera stays open so you can capture several things in a row; a small
+"Captured N" appears as confirmation.
+
+**QR codes are decoded on device.** If a capture contains a QR code or barcode, the app
+reads the code, tags the photo `qr code`, and stores the decoded value (for a link, the
+URL). This decoding is fully offline: the app reads the code but does not open or fetch the
+link. You can see the decoded value, and a short description of the capture, by tapping the
+photo to open it.
+
+Once you have captures, the gallery shows an **All / Screenshots / Photos** filter so you
+can browse your screenshots and your real-world photos separately.
+
+**Previewing where a QR link goes.** You can optionally let the app resolve a scanned link
+into a preview (its title, description, and image). This is the one part of the capture
+feature that uses the network, so it is **off by default**. Turn it on under **Settings >
+Camera capture > Resolve QR links**. With it on, the default is still manual: open a capture
+and tap **Resolve link**. You can switch it to resolve automatically during processing, and
+you can restrict it to Wi-Fi only and choose whether the preview image is downloaded (off by
+default, since loading it contacts the image host). Nothing is fetched unless you enable this
+and, by default, tap to resolve.
+
+> Note on an earlier statement: a previous version of this guide said link resolution would
+> be "never an automatic fetch." That was too absolute. Resolution is off by default and
+> manual by default, but it is now a setting you can switch to automatic if you want it. The
+> default behavior still never touches the network on its own.

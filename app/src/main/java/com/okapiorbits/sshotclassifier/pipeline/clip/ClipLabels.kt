@@ -22,6 +22,18 @@ class ClipLabels @Inject constructor(
 ) {
     val labels: List<ClipLabel> by lazy { load() }
 
+    /**
+     * Labels for real-world camera captures (storefront, menu, qr code, ...).
+     * Kept OUT of [screenshotLabels] so the screenshot scoring candidate set — and
+     * therefore the validated screenshot eval — is exactly what it was before these
+     * labels were added. A softmax/argmax over a larger candidate set can change the
+     * winner even when no existing embedding moved, so screenshots must not see these.
+     */
+    val realWorldLabels: List<ClipLabel> by lazy { labels.filter { it.tag in REALWORLD_TAGS } }
+
+    /** Labels used to score screenshots: the original set, excluding real-world capture labels. */
+    val screenshotLabels: List<ClipLabel> by lazy { labels.filter { it.tag !in REALWORLD_TAGS } }
+
     private fun load(): List<ClipLabel> {
         val json = context.assets.open("clip/labels.json").bufferedReader().use { it.readText() }
         val arr = JSONArray(json)
@@ -36,5 +48,16 @@ class ClipLabels @Inject constructor(
             fb.get(emb)
             ClipLabel(o.getString("internal"), o.getString("tag"), emb)
         }
+    }
+
+    companion object {
+        /**
+         * User-facing tags produced only from camera captures. Must match the tags of the
+         * real-world labels appended by spikes/clip/add_realworld_labels.py.
+         */
+        val REALWORLD_TAGS = setOf(
+            "storefront", "advertisement", "street sign", "business card",
+            "product", "menu", "poster", "qr code",
+        )
     }
 }
