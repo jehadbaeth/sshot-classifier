@@ -81,7 +81,13 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       lever (budgeting/expense decoy label) regenerates all embeddings + perturbs every
       softmax + risks the working receipt class for ~1 real over-fire. Closed no-fix with
       evidence. See docs/eval/results.md. (Phase 2 "receipts-article soft FP" is the related
-      OCR-side item, still separately open.)
+      OCR-side item, still separately open.) CONFIRMED on a clean real-bank set 2026-06-16:
+      104 screenshots from 18 banks (Revolut/Monzo/Starling/N26/Chime/Chase/BofA/WellsFargo/
+      CapitalOne/USAA/HSBC/Barclays…) via scripts/eval/fetch_bank_dashboards.py — finance
+      recall 59%, only 4/104 predicted receipt (3 low-conf needs-review; the 1 confident
+      "receipt 1.00" is literally a BofA "Receipt Organizer" screen showing real receipts =
+      correct). ZERO clean balance dashboards confidently mislabeled. Classic failure does
+      not occur on real bank UI.
 - [ ] **`browser / web` overprediction (NEW 2026-06-16).** 17% precision, 98 confident FPs;
       acts as a catch-all for web-view-shaped screens (partly the desktop/web gap). Risky
       to tune (legitimate class). Watch-item.

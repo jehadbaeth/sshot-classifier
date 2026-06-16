@@ -1,0 +1,36 @@
+Classification eval — 106 images
+Overall accuracy: 64/106 = 60%
+Predicted "other": 17/106 = 16%
+Flagged needs-review: 39/106 = 37%
+
+CLIP-only accuracy: 63/106 = 59% (vs fused above)
+Fusion changed the call on 10/106; helped 4, hurt 3
+  [FIX] _sheet0.png: clip=shopping -> fused=finance (truth=finance)
+  [FIX] _sheet1.png: clip=shopping -> fused=finance (truth=finance)
+  [neutral] capitalone_10.png: clip=chat / messaging -> fused=video / streaming (truth=finance)
+  [FIX] current_09.png: clip=document -> fused=finance (truth=finance)
+  [neutral] starling_03.png: clip=chat / messaging -> fused=calendar (truth=finance)
+  [REGRESS] usaa_03.png: clip=finance -> fused=map (truth=finance)
+  [neutral] usaa_05.png: clip=browser / web -> fused=other (truth=finance)
+  [REGRESS] usaa_07.png: clip=finance -> fused=other (truth=finance)
+  [REGRESS] usaa_10.png: clip=finance -> fused=other (truth=finance)
+  [FIX] varo_08.png: clip=document -> fused=finance (truth=finance)
+
+Per-class (truth): support  recall  | most-common prediction
+  finance             106      60% | finance (64)
+
+Per-predicted precision:
+  calendar              1       0%
+  chat / messaging      5       0%
+  document              1       0%
+  email                 1       0%
+  finance              64     100%
+  map                   2       0%
+  other                17       0%
+  receipt               4       0%
+  shopping              3       0%
+  social media          3       0%
+  video / streaming     5       0%
+
+Confusion (truth -> predicted, counts):
+  finance            -> finance:64, other:17, chat / messaging:5, video / streaming:5, receipt:4, shopping:3, social media:3, map:2, document:1, calendar:1, email:1

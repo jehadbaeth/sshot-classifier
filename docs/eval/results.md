@@ -162,6 +162,21 @@ the email/social fix: those exact folders are the noisy ones.
   embeddings, perturbs every image's softmax, targets a heterogeneous low-confidence set,
   and risks the working receipt class — a bad trade for ~1 real over-fire. Closed as
   no-fix with evidence, not deferred.
+
+  **Confirmed on a clean real-bank set (2026-06-16).** To close the one gap above (FOSS
+  finance apps can't show the classic balance-dashboard failure), pulled 104 real bank-app
+  screenshots from 18 banks' Google Play listings — neobanks (Revolut, Monzo, Starling,
+  N26, Chime, Wise, Cash App, Varo…) and traditional banks (Chase, BofA, Wells Fargo,
+  Capital One, USAA, HSBC, Barclays) — via `scripts/eval/fetch_bank_dashboards.py` (manifest
+  `bank_manifest.json`, results `results-banks.csv`; images gitignored). Result: finance
+  recall 59%, and only **4/104 predicted receipt** — 3 at low confidence and correctly
+  flagged needs-review (a Tap-to-Pay $25 screen, a sales dashboard with itemized amounts, a
+  marketing graphic), and the **one confident receipt prediction (BofA, 1.00) is literally a
+  "Receipt Organizer" screen displaying photographed pharmacy receipts** — i.e. correct. So
+  across 104 real bank screenshots, **zero clean balance dashboards are confidently
+  mislabeled receipt**. The classic failure does not occur; the receipt class is well-behaved
+  even on real bank UI. This is the clean-data confirmation that finance↔receipt is not a
+  model bug.
 - **`browser / web` overprediction (17% precision, 98 confident FPs).** It acts as a
   catch-all for any web-view-shaped screen. Partly the desktop/web distribution gap. Risky
   to tune (browser is a legitimate class); logged as watch-item.
