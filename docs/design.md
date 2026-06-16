@@ -72,7 +72,7 @@ flowchart TD
 
     subgraph Storage
         DB[(Room DB)]
-        FTS[(FTS5 text index)]
+        FTS[(FTS4 text index)]
         VEC[In-memory vector cache]
     end
 
@@ -108,13 +108,13 @@ app/
 │   └── ZeroShotClassifier          # softmax over cosine sim vs label embeddings
 │
 ├── data/
-│   ├── db/                         # Room + FTS5
+│   ├── db/                         # Room + FTS4
 │   ├── repository/
 │   └── model/                      # Screenshot, Tag, Embedding, OcrEntry
 │
 ├── search/
 │   ├── SemanticSearchEngine        # query -> CLIP text embed -> cosine sim
-│   └── HybridSearchEngine          # merges vector score + FTS5 BM25 score
+│   └── HybridSearchEngine          # merges vector ranking + FTS4 match via RRF
 │
 ├── reorg/
 │   └── FileReorganizer             # optional, user triggered file moves
@@ -135,7 +135,7 @@ flowchart LR
     IMG --> CV[CLIP Vision Encoder]
 
     OCRX --> TXT[Raw text]
-    TXT --> FTSIDX[FTS5 index]
+    TXT --> FTSIDX[FTS4 index]
     TXT --> OSIG[OCR signals<br/>keywords / patterns]
 
     CV --> VEC[512-dim vector]
@@ -212,7 +212,7 @@ Notes:
 - `tags.weight` is the softmax normalized score. Weights sum to roughly 1.0 per image, so they are comparable and "highest weight" is meaningful. See section 6.
 - `tags.source` is one of `clip_zero_shot` or `user`.
 - `embeddings.vector` is 512 float32 values, 2 KB per image. About 20 MB for 10k images, which fits in memory for brute force search.
-- `ocr_entries` is mirrored into an FTS5 virtual table for full text search with BM25 ranking.
+- `ocr_entries` is mirrored into an FTS4 virtual table for full text search (recency-ranked MATCH; FTS4 has no BM25, so hybrid search fuses the OCR and visual rankings via RRF — see section 8 and the TODO deviations).
 - `file_hash` is used to skip already processed images and to detect duplicates.
 
 ## 6. Multi-tag weighting
