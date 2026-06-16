@@ -1,5 +1,9 @@
 # Scale / load test findings (2026-06-14)
 
+> The consolidated performance + accuracy report (with charts) is
+> [docs/eval/performance-and-accuracy.md](../eval/performance-and-accuracy.md). This file is
+> the raw instrumented-test record it links to: full per-size tables, test names, caveats.
+
 The app's whole purpose is classifying and searching a *large* screenshot library,
 but until now the suite only ever exercised a handful of rows. This spike measures
 the two things that actually scale with library size:

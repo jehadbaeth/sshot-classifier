@@ -1,7 +1,7 @@
 # Screenshot Classifier — Design Document
 
-> Status: Draft / Planning
-> Last updated: 2026-06-14
+> Status: Phases 0-4 shipped (latest release v0.6.1)
+> Last updated: 2026-06-16
 > Owner: mohamed.baeth@okapiorbits.com
 
 > **Update 2026-06-14 (CLIP spike):** A zero-shot spike
@@ -166,7 +166,7 @@ CLIP zero-shot gives a score against every candidate label for free, which is th
 ### 4.3 Fusion and gating
 
 - **CLIP-led** for visually distinctive categories: map, photo-like, game, video, social feed.
-- **OCR-led** for text-heavy categories: code vs error vs document, finance vs news, calendar, receipt, and utility screens. These are cheaply separable by keywords and patterns (currency symbols and totals → receipt, stack-trace shapes → error, monospace plus language tokens → code).
+- **OCR-led** for text-heavy categories: code vs error vs document, finance vs news, calendar, receipt, email, social/forum, and utility screens. These are cheaply separable by keywords and patterns (currency symbols and totals → receipt, stack-trace shapes and Android error strings → error, monospace plus language tokens → code, inbox/subject markers → email). `error / crash` is **OCR-only** (the CLIP error label was removed in v0.6.1 because it fired on any modal dialog — see section 6.1).
 - **Margin gate, not confidence floor.** Decide on the top1-minus-top2 margin and whether OCR agrees with CLIP. Low margin or CLIP-OCR disagreement routes the screenshot to "needs review" / "other" instead of attaching a confident wrong tag.
 - **Label set.** Use a granular, concrete internal label set (prompt ensembled) and map it onto the user-facing taxonomy. Concrete labels measurably outperformed abstract buckets in the spike.
 
@@ -251,12 +251,12 @@ flowchart TD
 
 ### 6.1 Default taxonomy
 
-These ~15 labels are the user-facing taxonomy. Users can add custom ones (a custom label becomes another prompt-ensembled text embedding scored the same way).
+These ~16 labels are the user-facing taxonomy. Users can add custom ones (a custom label becomes another prompt-ensembled text embedding scored the same way).
 
 ```
 social media, receipt, map, code editor, chat / messaging,
 document, browser / web, game, shopping, news,
-video / streaming, error / crash, calendar, finance, other
+video / streaming, error / crash, calendar, finance, email, other
 ```
 
 Internally, classification runs against a finer, concrete label set (for example a
@@ -264,6 +264,13 @@ clock app, a contacts list, a phone dialer, a file manager, a settings screen) t
 maps onto these user-facing tags. The spike showed concrete labels with prompt
 ensembling clearly beat abstract buckets (settings 0.99, contacts 0.96 on LAION
 versus scattered guesses for the abstract set).
+
+> **`error / crash` is OCR-only as of v0.6.1.** The eval found CLIP's
+> `"an error message dialog"` label fired on *any* modal dialog (0 correct in 80
+> predictions), because CLIP cannot visually distinguish an error dialog from a normal
+> one. That internal label was remapped to `other`, so error/crash is now produced only by
+> the OCR rule (error text is the reliable signal). See
+> [docs/eval/performance-and-accuracy.md](eval/performance-and-accuracy.md).
 
 ### 6.2 Honest limitation on "the model decides the tags"
 
@@ -412,7 +419,18 @@ encode still dominates a full re-embed and is the next thing to benchmark.
 - **Phase 1 (done, v0.2.0)**: OCR pipeline + FTS4 text search. Useful on its own and validates the queue and background work.
 - **Phase 2 (done, v0.3.0)**: CLIP image encoder, model download, embeddings, zero-shot tagging fused with OCR.
 - **Phase 3 (done, v0.4.0)**: Free-text visual + hybrid semantic search (CLIP text encoder + on-device BPE tokenizer + RRF fusion).
-- **Phase 4 (in progress)**: Settings screen (done), reprocess action (done), custom user tags — manual per-image tags + user-defined auto-categories scored by an independent cosine threshold (done), a "needs review" surface for low-confidence/contradicted tags (done), and user-triggered reorganization. Also clears standing debt: OCR min-score floor, foreground-service processing.
+- **Phase 4 (done, v0.5.0)**: Settings screen, reprocess action, custom user tags — manual per-image tags + user-defined auto-categories scored by an independent cosine threshold, a "needs review" surface for low-confidence/contradicted tags, and configurable user-triggered reorganization. Also cleared standing debt: OCR min-score floor, foreground-service processing.
+- **v0.6.0**: email/reddit OCR fix, configurable multi-folder watching, new icon + brand, release signing / AAB, and a large on-device classification eval (see below).
+- **v0.6.1**: error/crash classification fix (CLIP error label was firing on any modal dialog; remapped to `other`, error/crash is now OCR-only).
+
+**Measured quality and performance.** A repeatable on-device eval harness
+(`ClassificationEvalTest`) runs the exact production path over ~3,380 real screenshots
+(F-Droid, Enrico, a clean field slice, and a real-bank slice) plus instrumented scale and
+throughput tests. Full findings, charts, and honest caveats:
+[docs/eval/performance-and-accuracy.md](eval/performance-and-accuracy.md). Headlines:
+precision is strong on confident visual classes (game/finance/map/video 68-88%); the app
+abstains rather than mislabel; OCR fusion is mildly net-positive on the confound-free signal;
+search is ~11 ms warm at 10k images after the embedding cache.
 
 Phase 1 ships value without the heavy CLIP dependency and de-risks the background processing machinery before adding the big model.
 

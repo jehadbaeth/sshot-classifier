@@ -37,7 +37,7 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       only, sha256-deduped, 4/app + 400/class — `scripts/eval/fetch_fdroid.py`) + full
       Enrico mappable slice (240) + the clean Wikimedia field slice (16). Scripts + result
       CSVs + summaries + manifests (license/sha256/URL per image) in `docs/eval/`; images
-      gitignored. **Findings** (`docs/eval/results.md`): (1) The email/reddit fix stays
+      gitignored. **Findings** (`docs/eval/performance-and-accuracy.md`): (1) The email/reddit fix stays
       validated only on the CLEAN field slice (4/6 email flips from CLIP's `document`,
       0 regressions) + `OcrHeuristicsTest`; the F-Droid email/document folders are 40–70%
       promo graphics / non-target screens (spot-checked by eye) so scale can't re-prove it.
@@ -80,7 +80,7 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       error/crash; confusion is CLIP-driven (39/45) so OCR isn't the lever; the only CLIP
       lever (budgeting/expense decoy label) regenerates all embeddings + perturbs every
       softmax + risks the working receipt class for ~1 real over-fire. Closed no-fix with
-      evidence. See docs/eval/results.md. (Phase 2 "receipts-article soft FP" is the related
+      evidence. See docs/eval/performance-and-accuracy.md. (Phase 2 "receipts-article soft FP" is the related
       OCR-side item, still separately open.) CONFIRMED on a clean real-bank set 2026-06-16:
       104 screenshots from 18 banks (Revolut/Monzo/Starling/N26/Chime/Chase/BofA/WellsFargo/
       CapitalOne/USAA/HSBC/Barclays…) via scripts/eval/fetch_bank_dashboards.py — finance

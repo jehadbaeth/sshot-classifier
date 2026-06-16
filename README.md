@@ -7,23 +7,27 @@ on-device machine learning, tags them, and lets you find them again through
 semantic search (visual concepts and text inside the image). Fully offline. No
 backend. Nothing leaves the device.
 
-See the [usage guide](docs/usage.md) for a screen by screen walkthrough, and
-[docs/design.md](docs/design.md) for the full design and roadmap.
+See the [usage guide](docs/usage.md) for a screen by screen walkthrough,
+[docs/design.md](docs/design.md) for the full design and roadmap, and
+[docs/eval/performance-and-accuracy.md](docs/eval/performance-and-accuracy.md) for the
+measured accuracy and performance (with charts).
 
 ## Status
 
-Phase 4 done: a Settings tab (library stats, model management, reprocess, scan,
-custom categories), manual per-image tags and user-defined visual auto-categories,
-a "needs review" surface for low-confidence tags, and configurable
-reorganization into per-tag albums (copy or move, with an undo log for moves and
-a system consent dialog before any deletion). Phase 3: free-text
-semantic search. The CLIP text encoder (TFLite int8) plus
-an on-device byte-level BPE tokenizer embed an arbitrary query and rank stored
-image embeddings by cosine similarity, fused with OCR full-text matches via
-reciprocal rank fusion. So you can search by what a screenshot *looks like*, not
-just the text in it. Phase 2: on-device CLIP image encoder, image embeddings, and
-zero-shot tags fused with OCR behind a margin gate. Phase 1: OCR, full-text search,
-OCR tagging, background processing. Phase 0: scaffold, Room, permissions, gallery.
+Latest release: **v0.6.1**. Phases 0-4 are complete (scaffold and gallery; OCR and
+full-text search; CLIP image encoder with zero-shot tags fused with OCR behind a margin
+gate; free-text semantic search via the CLIP text encoder, an on-device BPE tokenizer, and
+reciprocal rank fusion; then a Settings tab, manual and custom-category tags, a needs-review
+surface, and configurable reorganization into per-tag albums). Recent work since v0.5.0: an
+email/reddit OCR fix, configurable multi-folder watching, a new icon and brand, release
+signing, a large classification eval, and the error/crash classification fix in v0.6.1.
+
+On classification quality, be realistic: the app is reliable where it commits confidently to
+a visually distinctive class (game, finance, map, video all measured at 68-88% precision on
+real app screenshots), and where it is unsure it abstains to a "needs review" state by design
+rather than attach a wrong tag. Broad-distribution absolute accuracy figures are a weak-label
+floor, not a real accuracy. The full measured picture, methodology, and honest caveats are in
+the [performance and accuracy report](docs/eval/performance-and-accuracy.md).
 
 The two CLIP models (~90 MB image encoder, ~65 MB text encoder) are hosted on a
 public mirror repo

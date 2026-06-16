@@ -44,6 +44,10 @@ picks up new ones automatically while it is open, and a background pass also run
 6 hours so nothing is missed. You can force a pass at any time with **Scan for new
 screenshots** in Settings, or the **Scan** button on the gallery.
 
+Under **Settings > Watched folders** you can choose which image folders are watched. New
+files in a watched folder are tagged automatically, so you can include more than just the
+default Screenshots folder (for example a second folder you save shots into).
+
 Each screenshot goes through the pipeline once: read its text (OCR), then, if the image
 model is installed, compute a visual embedding, classify it, and store weighted tags.
 
