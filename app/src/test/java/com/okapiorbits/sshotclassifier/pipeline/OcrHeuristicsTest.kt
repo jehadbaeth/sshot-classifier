@@ -97,6 +97,11 @@ class OcrHeuristicsTest {
         // --- true positives: the category must be produced ---
         Case("receipt", "GROCERY MART\nSubtotal 12.40\nTax 0.99\nTotal \$13.39\nThank you", setOf("receipt"), emptySet()),
         Case("stack trace", "java.lang.NullPointerException\n    at com.example.App.main(App.java:42)", setOf("error / crash"), emptySet()),
+        // User-facing Android error dialogs (now OCR-only, since CLIP can't tell an
+        // error dialog from any modal). Each strong phrase alone clears the floor.
+        Case("anr dialog", "Maps isn't responding\nDo you want to close it?\nWait\nClose app", setOf("error / crash"), emptySet()),
+        Case("keeps stopping", "App keeps stopping\nSkytube keeps stopping.\nApp info\nClose app", setOf("error / crash"), emptySet()),
+        Case("unfortunately stopped", "Unfortunately, Settings has stopped.\nOK", setOf("error / crash"), emptySet()),
         Case("c source", "#include <stdio.h>\nint main() { return 0; }", setOf("code editor"), emptySet()),
         Case("python source", "def main():\n    return run()", setOf("code editor"), emptySet()),
         Case("bank", "Account balance\nIBAN DE89 3704 0044\n\$1,240.00", setOf("finance"), emptySet()),
@@ -116,6 +121,11 @@ class OcrHeuristicsTest {
         Case("prose with code words", "Please return the public library books in order", emptySet(), setOf("code editor")),
         Case("single price", "Acme Widget\n\$12.50\nView details", emptySet(), setOf("receipt", "finance", "shopping")),
         Case("news fatal", "Fatal accident on the highway closes the road", emptySet(), setOf("error / crash")),
+        // Weak error markers must NOT emit alone: "has stopped" / "something went
+        // wrong" / "try again" are common in ordinary transient UI, so they stay below
+        // the floor without a strong error phrase. Guards against re-creating the FP wave.
+        Case("media stopped", "Playback has stopped", emptySet(), setOf("error / crash")),
+        Case("generic retry", "Something went wrong. Try again", emptySet(), setOf("error / crash")),
         Case("show title", "Friday Night Live\nWatch now", emptySet(), setOf("calendar")),
         Case("signup form", "Create account\njohn@example.com\nPassword\nSign up", emptySet(), setOf("email")),
     )

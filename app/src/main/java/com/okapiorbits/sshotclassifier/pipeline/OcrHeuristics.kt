@@ -47,9 +47,26 @@ class OcrHeuristics @Inject constructor() {
         ),
         Rule(
             label = "error / crash",
-            strong = listOf("exception", "stack trace", "stacktrace", "traceback", "segmentation fault", "nullpointer", "errno", "unhandled", "error:"),
-            weak = listOf("fatal"),
-            patterns = listOf(Regex("""\bat\s+[\w.$]+\([\w.]+:\d+\)"""), Regex("""[\w.]+(Error|Exception)\b""")),
+            // Two kinds of real error screens: developer errors (stack traces, the
+            // original rule) and user-facing Android error dialogs. CLIP used to carry
+            // the latter but it can't tell an error dialog from any modal (it tagged 80
+            // normal screens error for 0 correct, 2026-06-16 eval), so OCR is now the
+            // sole error signal. The user-facing phrases below are Android system error
+            // strings, specific enough to be strong (verified ~0 FPs on 3,124 real
+            // F-Droid screenshots).
+            strong = listOf(
+                "exception", "stack trace", "stacktrace", "traceback", "segmentation fault",
+                "nullpointer", "errno", "unhandled", "error:",
+                "keeps stopping", "isn't responding", "isnt responding", "not responding",
+                "application not responding",
+            ),
+            weak = listOf("fatal", "unfortunately", "has stopped", "something went wrong", "try again"),
+            patterns = listOf(
+                Regex("""\bat\s+[\w.$]+\([\w.]+:\d+\)"""),
+                Regex("""[\w.]+(Error|Exception)\b"""),
+                // "Unfortunately, <app> has stopped" / "... has crashed" (classic crash dialog).
+                Regex("""unfortunately[\s\S]{0,40}(stopped|crashed)"""),
+            ),
         ),
         Rule(
             label = "code editor",

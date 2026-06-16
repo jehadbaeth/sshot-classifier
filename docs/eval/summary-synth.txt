@@ -1,0 +1,19 @@
+Classification eval — 12 images
+Overall accuracy: 1/12 = 8%
+Predicted "other": 10/12 = 83%
+Flagged needs-review: 10/12 = 83%
+
+CLIP-only accuracy: 0/12 = 0% (vs fused above)
+Fusion changed the call on 1/12; helped 1, hurt 0
+  [FIX] 08_stacktrace.png: clip=other -> fused=error / crash (truth=error / crash)
+
+Per-class (truth): support  recall  | most-common prediction
+  error / crash        12       8% | other (10)
+
+Per-predicted precision:
+  error / crash         1     100%
+  map                   1       0%
+  other                10       0%
+
+Confusion (truth -> predicted, counts):
+  error / crash      -> other:10, map:1, error / crash:1

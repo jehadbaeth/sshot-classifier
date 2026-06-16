@@ -48,14 +48,24 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       precision is strong where CLIP is visual: game 88%, finance 83%, map 72%, video 68%.
       See the three new CLIP-ceiling items below. No new release (docs-only; v0.6.0 already
       shipped the code).
-- [ ] **`error / crash` over-fires on modal dialogs (NEW 2026-06-16, top finding).**
-      Predicted 80× across F-Droid+Enrico, **0 correct, 42 shown confident** (not flagged).
-      79/80 are CLIP-only (NOT the OCR fix). Cause CONFIRMED by opening images: internal
-      label `"an error message dialog"` matches ordinary modal dialogs over a dimmed
-      background (name prompts, command popups w/ Close/Copy). Fix = retune/relabel the
-      error class, BUT needs real error/crash positive screenshots first to prove a fix
-      doesn't zero the class. Do not blind-tune. Requires regenerating `label_embeddings.f32`
-      via the text-encoder pipeline (`clipenv` host-side).
+- [x] **`error / crash` over-fires on modal dialogs (FIXED 2026-06-16, v0.6.1).** Was:
+      predicted 80× across F-Droid+Enrico, 0 correct, 42 confident, 79/80 CLIP-only. Cause
+      (confirmed by eye): CLIP label `"an error message dialog"` matched any modal dialog
+      and carried it (0.4 fusion weight) to a confident wrong `error / crash`. Fix (surgical,
+      no fusion changes): (1) remapped that CLIP label `error / crash`→`other` in labels.json
+      + precompute_labels.py — embedding is keyed on the unchanged phrase so
+      `label_embeddings.f32` stayed BYTE-IDENTICAL (no regen, no broad perturbation); (2)
+      extended the OcrHeuristics error rule with documented user-facing Android strings
+      (`keeps stopping`, `isn't responding`, `application not responding`, `unfortunately…
+      stopped/crashed`; weak `has stopped`/`something went wrong`/`try again`). Validated:
+      F-Droid error FP 74→1 (the 1 is a terminal screen with real error text); every
+      error/crash prediction is now pure OCR so that proves the new keywords cost ~0 FP on
+      3,124 real screens; no real class regresses (worst −0.75%); Enrico 60%→61%. CAVEAT:
+      real-error RECALL is NOT validated — clean real mobile error screenshots aren't
+      harvestable from the open web (checked ~9 articles/~35 images, ~0 usable). A 12-image
+      synthetic set (scripts/eval/gen_synth_errors.py) was a mechanism check only, not a
+      recall metric. Ambiguous error dialogs now route to needs-review (honest); only
+      text-rich error screens (stack traces) tag error. Unit tests updated (OcrHeuristicsTest).
 - [ ] **finance ↔ receipt visual confusion (NEW 2026-06-16).** `receipt` predicted 50×,
       0 correct; 33 are finance-app screens and 41/47 are CLIP-only (not the OCR receipt
       rule). Finance dashboards (amounts/line-items/totals) look like receipts to CLIP.

@@ -47,7 +47,14 @@ LABELS = [
     ("an online shopping product page", "shopping"),
     ("a news article", "news"),
     ("a video streaming app", "video / streaming"),
-    ("an error message dialog", "error / crash"),
+    # "an error message dialog" maps to "other", NOT "error / crash": CLIP cannot
+    # visually distinguish an error dialog from any ordinary modal (name prompts,
+    # permission popups, confirm dialogs all look the same), so as an error class it
+    # fired on 80 normal screens for 0 correct in the 2026-06-16 eval. Kept as an
+    # "other"/decoy so modal-dialog probability mass routes to needs-review instead.
+    # error/crash is now an OCR-only tag (OcrHeuristics): error text is the reliable
+    # signal, matching the CLIP-for-visual / OCR-for-text split. See docs/eval/results.md.
+    ("an error message dialog", "other"),
     ("a calendar", "calendar"),
     ("a banking or finance app", "finance"),
     ("a photo or picture", "other"),

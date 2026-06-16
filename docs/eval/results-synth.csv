@@ -1,0 +1,13 @@
+file,truth,predicted,clip_only,needs_review,top_tags
+"01_keeps_stopping.png","error / crash","other","other",true,"other 0.74; error / crash 0.20"
+"02_isnt_responding.png","error / crash","map","map",false,"map 0.68; error / crash 0.20; other 0.14"
+"03_unfortunately_stopped.png","error / crash","other","other",true,"other 0.83; error / crash 0.25"
+"04_went_wrong.png","error / crash","other","other",true,"other 0.85"
+"05_process_system.png","error / crash","other","other",true,"other 0.81; error / crash 0.20"
+"06_systemui.png","error / crash","other","other",true,"other 0.85"
+"07_anr.png","error / crash","other","other",true,"other 0.84; error / crash 0.41"
+"08_stacktrace.png","error / crash","error / crash","other",false,"error / crash 0.49; other 0.49"
+"09_conn_error.png","error / crash","other","other",true,"other 0.85"
+"10_crashed.png","error / crash","other","other",true,"other 0.79"
+"11_server_wrong.png","error / crash","other","other",true,"other 0.84"
+"12_keeps_stopping2.png","error / crash","other","other",true,"other 0.57; error / crash 0.20"
