@@ -93,11 +93,12 @@ hero shot first) and 400/class so game/document don't drown out email/social.
 
 ## Read precision, not absolute accuracy
 
-Overall fused accuracy on F-Droid is **1,030/3,124 = 33%**, CLIP-only 33%, predicted
-"other" 38%, needs-review 54%. **That 33% is a floor, not a real accuracy**, deflated three
-ways: (1) weak app-function labels, (2) no "other" truth folder so all 38% "other"/
-conservative predictions count as wrong, (3) the app deliberately abstains (54%
-needs-review) and abstention scores as a miss here.
+Overall fused accuracy on F-Droid is **1,015/3,124 = 32%**, CLIP-only 33%, predicted
+"other" 43%, needs-review 56% (this section and its chart are the post-fix v0.6.1 run, to
+match each other; the fusion section below is explicitly the pre-fix run). **That 32% is a
+floor, not a real accuracy**, deflated three ways: (1) weak app-function labels, (2) no
+"other" truth folder so all 43% "other"/conservative predictions count as wrong, (3) the
+app deliberately abstains (56% needs-review) and abstention scores as a miss here.
 
 The honest cut is per-class **precision**: when the app commits to a confident class, is it
 right? Visually distinctive classes are reliable; the bottom of the chart is where the real
@@ -339,7 +340,7 @@ scripts/eval/push_and_run.sh .evaldata/field_slice   field  eval-out
 
 - **Accuracy.** Where the app commits confidently to a visually distinctive class it is
   reliable (game 88%, finance 84%, map 72%, video 68% precision). Absolute accuracy on the
-  broad set is a weak-label floor, not a real accuracy; the app abstains (54% needs-review)
+  broad set is a weak-label floor, not a real accuracy; the app abstains (56% needs-review)
   rather than mislabel, by design. OCR fusion is mildly positive on the confound-free signal
   (Bucket A, +8). The email/reddit fix is validated on the clean field slice + unit tests.
   `error / crash` over-firing is fixed (74→1 FPs, v0.6.1); finance↔receipt was investigated
