@@ -138,11 +138,30 @@ the email/social fix: those exact folders are the noisy ones.
   biggest pure-CLIP false-positive sink. It is **not** caused by the OCR fix (79/80 are
   CLIP-only). Fix candidate, but it needs real error/crash positives to validate against
   before retuning the label — tuning blind could zero a working class. Logged in TODO.
-- **finance ↔ receipt visual confusion.** `receipt` predicted 50×, 0 correct; 33 of those
-  are finance-app screens, and **41/47 are CLIP-only** (not the OCR receipt rule). Finance
-  dashboards (amounts, line items, totals) genuinely look like receipts to CLIP. Can't be
-  fixed by touching the OCR rule; would need a visual disambiguation that risks real
-  receipts. Logged.
+- **finance ↔ receipt — investigated 2026-06-16, NOT a fixable bug (mostly weak-label
+  noise + genuine receipt-adjacency).** Headline was `receipt` predicted ~50×, 0 correct,
+  ~33 on finance-labeled screens. Per-image inspection of all 45 receipt predictions tells
+  a different story. Of the 32 shown confident, only **7 carry weight ≥ 0.50** (the ones
+  that would actually mislead a user), and **6 of those 7 are correct or defensible**:
+  three are `com.invoiceninja.app` (an invoice app — invoices *are* receipts), two are
+  `happytaxes` (a tax app; one screen is literally titled "RECEIPT"), one is a shopping
+  list (checkout≈receipt, in the taxonomy by design). The model is right; the F-Droid
+  `finance` app-category label is wrong. The other 25 confident predictions are low
+  confidence (0.26–0.49) on receipt-*adjacent* content — expense-entry forms, crypto
+  send/receive screens with amounts, price lists, even an itemized bus timetable — where
+  CLIP keys on "itemized list + amounts/numbers," which is genuinely receipt-like, not a
+  clean error. Exactly **one** confident case is an arguable over-fire (`evmap` charging
+  price list, 0.56). Crucially, **zero clean bank-balance dashboards** were mislabeled
+  receipt — and FOSS "Finance Manager"/"Wallet" apps skew to expense trackers, crypto and
+  budgeting tools, so clean bank dashboards are largely absent from this set; it can't even
+  exercise the classic failure. Conclusion stated honestly: in this set, finance→receipt is
+  dominated by label noise and receipt-adjacency, not a model bug. No safe fix exists —
+  `receipt` is a validated working class (receipt→receipt 1.0 on device), so it can't be
+  remapped like error/crash; the confusion is CLIP-driven (39/45), so the OCR rule isn't
+  the lever; and the one CLIP lever (a "budgeting/expense" decoy label) regenerates all
+  embeddings, perturbs every image's softmax, targets a heterogeneous low-confidence set,
+  and risks the working receipt class — a bad trade for ~1 real over-fire. Closed as
+  no-fix with evidence, not deferred.
 - **`browser / web` overprediction (17% precision, 98 confident FPs).** It acts as a
   catch-all for any web-view-shaped screen. Partly the desktop/web distribution gap. Risky
   to tune (browser is a legitimate class); logged as watch-item.
@@ -253,7 +272,8 @@ Manifests with per-image license + sha256 + URL: `fdroid_manifest.json`,
   than mislabel, which is by design.
 - Real, newly-surfaced weaknesses are CLIP-ceiling, not the email fix: `error / crash`
   over-fired on modal dialogs (80 predictions, 0 correct, verified by eye) — **now fixed**
-  (74→1 FPs, see the fix section); finance↔receipt visual confusion and browser/web
-  overprediction remain logged in TODO, neither safe to blind-tune without targeted data.
+  (74→1 FPs, see the fix section). finance↔receipt was investigated per-image and closed as
+  **not a fixable bug** (weak-label noise + receipt-adjacency; 6 of 7 high-confidence cases
+  are correct/defensible). browser/web overprediction remains a logged watch-item.
 - Release: the eval expansion itself was docs-only. The **error/crash fix is a real,
   validated code change**, so it ships in v0.6.1.

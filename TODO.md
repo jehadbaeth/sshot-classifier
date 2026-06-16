@@ -66,11 +66,22 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       synthetic set (scripts/eval/gen_synth_errors.py) was a mechanism check only, not a
       recall metric. Ambiguous error dialogs now route to needs-review (honest); only
       text-rich error screens (stack traces) tag error. Unit tests updated (OcrHeuristicsTest).
-- [ ] **finance ↔ receipt visual confusion (NEW 2026-06-16).** `receipt` predicted 50×,
-      0 correct; 33 are finance-app screens and 41/47 are CLIP-only (not the OCR receipt
-      rule). Finance dashboards (amounts/line-items/totals) look like receipts to CLIP.
-      Needs visual disambiguation; risks real receipts. The earlier "receipts-article soft
-      FP" (Phase 2) is the OCR-side cousin of this. Watch-item.
+- [x] **finance ↔ receipt — investigated + closed as NOT a fixable bug (2026-06-16).**
+      Took a crack: per-image inspection of all 45 receipt predictions. Of 32 confident,
+      only 7 have weight ≥0.50, and 6/7 are correct or defensible (invoiceninja = an invoice
+      app ×3; happytaxes = tax app, one screen literally titled "RECEIPT" ×2; a shopping
+      list = checkout≈receipt). The remaining 25 confident are low conf (0.26–0.49) on
+      receipt-ADJACENT content (expense forms, crypto send/receive, price lists, an itemized
+      timetable) — CLIP keys on "itemized list + amounts," genuinely receipt-like. Exactly 1
+      arguable over-fire (evmap price list 0.56). ZERO clean bank dashboards mislabeled (and
+      FOSS finance apps skew expense/crypto/budget, so the set can't even show that failure).
+      So: dominated by weak F-Droid label noise + receipt-adjacency, not a model bug. No safe
+      fix — receipt is validated working (receipt→receipt 1.0) so can't be remapped like
+      error/crash; confusion is CLIP-driven (39/45) so OCR isn't the lever; the only CLIP
+      lever (budgeting/expense decoy label) regenerates all embeddings + perturbs every
+      softmax + risks the working receipt class for ~1 real over-fire. Closed no-fix with
+      evidence. See docs/eval/results.md. (Phase 2 "receipts-article soft FP" is the related
+      OCR-side item, still separately open.)
 - [ ] **`browser / web` overprediction (NEW 2026-06-16).** 17% precision, 98 confident FPs;
       acts as a catch-all for web-view-shaped screens (partly the desktop/web gap). Risky
       to tune (legitimate class). Watch-item.
