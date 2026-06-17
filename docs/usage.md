@@ -199,3 +199,16 @@ and, by default, tap to resolve.
 > be "never an automatic fetch." That was too absolute. Resolution is off by default and
 > manual by default, but it is now a setting you can switch to automatic if you want it. The
 > default behavior still never touches the network on its own.
+
+**Description source (experimental generative captions).** Every capture gets a short
+description, by default composed offline from its text, tags, and any QR link (the
+**Structured** source). On a high-end phone (roughly Pixel 8 / Galaxy S23 or newer) you can
+opt into an experimental **Generative** source under **Settings > Camera capture**: an
+on-device vision-language model writes a free-form caption instead. It is off and disabled by
+default, and only selectable after you import a model file, because the model is large (~3 GB)
+and is never bundled with the app. Tap **Import model**, pick a Gemma 3n `.task` file you
+downloaded yourself (accepting its licence at the source), and once it copies you can switch
+the source to Generative. It is slow (tens of seconds per photo on CPU) and falls back to the
+structured description on any error. On phones that do not qualify, the option is hidden or
+disabled with the reason shown. This path has not been verified by us on real hardware yet, so
+treat it as experimental.

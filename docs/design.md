@@ -475,10 +475,11 @@ small.
    Barcode Scanning, on-device) decodes any code. A decoded code is treated as ground truth:
    an authoritative `qr code` tag is attached, the raw payload stored, and the capture is
    not flagged needs-review. Decoding never fetches what a URL points to.
-4. **Structured description.** `CaptureDescriber` (interface; `StructuredCaptureDescriber`
-   impl) composes a short, deterministic description from OCR text, the top tags, and any QR
-   payload (for a URL it names the host, not the full tracking URL), stored in `description`
-   and shown on the detail screen.
+4. **Description.** `CaptureDescriber` (interface) produces a short description stored in
+   `description` and shown on the detail screen. `StructuredCaptureDescriber` composes it
+   deterministically from OCR text, the top tags, and any QR payload (for a URL it names the host,
+   not the full tracking URL); this is the default and the guaranteed fallback. An experimental
+   generative VLM alternative is selected per the user's preference + device (see §15.3).
 
 **Why the screenshot eval is preserved (by construction, not by luck).** Adding labels to a
 zero-shot softmax can change the argmax for any image even if no existing embedding moved,
@@ -521,25 +522,32 @@ showing the page's OpenGraph metadata (title, description, og:image).
 > default and manual by default, but the comprehensive-config requirement added an opt-in
 > automatic trigger. The default behavior still never reaches the network on its own.
 
-### 15.3 Generative description (experimental, in progress)
+### 15.3 Generative description (experimental, built, unverified on hardware)
 
-A second `CaptureDescriber` impl backed by an on-device vision-language model, swappable
-without touching the pipeline or the `description` column. Researched and scaffolded
-2026-06-17; see [docs/spikes/vlm-device-research.md](spikes/vlm-device-research.md).
+A second `CaptureDescriber` impl backed by an on-device vision-language model, selected at
+runtime without touching the pipeline or the `description` column. Built 2026-06-17; see
+[docs/spikes/vlm-device-research.md](spikes/vlm-device-research.md) for the research and the
+on-device verification checklist.
 
-- **Runtime/model:** MediaPipe LLM Inference (`com.google.mediapipe:tasks-genai`) + Gemma 3n
-  E2B (multimodal, ~3.1 GB download, ~5.9 GB peak). High-end only: the API is documented as
-  for Pixel 8 / Samsung S23-class devices and "does not reliably support device emulators."
-- **Built so far (verifiable):** a pure device-capability gate (`DeviceCapability`, unit-tested:
-  arm64 + ~7 GB+ total RAM + not low-RAM + not emulator) and the experimental, opt-in Settings
-  config — the `GENERATIVE` selector is labeled experimental and stays disabled with a
-  device-aware reason (capability reason, or "model not downloadable yet" on a capable device).
-- **Blocked, not built (needs decisions):** the `tasks-genai` dependency, the
-  `GenerativeCaptureDescriber` (LlmInference + vision session), and the model download. These
-  cannot be verified in our environment (emulator unsupported; no high-end device), the 3.1 GB
-  model exceeds the 2 GB GitHub-release limit our mirror uses, and Gemma's license governs
-  redistribution. Open decisions: where to host/download the model, license handling, and a real
-  device for verification. Until then the offline structured describer remains the only path.
+- **Runtime/model:** MediaPipe LLM Inference (`com.google.mediapipe:tasks-genai:0.10.27`,
+  `tasks-core` for `MPImage`) + Gemma 3n E2B as a `.task` bundle (multimodal, ~3.1 GB, ~5.9 GB
+  peak). High-end only: the API targets Pixel 8 / Samsung S23-class devices and "does not
+  reliably support device emulators."
+- **Gate:** `DeviceCapability` (pure, unit-tested: arm64 + ~7 GB+ total RAM + not low-RAM + not
+  emulator) read by `DeviceCapabilityChecker`. Non-qualifying devices never see the option enabled.
+- **Model delivery:** user-imported, never bundled or hosted by us (3.1 GB > GitHub's 2 GB limit;
+  Gemma is licence-gated so no clean no-auth link). `VlmModelManager` imports a user-picked `.task`
+  via SAF (atomic `.part` rename + size gate). The user accepts Gemma's licence at the source.
+- **Describer + routing:** `GenerativeCaptureDescriber` loads-runs-closes the model per call
+  (weights are ~3 GB resident, never a singleton), serialises with a mutex, and returns null on any
+  failure. `CaptureDescriberRouter` (the bound `CaptureDescriber`) picks generative only when opted
+  in AND device-capable AND a model is imported AND there is an image, always falling back to
+  structured. Settings (capable devices) offers import/replace/remove; the `GENERATIVE` radio
+  unlocks only once a model is imported.
+- **NOT verified on hardware.** The emulator can't run the API and no high-end device is in our
+  loop, so generation is compile/logic-checked only. The fence (gate + opt-in + imported model +
+  fall back to structured) guarantees the unverified path can't corrupt a capture. A user with a
+  Pixel 8 / S23-class device runs the checklist to confirm. Cost: +~52 MB universal APK.
 
 ### 15.4 Still deferred
 

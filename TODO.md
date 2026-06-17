@@ -106,19 +106,23 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
         real-world label set per image. (4) Report precision per real-world class in
         performance-and-accuracy.md. Cost: ~1–2h data + run. Blocked only by not-yet-done; no
         external blocker. Deferred per user scope decision (build features now, plan the data/eval).
-      * **Generative description (VLM) — RESEARCHED + scaffolded 2026-06-17; describer/download BLOCKED.**
-        Research: docs/spikes/vlm-device-research.md. Decision: MediaPipe `tasks-genai` + Gemma 3n E2B
-        (multimodal, ~3.1 GB, ~5.9 GB peak), high-end only (Pixel 8 / S23+; emulator unsupported).
-        BUILT (verifiable): pure `DeviceCapability` gate (arm64 + ~7 GB RAM + not low-RAM + not
-        emulator; DeviceCapabilityTest×6) + experimental opt-in Settings config — `GENERATIVE` radio
-        is labeled experimental and disabled with a device-aware reason. BLOCKED (not built, need
-        decisions): the `tasks-genai` dependency, `GenerativeCaptureDescriber` (LlmInference + vision
-        session), and the model download. Why blocked: (1) cannot verify here — emulator unsupported,
-        no high-end device in the loop; (2) the 3.1 GB model > GitHub's 2 GB release-asset limit, so
-        our mirror can't host it — needs official-source download (HF/Kaggle, auth + Gemma license) or
-        >2 GB hosting; (3) Gemma license governs redistribution. OPEN DECISIONS FOR USER: where to
-        host/download, license handling, and a real device for verification. Structured descriptions
-        remain the default and are fine for an inventory.
+      * **Generative description (VLM) — BUILT 2026-06-17; UNVERIFIED on hardware (released v0.9.0).**
+        Research + verification checklist: docs/spikes/vlm-device-research.md. Decision: MediaPipe
+        `tasks-genai:0.10.27` (+ `tasks-core` for MPImage, no extra native libs) + Gemma 3n E2B as a
+        `.task` bundle (multimodal, ~3.1 GB, ~5.9 GB peak), high-end only (Pixel 8 / S23+; emulator
+        unsupported). SHIPPED: `DeviceCapability` gate (DeviceCapabilityTest×6) + `VlmModelManager`
+        (SAF import, atomic .part rename, size gate) + `GenerativeCaptureDescriber` (LlmInference +
+        vision session, load/run/close per call, mutex-serialised, null-on-failure) +
+        `CaptureDescriberRouter` (pure shouldUseGenerative gate, unit-tested; always falls back to
+        structured) + Settings import/replace/remove UI (capable devices; GENERATIVE radio unlocks
+        only when a model is imported). Delivery: user-imported, never bundled/hosted by us — GitHub
+        2 GB limit + Gemma gating rule out a clean link (decided with user). Cost: +~52 MB universal
+        APK. CAVEAT — NOT verified on a real device by the author (emulator can't run the API); the
+        fence (gate + opt-in + imported model + structured fallback) means the unverified path can't
+        corrupt a capture. User has a high-end device; runs the checklist in the research doc to
+        confirm generation. Structured descriptions remain the default. FOLLOW-UPS: (a) on-device
+        verification by the user; (b) drop x86/x86_64 ABIs from release builds (~32 MB of the 52 MB is
+        emulator-only ABIs that can't run this); (c) batch-level model load instead of per-call.
 - [x] **Classification accuracy eval against datasets (done 2026-06-15, SCALED 2026-06-16).**
       Built an on-device eval harness (`app/src/androidTest/.../pipeline/ClassificationEvalTest.kt`)
       that runs the EXACT production path (OCR + heuristics + CLIP + `TagFuser.fuse` +
