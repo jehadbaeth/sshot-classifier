@@ -323,7 +323,8 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Foreground service for very large backfills — DONE (shipped v0.5.0; this TODO was stale).
       ScreenshotProcessingWorker calls setForeground + getForegroundInfo with a dataSync
       ForegroundInfo (FOREGROUND_SERVICE_TYPE_DATA_SYNC on Q+); manifest declares the FGS perms.
-- [ ] Heuristic tuning is ongoing, not "done" — see Known issues
+- NOTE: OCR heuristic tuning is a standing, never-"done" activity (latest pass: browser/web URL
+  markers demoted, 2026-06-17). Driven by eval findings, not a discrete task. See Known issues.
 
 ### Phase 2 — CLIP integration (code done + verified 2026-06-14; release pending hosting)
 - [x] Convert CLIP image encoder to TFLite (int8 weight-only, 89.5 MB, cos >= 0.998)
