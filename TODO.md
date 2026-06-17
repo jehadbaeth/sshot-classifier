@@ -375,7 +375,14 @@ Mirrors docs/design.md section 14, with task-level detail.
       images, ordered so members sit adjacent; reuses the existing grid + detail, NO new destructive
       delete subsystem (the app stays non-destructive; act via detail/reorg). Group count shown on
       the chip.
-- [ ] Export/import of the tag database.
+- [x] Export/import of the tag database — DONE 2026-06-17. Exports the user-meaningful,
+      non-re-derivable data only: manual (USER) tags keyed by image content hash + custom category
+      labels (auto tags regenerate on a scan, so excluded). JSON via SAF (CreateDocument/
+      OpenDocument) in a Settings "Backup" section. Import re-attaches user tags to images present
+      by hash (survives reinstall / destructive DB recreate), skips unknown hashes + duplicates,
+      re-creates categories via addCustomCategory (re-embeds; needs text model), and tolerates
+      garbage input. repository.exportTagsJson()/importTagsJson() (org.json); DAO idByHash +
+      userTagsForExport. Round-trip instrumented test (TagBackupInstrumentedTest, 3, green).
 - [ ] Widen the spike test set (real game, calendar, receipt, shopping screens;
       the v1 spike leaned on web consent walls for several categories).
 - [x] Signed release builds (keystore in CI secrets) instead of debug-signed.

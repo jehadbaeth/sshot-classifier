@@ -267,6 +267,46 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    // ---- Backup: export / import tag data ----
+
+    private val _backupStatus = MutableStateFlow<String?>(null)
+    val backupStatus: StateFlow<String?> = _backupStatus.asStateFlow()
+
+    /** Writes a tag backup (manual tags + custom categories) to the user-chosen file. */
+    fun exportTagsTo(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val result = runCatching {
+                val json = repository.exportTagsJson()
+                context.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
+                    ?: error("could not open file for writing")
+            }
+            _backupStatus.value = result.fold(
+                onSuccess = { "Backup exported" },
+                onFailure = { "Export failed: ${it.message}" },
+            )
+        }
+    }
+
+    /** Restores manual tags + custom categories from a previously exported file. */
+    fun importTagsFrom(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val result = runCatching {
+                val json = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+                    ?: error("could not open file for reading")
+                repository.importTagsJson(json)
+            }
+            _backupStatus.value = result.fold(
+                onSuccess = { "Imported ${it.userTagsApplied} tags, ${it.categoriesAdded} categories" +
+                    (if (it.skipped > 0) " (${it.skipped} skipped)" else "") },
+                onFailure = { "Import failed: ${it.message}" },
+            )
+        }
+    }
+
+    fun clearBackupStatus() {
+        _backupStatus.value = null
+    }
+
     // ---- Camera-capture preferences ----
 
     val capturePrefs: StateFlow<CapturePreferences> =

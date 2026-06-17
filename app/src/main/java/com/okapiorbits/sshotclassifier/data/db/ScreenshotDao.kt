@@ -105,6 +105,24 @@ interface ScreenshotDao {
     @Query("SELECT EXISTS(SELECT 1 FROM screenshots WHERE file_hash = :hash)")
     suspend fun existsByHash(hash: String): Boolean
 
+    /** Screenshot id for a content hash, or null. Used to re-attach imported user tags. */
+    @Query("SELECT id FROM screenshots WHERE file_hash = :hash")
+    suspend fun idByHash(hash: String): Long?
+
+    /**
+     * User-authored tags joined to their image content hash, for backup/export. Auto tags
+     * (FUSED/CLIP/OCR/CUSTOM) are re-derivable by re-scanning, so only USER tags are exported;
+     * the hash (not the row id, which is unstable across reinstall) re-attaches them on import.
+     */
+    @Query(
+        """
+        SELECT s.file_hash AS fileHash, t.label AS label
+        FROM tags t JOIN screenshots s ON s.id = t.screenshot_id
+        WHERE t.source = 'USER'
+        """
+    )
+    suspend fun userTagsForExport(): List<UserTagExport>
+
     @Query("UPDATE screenshots SET status = :status, date_processed = :processedAt WHERE id = :id")
     suspend fun updateStatus(id: Long, status: String, processedAt: Long?)
 
@@ -243,6 +261,9 @@ interface ScreenshotDao {
 }
 
 data class TagCount(val label: String, val cnt: Int)
+
+/** One exported user tag: the image's content hash plus the label. */
+data class UserTagExport(val fileHash: String, val label: String)
 
 /** Lightweight projection of an embedding row (no entity id) for search. */
 data class EmbeddingRow(val screenshot_id: Long, val vector: ByteArray) {

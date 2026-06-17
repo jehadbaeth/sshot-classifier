@@ -69,8 +69,16 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
     val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
     val capturePrefs by viewModel.capturePrefs.collectAsStateWithLifecycle()
+    val backupStatus by viewModel.backupStatus.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.loadFolders() }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri -> uri?.let(viewModel::exportTagsTo) }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(viewModel::importTagsFrom) }
 
     // MOVE mode: launch the system delete-consent dialog when one is pending.
     val deleteLauncher = rememberLauncherForActivityResult(
@@ -195,6 +203,26 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 onRemove = viewModel::removeCategory,
                 onDismissStatus = viewModel::clearCategoryStatus,
             )
+
+            Section("Backup")
+            Text(
+                "Export your manual tags and custom categories to a file you can keep or move to a " +
+                    "new device, then import them back. Tags re-attach to the same images by content, " +
+                    "so they survive a reinstall. Auto tags are not exported (they regenerate on a scan).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                OutlinedButton(onClick = { exportLauncher.launch("sshot-tags-backup.json") }) {
+                    Text("Export")
+                }
+                OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }) {
+                    Text("Import")
+                }
+            }
+            backupStatus?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+            }
 
             Section("Appearance")
             LabeledSwitch(

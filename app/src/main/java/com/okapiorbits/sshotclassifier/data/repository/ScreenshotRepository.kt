@@ -2,6 +2,8 @@ package com.okapiorbits.sshotclassifier.data.repository
 
 import android.content.ContentUris
 import android.net.Uri
+import org.json.JSONArray
+import org.json.JSONObject
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.data.db.TagCount
@@ -173,6 +175,61 @@ class ScreenshotRepository @Inject constructor(
         return AddCategoryResult.Added(matched)
     }
 
+    // ---- Backup: export / import of user-meaningful tag data ----
+
+    data class ImportResult(val userTagsApplied: Int, val categoriesAdded: Int, val skipped: Int)
+
+    /**
+     * Serializes the user-meaningful, non-re-derivable data to JSON: manual (USER) tags keyed
+     * by image content hash, plus custom category labels. Auto tags re-derive on a rescan, so
+     * they are intentionally excluded. The hash (not the unstable row id) lets tags re-attach
+     * after a reinstall or a destructive DB recreate.
+     */
+    suspend fun exportTagsJson(): String {
+        val tags = JSONArray()
+        for (t in dao.userTagsForExport()) {
+            tags.put(JSONObject().put("hash", t.fileHash).put("label", t.label))
+        }
+        val cats = JSONArray()
+        for (c in dao.allCategories()) cats.put(c.label)
+        return JSONObject()
+            .put("version", BACKUP_VERSION)
+            .put("userTags", tags)
+            .put("customCategories", cats)
+            .toString(2)
+    }
+
+    /**
+     * Applies a backup produced by [exportTagsJson]. User tags re-attach to images present on
+     * this device (matched by hash; missing images and existing duplicates are skipped). Custom
+     * categories are re-created via [addCustomCategory] (re-embedded on-device; needs the text
+     * model, else skipped). Never throws on bad input — returns a best-effort [ImportResult].
+     */
+    suspend fun importTagsJson(json: String): ImportResult {
+        val root = runCatching { JSONObject(json) }.getOrNull()
+            ?: return ImportResult(0, 0, 0)
+        var applied = 0
+        var skipped = 0
+        val tags = root.optJSONArray("userTags") ?: JSONArray()
+        for (i in 0 until tags.length()) {
+            val o = tags.optJSONObject(i) ?: continue
+            val hash = o.optString("hash").takeIf { it.isNotBlank() } ?: continue
+            val label = o.optString("label").trim().lowercase().takeIf { it.isNotBlank() } ?: continue
+            val id = dao.idByHash(hash)
+            if (id == null || dao.tagExists(id, label)) { skipped++; continue }
+            dao.insertTag(TagEntity(screenshot_id = id, label = label, weight = 1f, source = TagSource.USER.name))
+            dao.updateNeedsReview(id, false)
+            applied++
+        }
+        var catsAdded = 0
+        val cats = root.optJSONArray("customCategories") ?: JSONArray()
+        for (i in 0 until cats.length()) {
+            val label = cats.optString(i).takeIf { it.isNotBlank() } ?: continue
+            if (addCustomCategory(label) is AddCategoryResult.Added) catsAdded++ else skipped++
+        }
+        return ImportResult(applied, catsAdded, skipped)
+    }
+
     /** Deletes a custom category and removes the auto tags it produced. */
     suspend fun removeCustomCategory(id: Long, label: String) {
         dao.deleteCategory(id)
@@ -320,5 +377,9 @@ class ScreenshotRepository @Inject constructor(
             if (rowId != -1L) inserted++
         }
         return inserted
+    }
+
+    private companion object {
+        const val BACKUP_VERSION = 1
     }
 }
