@@ -92,13 +92,29 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
         example.com extracts the title; file:// and LAN hosts rejected). Local-only/network test
         (CI is Linux, no emulator). Only the visual og:image render in the preview card still
         wants a human eyeball; standard Coil AsyncImage, low risk.
-- [ ] **Camera capture — still deferred.**
-      * **Generative description**: second `CaptureDescriber` impl backed by an on-device VLM
-        (BLIP/Florence/SmolVLM-class). The Settings selector exists with Generative shown but
-        DISABLED (generativeDescriptionAvailable=false) until a model is bundled. Hundreds of MB;
-        its own LiteRT conversion + tokenizer + decode loop + model-delivery + perf project.
-      * **Real-world classification eval**: build/borrow a labeled real-world capture set
-        (storefronts/signs/products) and run the eval harness with the CLIP model installed.
+- [!] **Camera capture — still deferred (scoped plans written 2026-06-17, both DEFERRED).**
+      * **Real-world classification eval (P3) — DEFERRED, plan ready.** Goal: measure CLIP accuracy
+        on the new real-world tags (storefront/advertisement/street sign/business card/product/menu/
+        poster/qr code) the capture feature added but can't currently validate. Concrete plan:
+        (1) source a small CC-licensed labeled set from Wikimedia Commons category slices (reuse
+        `scripts/eval/fetch_field_commons.py` pattern) — e.g. categories "Storefronts", "Street
+        name signs", "Restaurant menus", "Business cards", "Product packaging", ~30–50/class,
+        sha256-deduped, manifest with license/URL like the existing slices. (2) Push to the emulator
+        internal eval dir + the CLIP model (the chcon/MLS dance in scripts/eval/push_and_run.sh).
+        (3) Run `ClassificationEvalTest` (it already runs the production path); captures score
+        against all 30 labels (includeRealWorld) — may need a small harness flag to force the
+        real-world label set per image. (4) Report precision per real-world class in
+        performance-and-accuracy.md. Cost: ~1–2h data + run. Blocked only by not-yet-done; no
+        external blocker. Deferred per user scope decision (build features now, plan the data/eval).
+      * **Generative description (VLM) — DEFERRED, plan ready.** Second `CaptureDescriber` impl
+        behind the already-built gated selector (generativeDescriptionAvailable=false). Concrete
+        plan: pick a small VLM (SmolVLM-256M/500M or Moondream-class), convert to LiteRT (the spike
+        venv already has litert-torch + litert-lm-builder/peek tooling), port/handle its multimodal
+        tokenizer + a greedy decode loop, host on the mirror repo like CLIP (first-launch download +
+        sha256), and add `GenerativeCaptureDescriber : CaptureDescriber` selected when the pref is
+        GENERATIVE and the model is present (then flip generativeDescriptionAvailable=true). Cost:
+        multi-day, hundreds of MB download, seconds/caption inference + battery. Real project; not a
+        session task. Structured descriptions remain the default and are fine for an inventory.
 - [x] **Classification accuracy eval against datasets (done 2026-06-15, SCALED 2026-06-16).**
       Built an on-device eval harness (`app/src/androidTest/.../pipeline/ClassificationEvalTest.kt`)
       that runs the EXACT production path (OCR + heuristics + CLIP + `TagFuser.fuse` +
@@ -272,7 +288,11 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       OCR snippets) so the rules are measured, not just asserted. All green. Caveat: hand-
       labeled cases, not a sample of real screenshots, so this validates the logic, not
       field precision. Fusion tuning (TagFuser receipts-article soft FP) is still separate.
-- [ ] Shrink the APK (now ~125 MB debug, +1.3 MB BPE merges asset). See Known issues.
+- [x] Shrink the APK — addressed/won't-chase-further (reviewed 2026-06-17). The bulk is ML Kit
+      OCR + TFLite native libs across 4 ABIs; CLIP models download at runtime (not in the APK).
+      The minified release APK is ~101 MB and the AAB is 49 MB with Play serving per-ABI/density
+      splits (see docs/publishing.md), so real download is far smaller. Ship the AAB; no further
+      work warranted unless a concrete size target appears.
 
 ---
 
@@ -300,7 +320,9 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Progress notification (normal, not foreground service yet)
 - [x] Verified on emulator: OCR + FTS search ("linux" -> code shot) + tags
 - [x] Unit tests for heuristics (regressions: status-bar clock, #include)
-- [ ] Foreground service for very large backfills (deferred; normal notification for now)
+- [x] Foreground service for very large backfills — DONE (shipped v0.5.0; this TODO was stale).
+      ScreenshotProcessingWorker calls setForeground + getForegroundInfo with a dataSync
+      ForegroundInfo (FOREGROUND_SERVICE_TYPE_DATA_SYNC on Q+); manifest declares the FGS perms.
 - [ ] Heuristic tuning is ongoing, not "done" — see Known issues
 
 ### Phase 2 — CLIP integration (code done + verified 2026-06-14; release pending hosting)
@@ -332,8 +354,12 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Hybrid merge of visual + OCR rankings via reciprocal rank fusion (RRF over FTS4, not BM25 weighting)
 - [x] Search UX: query embeds visual+text, graceful fallback if text model absent
 - [x] Verified on-device cross-modal retrieval (instrumented test, map/code/receipt)
-- [ ] HNSW index only if libraries exceed ~20k images (defer)
-- [ ] Tune RRF k / cap; consider showing a per-result "visual vs text" provenance hint
+- [!] HNSW index — DEFER-BY-DESIGN (reviewed 2026-06-17). Brute-force cosine over the embedding
+      cache is ~11 ms warm at 10k and ~22 ms extrapolated at 20k (scale-test.md), under the 50 ms
+      target. Trigger to build: real libraries exceeding ~20k images. Not before.
+- [!] Tune RRF k/cap + per-result "visual vs text" provenance hint — DEFERRED (reviewed 2026-06-17).
+      No data pressure on RRF k (=60 works); the provenance hint is a minor UX nicety. Low value
+      now; revisit if users report ranking confusion. Not blind-tuning without a signal.
 
 ### Phase 4 — Reorg, taxonomy, polish
 - [x] Reprocess already-DONE-but-unembedded screenshots after model install
@@ -361,8 +387,12 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Backlog / ideas (not scheduled)
 
-- [ ] Follow-up spike: UI-domain model (SigLIP or CLIP fine-tuned on RICO /
-      Screen2Words) to beat generic CLIP on text-heavy screens. Costs size.
+- [!] Follow-up spike: UI-domain model (SigLIP or CLIP fine-tuned on RICO / Screen2Words) to beat
+      generic CLIP on text-heavy screens. DEFERRED-BY-DECISION (reviewed 2026-06-17): this is the
+      real lever for the remaining CLIP-ceiling weaknesses (browser/web's CLIP-driven half, document/
+      dense-text drift, social beyond Reddit), but it is a large research + app-size investment
+      (training/fine-tuning, conversion, a new bundled model). Hold until on-screen classification
+      accuracy is prioritized over size; not a quick win.
 - [x] App bundle (AAB) to cut download size. `bundleRelease` produces a 49 MB AAB
       vs the 101 MB universal release APK; Play serves per-ABI/density splits. See
       docs/publishing.md. (Per-ABI APK splits not needed once shipping the AAB.)
@@ -383,15 +413,20 @@ Mirrors docs/design.md section 14, with task-level detail.
       re-creates categories via addCustomCategory (re-embeds; needs text model), and tolerates
       garbage input. repository.exportTagsJson()/importTagsJson() (org.json); DAO idByHash +
       userTagsForExport. Round-trip instrumented test (TagBackupInstrumentedTest, 3, green).
-- [ ] Widen the spike test set (real game, calendar, receipt, shopping screens;
-      the v1 spike leaned on web consent walls for several categories).
+- [x] Widen the spike test set — SUPERSEDED 2026-06-17 by the scaled eval. The v1 11-image spike
+      is obsolete now that ClassificationEvalTest runs ~3,380 real images (F-Droid 3,124 + Enrico
+      240 + field slice + bank slice). Remaining data gaps (clean mobile-social, labeled real-world
+      captures) are tracked under their own items, not this one.
 - [x] Signed release builds (keystore in CI secrets) instead of debug-signed.
       build.gradle signingConfig reads keystore.properties / env (debug fallback +
       loud warning); Release workflow builds signed APK + AAB from secrets. The
       minified R8 release build was verified on device: OCR (ML Kit) + CLIP image
       and query encoding (TFLite) all run, worker SUCCESS, no stripping crashes.
       CI release path is wired but unexercised until the keystore secrets exist.
-- [ ] On-device benchmark harness for CLIP encode time (design sec 12 targets).
+- [x] On-device benchmark harness for CLIP encode time — DONE 2026-06-17.
+      `ClipEncodeBenchmarkTest` warms up then encodes a bundled image 30× and logs mean/p50/p95
+      under "ClipBench". Skips (assumeTrue) when the model is absent, so CI is unaffected; run on
+      a device/emulator with the model present to get numbers for the design §12 target.
 
 ---
 
