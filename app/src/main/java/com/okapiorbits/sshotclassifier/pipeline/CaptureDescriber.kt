@@ -1,33 +1,41 @@
 package com.okapiorbits.sshotclassifier.pipeline
 
+import android.net.Uri
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Inputs for describing a camera capture. Tags are user-facing labels, weightiest first. */
+/**
+ * Inputs for describing a camera capture. Tags are user-facing labels, weightiest first.
+ * [imageUri] is the captured image; the deterministic describer ignores it, the generative
+ * one needs the pixels. It is nullable so non-image call sites (and tests) need not supply it.
+ */
 data class CaptureContext(
     val ocrText: String,
     val tags: List<String>,
     val qrPayload: String?,
     val qrIsUrl: Boolean,
+    val imageUri: Uri? = null,
 )
 
 /**
  * Turns a classified camera capture into a short human-readable description for the
  * inventory.
  *
- * Phase A ships [StructuredCaptureDescriber], which composes the text deterministically
- * from OCR, tags, and any QR payload. It is an interface so a generative on-device
- * vision-language model can replace it later (Phase B) without touching the pipeline or
- * the stored `description` column. See docs/design.md (camera capture feature) and TODO.md.
+ * [StructuredCaptureDescriber] composes the text deterministically from OCR, tags, and any
+ * QR payload (always available, offline). The experimental [vlm.GenerativeCaptureDescriber]
+ * runs an on-device vision-language model instead; [CaptureDescriberRouter] picks between
+ * them per the user's preference + device capability + model availability, always falling
+ * back to structured. [describe] is `suspend` because the generative path is slow and
+ * blocking. See docs/design.md (camera capture feature) and TODO.md.
  */
 interface CaptureDescriber {
-    fun describe(ctx: CaptureContext): String
+    suspend fun describe(ctx: CaptureContext): String
 }
 
 @Singleton
 class StructuredCaptureDescriber @Inject constructor() : CaptureDescriber {
 
-    override fun describe(ctx: CaptureContext): String {
+    override suspend fun describe(ctx: CaptureContext): String {
         val snippet = snippet(ctx.ocrText)
         val primary = ctx.tags.firstOrNull { it != "other" && it != "qr code" }
 

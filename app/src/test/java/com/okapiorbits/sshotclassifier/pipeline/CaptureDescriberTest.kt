@@ -1,5 +1,6 @@
 package com.okapiorbits.sshotclassifier.pipeline
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -8,9 +9,12 @@ class CaptureDescriberTest {
 
     private val describer = StructuredCaptureDescriber()
 
+    // describe() is suspend (the generative sibling is async); the structured output is unchanged.
+    private fun describe(ctx: CaptureContext): String = runBlocking { describer.describe(ctx) }
+
     @Test
     fun storefront_with_text() {
-        val d = describer.describe(
+        val d = describe(
             CaptureContext(
                 ocrText = "DR MEYER\nDENTIST\nOpen 9-5",
                 tags = listOf("storefront", "street sign"),
@@ -23,7 +27,7 @@ class CaptureDescriberTest {
 
     @Test
     fun qr_url_uses_host_not_full_url() {
-        val d = describer.describe(
+        val d = describe(
             CaptureContext(
                 ocrText = "Scan for menu",
                 tags = listOf("qr code"),
@@ -37,7 +41,7 @@ class CaptureDescriberTest {
     @Test
     fun qr_non_url_payload_is_quoted_and_truncated() {
         val payload = "WIFI:S:MyNetwork;T:WPA;P:" + "x".repeat(200) + ";;"
-        val d = describer.describe(
+        val d = describe(
             CaptureContext(ocrText = "", tags = emptyList(), qrPayload = payload, qrIsUrl = false)
         )
         assertTrue(d.startsWith("QR code: \"WIFI:S:MyNetwork"))
@@ -46,7 +50,7 @@ class CaptureDescriberTest {
 
     @Test
     fun no_recognized_tag_falls_back_to_photo() {
-        val d = describer.describe(
+        val d = describe(
             CaptureContext(ocrText = "", tags = listOf("other"), qrPayload = null, qrIsUrl = false)
         )
         assertEquals("Photo.", d)
@@ -54,7 +58,7 @@ class CaptureDescriberTest {
 
     @Test
     fun other_tag_is_skipped_in_favor_of_a_real_tag() {
-        val d = describer.describe(
+        val d = describe(
             CaptureContext(
                 ocrText = "",
                 tags = listOf("other", "menu"),
@@ -67,7 +71,7 @@ class CaptureDescriberTest {
 
     @Test
     fun long_ocr_is_truncated() {
-        val d = describer.describe(
+        val d = describe(
             CaptureContext(
                 ocrText = "word ".repeat(100),
                 tags = listOf("poster"),

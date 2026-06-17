@@ -18,6 +18,7 @@ mlkitImageLabeling = "17.0.9"
 mlkitBarcode = "17.3.0"
 camerax = "1.4.1"
 mediapipeGenai = "0.10.27"
+mediapipeCore = "0.10.28"
 tflite = "2.16.1"
 tfliteSupport = "0.4.4"
 androidxTestExtJunit = "1.2.1"
@@ -65,6 +66,7 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipeGenai" }
+mediapipe-tasks-core = { group = "com.google.mediapipe", name = "tasks-core", version.ref = "mediapipeCore" }
 
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
 tensorflow-lite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tfliteSupport" }

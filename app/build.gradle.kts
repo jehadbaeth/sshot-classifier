@@ -126,7 +126,10 @@ dependencies {
 
     // On-device generative VLM captions (experimental, opt-in, high-end devices only).
     // MediaPipe LLM Inference API; the Gemma .task model is user-provided, never bundled.
+    // tasks-core supplies the framework MPImage/BitmapImageBuilder that addImage() needs
+    // (pure Java, no extra native libs; tasks-vision would add unused vision .so files).
     implementation(libs.mediapipe.tasks.genai)
+    implementation(libs.mediapipe.tasks.core)
 
     // Camera (in-app capture for the real-world inventory feature)
     implementation(libs.androidx.camera.core)
