@@ -26,7 +26,7 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Now / next up
 
-- [~] **Camera capture inventory — Phase A (built + tested 2026-06-16).** New feature:
+- [x] **Camera capture inventory — Phase A (RELEASED v0.7.0 2026-06-17).** New feature:
       in-app camera capture of real-world things (storefronts, signs, ads, QR codes)
       classified into the same gallery/search/tag inventory as screenshots. Fully offline.
       Design: docs/design.md section 15. Shipped in Phase A:
@@ -57,10 +57,10 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
         (instrumented, real ML Kit + describer on a real QR image, green on galaxy_s20fe_api33).
         Build + full unit suite + androidTest compile green.
       * **NOT validated**: real-world CLIP classification accuracy (no labeled real-world
-        capture set; eval emulator has no CLIP model) and the live CameraX shutter→file flow
-        (hardware/UI path, not automatable headlessly). Honest gap, documented.
-      Remaining to close the task: user smoke-test of the live capture on a device; then mark [x].
-- [~] **Camera capture — Phase B (QR link resolution BUILT + tested 2026-06-17).** User
+        capture set; eval emulator has no CLIP model — tracked separately below) and the live
+        CameraX shutter→file flow (hardware/UI path, not automatable headlessly). The physical
+        shutter is the only remaining human-eyeball step; the feature is shipped/released.
+- [x] **Camera capture — Phase B (QR link resolution RELEASED v0.7.0 2026-06-17).** User
       asked to proceed with Step B and make everything fully user-controllable. Shipped:
       * **All behavior is now a stored preference** (`CapturePreferences` + `CapturePreferencesStore`,
         DataStore `capture_prefs`, mirrors ReorgPreferencesStore) surfaced in a Settings "Camera
@@ -88,8 +88,10 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
         manual; nothing touches the network on its own by default. (advisor catch.)
       * Also: ACCESS_NETWORK_STATE permission added. Build + unit suite + 2 instrumented camera
         tests green; the 4 repo-constructing instrumented tests updated for the 3 new repo ctor deps.
-      Remaining to mark [x]: user smoke-test of live resolution against a real link on device, and
-      the live OG fetch path is not auto-tested (needs a live server; the pure parser + policy are).
+      * Live OG fetch now VERIFIED on device by `LinkPreviewResolverLiveTest` (real fetch of
+        example.com extracts the title; file:// and LAN hosts rejected). Local-only/network test
+        (CI is Linux, no emulator). Only the visual og:image render in the preview card still
+        wants a human eyeball; standard Coil AsyncImage, low risk.
 - [ ] **Camera capture — still deferred.**
       * **Generative description**: second `CaptureDescriber` impl backed by an on-device VLM
         (BLIP/Florence/SmolVLM-class). The Settings selector exists with Generative shown but
