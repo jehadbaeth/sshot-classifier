@@ -175,14 +175,18 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       in code / shared link in chat no longer browser; saturated web page still browser). CAVEAT:
       the full fusion precision/recall delta on F-Droid was NOT re-measured (the 3,124-image corpus
       and CLIP model are not on disk); re-validate when the eval corpus is regenerated.
-- [ ] **Social-media generalization beyond Reddit (open, needs CLEAN data).** OCR social
-      rule keys on Reddit markers (upvote/subreddit/`r/`). The F-Droid social folder is
-      too noisy to settle this (promo graphics + messenger shots); social precision 45%.
-      Still needs representative, hand-verified MOBILE social captures before any change.
-      Do NOT tune against weak-labeled folders — overfit risk.
-- [ ] **Document/dense-text drift (open, CLIP ceiling).** Terms/long-text screens drift
-      to `news`/`other` (Enrico document recall 31%). Pre-existing visual ambiguity, not
-      caused by the email fix. Candidate for the UI-domain-model spike, not a quick tune.
+- [!] **Social-media generalization beyond Reddit — BLOCKED on clean data (reviewed 2026-06-17).**
+      OCR social rule keys on Reddit markers (upvote/subreddit/`r/`). The F-Droid social folder is
+      too noisy to settle this (promo graphics + messenger shots); social precision 45%. Needs
+      representative, hand-verified MOBILE social captures before any change. Do NOT tune against
+      weak-labeled folders — overfit risk. DECISION: not actionable until such a set exists; not a
+      blind-tuning candidate. Unblock = build/borrow a clean mobile-social slice (ties to the P3
+      real-world / clean-data datasets effort).
+- [!] **Document/dense-text drift — BLOCKED, CLIP ceiling (reviewed 2026-06-17).** Terms/long-text
+      screens drift to `news`/`other` (Enrico document recall 31%). Pre-existing visual ambiguity,
+      not an OCR-tunable bug (a dense-text page genuinely looks like news/doc to CLIP). DECISION:
+      the only real lever is the UI-domain-model spike (SigLIP / CLIP fine-tuned on RICO or
+      Screen2Words), tracked in the backlog; no standalone quick fix. Closed as folded into that spike.
 - [x] **Close the search-path test gap (done 2026-06-14).** The repository fusion
       glue was previously unverified at runtime. Extracted RRF + FTS sanitization +
       result reordering into a pure `SearchFusion` object with JVM unit tests (run in
@@ -310,7 +314,14 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] Text encoder NOT needed on-device for tagging (label embeddings precomputed)
 - [x] Model delivery: public mirror repo + first-launch download with sha256
       verify; verified end to end on emulator (download -> checksum -> install)
-- [ ] Tune fusion (receipts-article -> receipt is a soft false positive)
+- [x] Tune fusion (receipts-article -> receipt soft FP) — INVESTIGATED + closed no-fix 2026-06-17.
+      Eval (results-fdroid2.csv): 32 confident receipt FPs, but 26/32 are CLIP-driven (the
+      finance↔receipt visual confusion already investigated + closed no-fix). Only 6 are
+      OCR-driven, and those are currency-pattern overlap (`[$€£]\s?\d` / `\d+\.\d{2}`) on finance
+      screens with amounts — NOT the literal-"receipt"-word-in-an-article case this item names,
+      which does not materially appear in the scaled set. Removing the currency pattern from the
+      receipt rule would hurt genuine receipt recall (receipts are all amounts) to fix 6 weak-label
+      finance shots. No safe OCR lever; folded into the finance↔receipt no-fix conclusion.
 - [x] Reprocess action to re-tag/re-embed already-DONE screenshots after model
       install (done 2026-06-14, see Phase 4)
 
