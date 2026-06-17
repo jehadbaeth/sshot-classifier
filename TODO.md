@@ -366,7 +366,12 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] App bundle (AAB) to cut download size. `bundleRelease` produces a 49 MB AAB
       vs the 101 MB universal release APK; Play serves per-ABI/density splits. See
       docs/publishing.md. (Per-ABI APK splits not needed once shipping the AAB.)
-- [ ] Duplicate / near-duplicate screenshot detection (hash already stored).
+- [~] Duplicate / near-duplicate screenshot detection. Exact dupes are already prevented at
+      ingest (sha256 unique index), so this is NEAR-dupe via CLIP embeddings (cosine = dot,
+      they're L2-normalized). Engine done 2026-06-17: pure `DuplicateFinder.groups()` (union-find
+      over pairwise cosine ≥ 0.96, O(n²) like brute-force search) + DuplicateFinderTest (5).
+      Remaining: repository hook + a way to surface groups in the UI (leaning to a gallery
+      "duplicates" filter that reuses the grid/detail, no new destructive delete subsystem).
 - [ ] Export/import of the tag database.
 - [ ] Widen the spike test set (real game, calendar, receipt, shopping screens;
       the v1 spike leaned on web consent walls for several categories).
