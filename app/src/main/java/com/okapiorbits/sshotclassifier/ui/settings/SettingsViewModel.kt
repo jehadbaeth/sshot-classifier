@@ -22,6 +22,8 @@ import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository.AddC
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
+import com.okapiorbits.sshotclassifier.pipeline.vlm.DeviceCapability
+import com.okapiorbits.sshotclassifier.pipeline.vlm.DeviceCapabilityChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,7 +59,11 @@ class SettingsViewModel @Inject constructor(
     private val reorgPrefsStore: ReorgPreferencesStore,
     private val uiPrefsStore: UiPreferencesStore,
     private val capturePrefsStore: CapturePreferencesStore,
+    deviceCapabilityChecker: DeviceCapabilityChecker,
 ) : ViewModel() {
+
+    /** Device check for the experimental on-device VLM describer (see docs/spikes/vlm-device-research.md). */
+    private val deviceCapability: DeviceCapability.Result = deviceCapabilityChecker.assess()
 
     /** Material You opt-in. Default false = fixed brand palette. */
     val dynamicColor: StateFlow<Boolean> =
@@ -314,11 +320,16 @@ class SettingsViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CapturePreferences())
 
     /**
-     * Whether the generative description option can be selected. False for now: no
-     * on-device vision-language model is bundled (Phase B item). The radio is shown but
-     * disabled so the seam is visible without pretending the model exists.
+     * Why the experimental Generative describer can't be selected yet, or null if it can.
+     * Device-aware: a non-qualifying device shows the capability reason; a capable device shows
+     * that the on-device model isn't downloadable yet (the describer + download are deferred —
+     * see docs/spikes/vlm-device-research.md). It is never selectable in this build, by design.
      */
-    val generativeDescriptionAvailable: Boolean = false
+    val generativeUnavailableReason: String? = when (val c = deviceCapability) {
+        is DeviceCapability.Result.Capable ->
+            "Experimental. The on-device model isn't available to download yet."
+        is DeviceCapability.Result.NotCapable -> "${c.reason}. (Experimental, high-end only.)"
+    }
 
     fun setResolveQrLinks(v: Boolean) = viewModelScope.launch { capturePrefsStore.setResolveQrLinks(v) }
     fun setResolveTrigger(t: ResolveTrigger) = viewModelScope.launch { capturePrefsStore.setResolveTrigger(t) }

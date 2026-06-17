@@ -184,7 +184,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Section("Camera capture")
             CameraCaptureSection(
                 prefs = capturePrefs,
-                generativeAvailable = viewModel.generativeDescriptionAvailable,
+                generativeUnavailableReason = viewModel.generativeUnavailableReason,
                 onDecodeQrChange = viewModel::setDecodeQrCodes,
                 onResolveQrLinksChange = viewModel::setResolveQrLinks,
                 onTriggerChange = viewModel::setResolveTrigger,
@@ -419,7 +419,7 @@ private fun ReorganizationSection(
 @Composable
 private fun CameraCaptureSection(
     prefs: CapturePreferences,
-    generativeAvailable: Boolean,
+    generativeUnavailableReason: String?,
     onDecodeQrChange: (Boolean) -> Unit,
     onResolveQrLinksChange: (Boolean) -> Unit,
     onTriggerChange: (ResolveTrigger) -> Unit,
@@ -492,10 +492,11 @@ private fun CameraCaptureSection(
         onSelect = { onDescriptionSourceChange(DescriptionSource.STRUCTURED) },
     )
     RadioRow(
-        label = if (generativeAvailable) "Generative" else "Generative (needs a model, not available yet)",
-        subtitle = "A vision-language model writes a free-form caption. Not bundled yet.",
+        label = "Generative (experimental)",
+        subtitle = generativeUnavailableReason
+            ?: "A vision-language model writes a free-form caption on-device.",
         selected = prefs.descriptionSource == DescriptionSource.GENERATIVE,
-        enabled = generativeAvailable,
+        enabled = generativeUnavailableReason == null,
         onSelect = { onDescriptionSourceChange(DescriptionSource.GENERATIVE) },
     )
 
