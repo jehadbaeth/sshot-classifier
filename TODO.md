@@ -106,15 +106,19 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
         real-world label set per image. (4) Report precision per real-world class in
         performance-and-accuracy.md. Cost: ~1–2h data + run. Blocked only by not-yet-done; no
         external blocker. Deferred per user scope decision (build features now, plan the data/eval).
-      * **Generative description (VLM) — DEFERRED, plan ready.** Second `CaptureDescriber` impl
-        behind the already-built gated selector (generativeDescriptionAvailable=false). Concrete
-        plan: pick a small VLM (SmolVLM-256M/500M or Moondream-class), convert to LiteRT (the spike
-        venv already has litert-torch + litert-lm-builder/peek tooling), port/handle its multimodal
-        tokenizer + a greedy decode loop, host on the mirror repo like CLIP (first-launch download +
-        sha256), and add `GenerativeCaptureDescriber : CaptureDescriber` selected when the pref is
-        GENERATIVE and the model is present (then flip generativeDescriptionAvailable=true). Cost:
-        multi-day, hundreds of MB download, seconds/caption inference + battery. Real project; not a
-        session task. Structured descriptions remain the default and are fine for an inventory.
+      * **Generative description (VLM) — RESEARCHED + scaffolded 2026-06-17; describer/download BLOCKED.**
+        Research: docs/spikes/vlm-device-research.md. Decision: MediaPipe `tasks-genai` + Gemma 3n E2B
+        (multimodal, ~3.1 GB, ~5.9 GB peak), high-end only (Pixel 8 / S23+; emulator unsupported).
+        BUILT (verifiable): pure `DeviceCapability` gate (arm64 + ~7 GB RAM + not low-RAM + not
+        emulator; DeviceCapabilityTest×6) + experimental opt-in Settings config — `GENERATIVE` radio
+        is labeled experimental and disabled with a device-aware reason. BLOCKED (not built, need
+        decisions): the `tasks-genai` dependency, `GenerativeCaptureDescriber` (LlmInference + vision
+        session), and the model download. Why blocked: (1) cannot verify here — emulator unsupported,
+        no high-end device in the loop; (2) the 3.1 GB model > GitHub's 2 GB release-asset limit, so
+        our mirror can't host it — needs official-source download (HF/Kaggle, auth + Gemma license) or
+        >2 GB hosting; (3) Gemma license governs redistribution. OPEN DECISIONS FOR USER: where to
+        host/download, license handling, and a real device for verification. Structured descriptions
+        remain the default and are fine for an inventory.
 - [x] **Classification accuracy eval against datasets (done 2026-06-15, SCALED 2026-06-16).**
       Built an on-device eval harness (`app/src/androidTest/.../pipeline/ClassificationEvalTest.kt`)
       that runs the EXACT production path (OCR + heuristics + CLIP + `TagFuser.fuse` +

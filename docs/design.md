@@ -521,13 +521,28 @@ showing the page's OpenGraph metadata (title, description, og:image).
 > default and manual by default, but the comprehensive-config requirement added an opt-in
 > automatic trigger. The default behavior still never reaches the network on its own.
 
-### 15.3 Still deferred
+### 15.3 Generative description (experimental, in progress)
 
-- **Generative description.** A second `CaptureDescriber` impl backed by an on-device
-  vision-language model, swappable without touching the pipeline or the `description` column.
-  The Settings selector exists with Generative shown but disabled until such a model is
-  bundled. The model itself (selection, LiteRT conversion, tokenizer, decode loop, hosting,
-  on-device inference) is a separate large project.
+A second `CaptureDescriber` impl backed by an on-device vision-language model, swappable
+without touching the pipeline or the `description` column. Researched and scaffolded
+2026-06-17; see [docs/spikes/vlm-device-research.md](spikes/vlm-device-research.md).
+
+- **Runtime/model:** MediaPipe LLM Inference (`com.google.mediapipe:tasks-genai`) + Gemma 3n
+  E2B (multimodal, ~3.1 GB download, ~5.9 GB peak). High-end only: the API is documented as
+  for Pixel 8 / Samsung S23-class devices and "does not reliably support device emulators."
+- **Built so far (verifiable):** a pure device-capability gate (`DeviceCapability`, unit-tested:
+  arm64 + ~7 GB+ total RAM + not low-RAM + not emulator) and the experimental, opt-in Settings
+  config — the `GENERATIVE` selector is labeled experimental and stays disabled with a
+  device-aware reason (capability reason, or "model not downloadable yet" on a capable device).
+- **Blocked, not built (needs decisions):** the `tasks-genai` dependency, the
+  `GenerativeCaptureDescriber` (LlmInference + vision session), and the model download. These
+  cannot be verified in our environment (emulator unsupported; no high-end device), the 3.1 GB
+  model exceeds the 2 GB GitHub-release limit our mirror uses, and Gemma's license governs
+  redistribution. Open decisions: where to host/download the model, license handling, and a real
+  device for verification. Until then the offline structured describer remains the only path.
+
+### 15.4 Still deferred
+
 - **Real-world classification eval.** Validating CLIP accuracy on storefront/sign/product
   captures needs a labeled real-world dataset and the CLIP model on the eval device.
 
