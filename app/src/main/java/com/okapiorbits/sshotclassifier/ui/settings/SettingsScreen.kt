@@ -70,6 +70,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
     val capturePrefs by viewModel.capturePrefs.collectAsStateWithLifecycle()
     val backupStatus by viewModel.backupStatus.collectAsStateWithLifecycle()
+    val generativeReason by viewModel.generativeUnavailableReason.collectAsStateWithLifecycle()
+    val vlmInstalled by viewModel.vlmModelInstalled.collectAsStateWithLifecycle()
+    val vlmImport by viewModel.vlmImport.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.loadFolders() }
 
@@ -79,6 +82,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let(viewModel::importTagsFrom) }
+    // The VLM model has no standard MIME type (.task); accept any file and validate by size.
+    val vlmImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(viewModel::importVlmModel) }
 
     // MOVE mode: launch the system delete-consent dialog when one is pending.
     val deleteLauncher = rememberLauncherForActivityResult(
@@ -184,7 +191,13 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Section("Camera capture")
             CameraCaptureSection(
                 prefs = capturePrefs,
-                generativeUnavailableReason = viewModel.generativeUnavailableReason,
+                generativeUnavailableReason = generativeReason,
+                vlmImportSupported = viewModel.vlmImportSupported,
+                vlmInstalled = vlmInstalled,
+                vlmModelBytes = viewModel.vlmModelBytes(),
+                vlmImport = vlmImport,
+                onImportModel = { vlmImportLauncher.launch(arrayOf("*/*")) },
+                onDeleteModel = viewModel::deleteVlmModel,
                 onDecodeQrChange = viewModel::setDecodeQrCodes,
                 onResolveQrLinksChange = viewModel::setResolveQrLinks,
                 onTriggerChange = viewModel::setResolveTrigger,
@@ -420,6 +433,12 @@ private fun ReorganizationSection(
 private fun CameraCaptureSection(
     prefs: CapturePreferences,
     generativeUnavailableReason: String?,
+    vlmImportSupported: Boolean,
+    vlmInstalled: Boolean,
+    vlmModelBytes: Long,
+    vlmImport: SettingsViewModel.VlmImportState,
+    onImportModel: () -> Unit,
+    onDeleteModel: () -> Unit,
     onDecodeQrChange: (Boolean) -> Unit,
     onResolveQrLinksChange: (Boolean) -> Unit,
     onTriggerChange: (ResolveTrigger) -> Unit,
@@ -494,11 +513,24 @@ private fun CameraCaptureSection(
     RadioRow(
         label = "Generative (experimental)",
         subtitle = generativeUnavailableReason
-            ?: "A vision-language model writes a free-form caption on-device.",
+            ?: "A vision-language model writes a free-form caption on-device. Slow (tens of " +
+                "seconds per photo) and falls back to structured on any error.",
         selected = prefs.descriptionSource == DescriptionSource.GENERATIVE,
         enabled = generativeUnavailableReason == null,
         onSelect = { onDescriptionSourceChange(DescriptionSource.GENERATIVE) },
     )
+
+    // Model import: only meaningful on a capable device. The model is large and never bundled,
+    // so the user imports a file they downloaded themselves (see docs/spikes/vlm-device-research.md).
+    if (vlmImportSupported) {
+        VlmModelControls(
+            installed = vlmInstalled,
+            modelBytes = vlmModelBytes,
+            importState = vlmImport,
+            onImport = onImportModel,
+            onDelete = onDeleteModel,
+        )
+    }
 
     var root by remember(prefs.captureAlbumRoot) { mutableStateOf(prefs.captureAlbumRoot) }
     OutlinedTextField(
@@ -515,6 +547,59 @@ private fun CameraCaptureSection(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+@Composable
+private fun VlmModelControls(
+    installed: Boolean,
+    modelBytes: Long,
+    importState: SettingsViewModel.VlmImportState,
+    onImport: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val running = importState as? SettingsViewModel.VlmImportState.Running
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Text(
+            if (installed) {
+                "Model imported (${"%.1f".format(modelBytes / 1_000_000_000.0)} GB). " +
+                    "You can switch the description source to Generative above."
+            } else {
+                "No model imported. Download a multimodal model file (a Gemma 3n .task bundle) " +
+                    "from its official source, accept its licence, then import it here. It is " +
+                    "large (~3 GB) and is never bundled with the app."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (running != null) {
+            LinearProgressIndicator(
+                progress = { running.progress },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            Text(
+                "Importing… ${(running.progress * 100).toInt()}%",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                OutlinedButton(onClick = onImport) {
+                    Text(if (installed) "Replace model" else "Import model")
+                }
+                if (installed) {
+                    OutlinedButton(onClick = onDelete) { Text("Remove model") }
+                }
+            }
+        }
+        (importState as? SettingsViewModel.VlmImportState.Failed)?.let {
+            Text(
+                "Import failed: ${it.message}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
 }
 
 @Composable

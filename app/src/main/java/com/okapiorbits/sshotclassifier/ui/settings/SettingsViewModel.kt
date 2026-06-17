@@ -24,6 +24,8 @@ import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
 import com.okapiorbits.sshotclassifier.pipeline.vlm.DeviceCapability
 import com.okapiorbits.sshotclassifier.pipeline.vlm.DeviceCapabilityChecker
+import com.okapiorbits.sshotclassifier.pipeline.vlm.VlmModelManager
+import kotlinx.coroutines.flow.map
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +62,7 @@ class SettingsViewModel @Inject constructor(
     private val uiPrefsStore: UiPreferencesStore,
     private val capturePrefsStore: CapturePreferencesStore,
     deviceCapabilityChecker: DeviceCapabilityChecker,
+    private val vlmModelManager: VlmModelManager,
 ) : ViewModel() {
 
     /** Device check for the experimental on-device VLM describer (see docs/spikes/vlm-device-research.md). */
@@ -319,16 +322,68 @@ class SettingsViewModel @Inject constructor(
         capturePrefsStore.preferences
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CapturePreferences())
 
+    // ---- Experimental generative VLM describer (model is user-imported, never bundled) ----
+
+    /** Whether to offer the model-import UI at all: only on a capable device. */
+    val vlmImportSupported: Boolean = deviceCapability.isCapable
+
+    private val _vlmInstalled = MutableStateFlow(vlmModelManager.isInstalled())
+    val vlmModelInstalled: StateFlow<Boolean> = _vlmInstalled.asStateFlow()
+
+    /** Size of the imported model on disk, for display. */
+    fun vlmModelBytes(): Long = vlmModelManager.sizeBytes()
+
+    sealed interface VlmImportState {
+        data object Idle : VlmImportState
+        data class Running(val progress: Float) : VlmImportState
+        data class Failed(val message: String) : VlmImportState
+    }
+
+    private val _vlmImport = MutableStateFlow<VlmImportState>(VlmImportState.Idle)
+    val vlmImport: StateFlow<VlmImportState> = _vlmImport.asStateFlow()
+
     /**
-     * Why the experimental Generative describer can't be selected yet, or null if it can.
-     * Device-aware: a non-qualifying device shows the capability reason; a capable device shows
-     * that the on-device model isn't downloadable yet (the describer + download are deferred —
-     * see docs/spikes/vlm-device-research.md). It is never selectable in this build, by design.
+     * Why the experimental Generative describer can't be selected, or null if it can.
+     * Reacts to model install state: a non-qualifying device shows the capability reason; a
+     * capable device without an imported model asks the user to import one; once a capable
+     * device has a model it becomes selectable (null). See docs/spikes/vlm-device-research.md.
      */
-    val generativeUnavailableReason: String? = when (val c = deviceCapability) {
-        is DeviceCapability.Result.Capable ->
-            "Experimental. The on-device model isn't available to download yet."
+    val generativeUnavailableReason: StateFlow<String?> =
+        _vlmInstalled.map { installed -> generativeReason(installed) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), generativeReason(_vlmInstalled.value))
+
+    private fun generativeReason(modelInstalled: Boolean): String? = when (val c = deviceCapability) {
         is DeviceCapability.Result.NotCapable -> "${c.reason}. (Experimental, high-end only.)"
+        is DeviceCapability.Result.Capable ->
+            if (modelInstalled) null
+            else "Experimental. Import a model file below to enable on-device captions."
+    }
+
+    /** Copies a user-selected model file into app storage, then refreshes install state. */
+    fun importVlmModel(uri: android.net.Uri) {
+        if (_vlmImport.value is VlmImportState.Running) return
+        viewModelScope.launch {
+            _vlmImport.value = VlmImportState.Running(0f)
+            val result = vlmModelManager.importFrom(uri) { p -> _vlmImport.value = VlmImportState.Running(p) }
+            _vlmImport.value = when (result) {
+                is VlmModelManager.ImportResult.Done -> VlmImportState.Idle
+                is VlmModelManager.ImportResult.Failed -> VlmImportState.Failed(result.message)
+            }
+            _vlmInstalled.value = vlmModelManager.isInstalled()
+        }
+    }
+
+    /** Removes the imported model (reclaims ~3 GB) and falls back to structured descriptions. */
+    fun deleteVlmModel() {
+        viewModelScope.launch {
+            vlmModelManager.delete()
+            // If the user was on generative, revert the stored preference so nothing silently
+            // falls back without the toggle reflecting it.
+            if (capturePrefsStore.current().descriptionSource == DescriptionSource.GENERATIVE) {
+                capturePrefsStore.setDescriptionSource(DescriptionSource.STRUCTURED)
+            }
+            _vlmInstalled.value = vlmModelManager.isInstalled()
+        }
     }
 
     fun setResolveQrLinks(v: Boolean) = viewModelScope.launch { capturePrefsStore.setResolveQrLinks(v) }

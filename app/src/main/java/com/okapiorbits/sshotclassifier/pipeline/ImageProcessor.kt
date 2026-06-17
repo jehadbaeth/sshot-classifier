@@ -125,6 +125,7 @@ class ImageProcessor @Inject constructor(
                     tags = labels,
                     qrPayload = decoded?.rawValue,
                     qrIsUrl = decoded?.isUrl ?: false,
+                    imageUri = uri,
                 )
             )
             dao.updateCaptureMeta(screenshot.id, description, decoded?.rawValue)

@@ -5,7 +5,7 @@ import androidx.room.Room
 import com.okapiorbits.sshotclassifier.data.db.AppDatabase
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotDao
 import com.okapiorbits.sshotclassifier.pipeline.CaptureDescriber
-import com.okapiorbits.sshotclassifier.pipeline.StructuredCaptureDescriber
+import com.okapiorbits.sshotclassifier.pipeline.vlm.CaptureDescriberRouter
 import com.okapiorbits.sshotclassifier.pipeline.clip.CategoryEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipTextEncoder
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
@@ -22,9 +22,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class BindingsModule {
-    /** Structured describer now; a generative VLM impl can replace this in Phase B. */
+    /**
+     * The router picks structured vs the experimental generative VLM per preference + device +
+     * model availability, falling back to structured. See CaptureDescriberRouter.
+     */
     @Binds
-    abstract fun bindCaptureDescriber(impl: StructuredCaptureDescriber): CaptureDescriber
+    abstract fun bindCaptureDescriber(impl: CaptureDescriberRouter): CaptureDescriber
 }
 
 @Module
