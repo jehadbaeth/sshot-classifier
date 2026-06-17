@@ -125,8 +125,14 @@ class OcrHeuristics @Inject constructor() {
         ),
         Rule(
             label = "browser / web",
-            strong = listOf("http://", "https://", "www."),
-            weak = listOf("sign in", "search"),
+            // A URL or domain in text is NOT evidence the screen is a browser: code
+            // editors show repo links, chats and docs and news all quote URLs. In the
+            // 2026-06-16 eval a bare URL as a STRONG marker drove ~38 confident false
+            // positives across 11 other classes (browser confident precision 26%), while
+            // only ~4 true browsers depended on it (CLIP catches the rest). So the URL
+            // scheme markers are weak now: OCR only votes browser when several web signals
+            // co-occur, and CLIP remains the primary browser signal.
+            weak = listOf("http://", "https://", "www.", "sign in", "search"),
             patterns = listOf(Regex("""\b[\w-]+\.(com|org|net|io|gov|edu)\b""")),
         ),
     )

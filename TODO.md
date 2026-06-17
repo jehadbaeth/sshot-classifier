@@ -161,9 +161,20 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
       "receipt 1.00" is literally a BofA "Receipt Organizer" screen showing real receipts =
       correct). ZERO clean balance dashboards confidently mislabeled. Classic failure does
       not occur on real bank UI.
-- [ ] **`browser / web` overprediction (NEW 2026-06-16).** 17% precision, 98 confident FPs;
-      acts as a catch-all for web-view-shaped screens (partly the desktop/web gap). Risky
-      to tune (legitimate class). Watch-item.
+- [x] **`browser / web` overprediction — OCR rule fixed 2026-06-17.** Eval (results-fdroid2.csv):
+      89 confident browser preds, 23 correct = 26% confident precision; the 66 confident FPs were
+      spread across 11 true classes (code 13, social 11, document 10, news 7, chat 6, …). Cause
+      (from the CSV `clip_only` column): the OCR rule treated `http://`/`https://`/`www.` as STRONG
+      markers, so any screen merely quoting a URL got a confident browser vote, and browser/web is
+      OCR-authoritative (0.6). 38 of the 66 FPs were OCR-driven (clip_only != browser); only 4 of
+      the 23 true positives depended on OCR (CLIP catches 19/57 on its own). Fix: demoted the URL
+      scheme markers to WEAK so a bare/partial URL no longer emits browser alone; OCR votes browser
+      only when several web signals co-occur, CLIP stays primary. Estimated effect (CSV-derived, not
+      re-run — corpus is offline): ~9:1 FP:TP trade, confident precision ~26%→~37%, recall ~40%→~33%;
+      lost positives fall to needs-review, not wrong tags. Unit-tested (OcrHeuristicsTest: repo-url
+      in code / shared link in chat no longer browser; saturated web page still browser). CAVEAT:
+      the full fusion precision/recall delta on F-Droid was NOT re-measured (the 3,124-image corpus
+      and CLIP model are not on disk); re-validate when the eval corpus is regenerated.
 - [ ] **Social-media generalization beyond Reddit (open, needs CLEAN data).** OCR social
       rule keys on Reddit markers (upvote/subreddit/`r/`). The F-Droid social folder is
       too noisy to settle this (promo graphics + messenger shots); social precision 45%.

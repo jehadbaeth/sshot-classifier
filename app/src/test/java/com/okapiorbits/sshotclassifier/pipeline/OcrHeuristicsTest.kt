@@ -61,6 +61,28 @@ class OcrHeuristicsTest {
     }
 
     @Test
+    fun `a code editor showing a repo url is not tagged browser`() {
+        // Regression (2026-06-17): a bare URL used to be a STRONG browser marker, so any
+        // screen quoting a link read as a browser. A code editor is not a browser.
+        val text = "// clone from https://github.com/acme/widget\nfun main() { println(\"hi\") }"
+        assertFalse("browser / web" in labels(text))
+    }
+
+    @Test
+    fun `a chat with a shared link is not tagged browser`() {
+        val text = "Alice is typing…\nCheck this out https://example.org\nDelivered"
+        assertFalse("browser / web" in labels(text))
+        assertTrue("chat / messaging" in labels(text))
+    }
+
+    @Test
+    fun `a page saturated with web signals is still tagged browser`() {
+        // Multiple co-occurring web signals (scheme + www + domain + chrome words) still emit.
+        val text = "https://www.example.com\nSign in\nSearch the web"
+        assertTrue("browser / web" in labels(text))
+    }
+
+    @Test
     fun `a lone currency amount does not tag receipt finance or shopping`() {
         // Min-score floor: a single shared pattern hit (here a price) is below the
         // emit threshold, so it must not by itself produce any of these categories.

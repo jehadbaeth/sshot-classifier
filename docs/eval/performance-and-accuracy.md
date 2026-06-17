@@ -27,7 +27,7 @@ instrumented-test specifics live in the companion files this doc links to.
   - [The email/reddit fix (clean validation)](#the-emailreddit-fix-clean-validation)
   - [Fix: error/crash over-firing](#fix-errorcrash-over-firing)
   - [Investigated, no-fix: finance ↔ receipt](#investigated-no-fix-finance--receipt)
-  - [Watch-item: browser/web overprediction](#watch-item-browserweb-overprediction)
+  - [browser/web overprediction (OCR rule fixed)](#browserweb-overprediction-ocr-rule-fixed-2026-06-17)
   - [Enrico regression slice](#enrico-regression-slice)
 - [Part B — Performance](#part-b--performance)
   - [Search latency and memory](#search-latency-and-memory)
@@ -224,13 +224,33 @@ the lever; and the only CLIP lever (a budgeting/expense decoy label) regenerates
 embeddings, perturbs every image's softmax, and risks the working receipt class for ~1 real
 over-fire. **Closed as no-fix with evidence, not deferred.**
 
-## Watch-item: browser/web overprediction
+## browser/web overprediction (OCR rule fixed 2026-06-17)
 
-`browser / web` is the lowest-precision class (17%, 98 confident FPs): it acts as a
-catch-all for any web-view-shaped screen, partly the desktop/web distribution gap. Risky to
-tune (browser is a legitimate class), so it stays a logged watch-item rather than a fix. The
-real lever for this and the other CLIP-ceiling weaknesses (social beyond Reddit, dense-text
-→ news drift) is the UI-domain-model spike, not a quick tune.
+`browser / web` was the lowest-precision class: 89 confident predictions, 23 correct = **26%
+confident precision**, with the 66 confident false positives spread across 11 other true
+classes (code 13, social 11, document 10, news 7, chat 6, map 5, video 5, …). The `clip_only`
+column splits the cause: **38 of the 66 FPs were OCR-driven** (CLIP's argmax was another
+class) and only **4 of the 23 true positives depended on OCR** (CLIP catches 19/57 browsers
+on its own).
+
+Root cause: the OCR rule treated `http://`/`https://`/`www.` as *strong* markers, so any
+screen merely quoting a URL (a code editor showing a repo link, a chat with a shared link, a
+news article citing a source) got a confident browser vote, and browser/web is
+OCR-authoritative (0.6 weight). Fix: those URL scheme markers are now *weak*, so a bare or
+partial URL no longer emits browser on its own; OCR only votes browser when several web
+signals co-occur, and CLIP remains the primary browser signal. Estimated effect (derived from
+the committed CSV, ~9:1 FP:TP trade): confident precision ~26% → ~37%, recall ~40% → ~33%,
+with lost positives falling to needs-review rather than becoming wrong tags. Guarded by
+`OcrHeuristicsTest`.
+
+> Caveat: the full fusion precision/recall delta on the 3,124-image F-Droid set was **not**
+> re-measured end to end (the eval corpus and CLIP model are not currently on disk). The
+> estimate uses the `clip_only` split in `results-fdroid2.csv`, which determines exactly which
+> FPs are OCR-driven; re-run `ClassificationEvalTest` to confirm when the corpus is regenerated.
+
+The CLIP-driven half (28 FPs) and the other CLIP-ceiling weaknesses (social beyond Reddit,
+dense-text → news drift) are not addressable by OCR tuning; the lever there is the
+UI-domain-model spike.
 
 ## Enrico regression slice
 
@@ -344,8 +364,9 @@ scripts/eval/push_and_run.sh .evaldata/field_slice   field  eval-out
   rather than mislabel, by design. OCR fusion is mildly positive on the confound-free signal
   (Bucket A, +8). The email/reddit fix is validated on the clean field slice + unit tests.
   `error / crash` over-firing is fixed (74→1 FPs, v0.6.1); finance↔receipt was investigated
-  and closed as not-a-bug on a clean real-bank set; browser/web overprediction is a logged
-  watch-item.
+  and closed as not-a-bug on a clean real-bank set; browser/web overprediction had its
+  OCR-driven half fixed (URL markers demoted, est. precision 26%→~37%, 2026-06-17), with the
+  CLIP-driven half left to the UI-domain spike.
 - **Performance.** Search and classification are fast and stable at realistic library sizes
   (single-digit ms search, ~22 ms/image OCR classify, no heap leak). The one structural
   finding — brute-force search was linear and only fine to ~5k — is resolved by
