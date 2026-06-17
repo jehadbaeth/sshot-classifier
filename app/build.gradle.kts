@@ -124,6 +124,10 @@ dependencies {
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
 
+    // On-device generative VLM captions (experimental, opt-in, high-end devices only).
+    // MediaPipe LLM Inference API; the Gemma .task model is user-provided, never bundled.
+    implementation(libs.mediapipe.tasks.genai)
+
     // Camera (in-app capture for the real-world inventory feature)
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
