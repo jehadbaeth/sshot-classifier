@@ -366,12 +366,15 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] App bundle (AAB) to cut download size. `bundleRelease` produces a 49 MB AAB
       vs the 101 MB universal release APK; Play serves per-ABI/density splits. See
       docs/publishing.md. (Per-ABI APK splits not needed once shipping the AAB.)
-- [~] Duplicate / near-duplicate screenshot detection. Exact dupes are already prevented at
-      ingest (sha256 unique index), so this is NEAR-dupe via CLIP embeddings (cosine = dot,
-      they're L2-normalized). Engine done 2026-06-17: pure `DuplicateFinder.groups()` (union-find
-      over pairwise cosine ≥ 0.96, O(n²) like brute-force search) + DuplicateFinderTest (5).
-      Remaining: repository hook + a way to surface groups in the UI (leaning to a gallery
-      "duplicates" filter that reuses the grid/detail, no new destructive delete subsystem).
+- [x] Duplicate / near-duplicate screenshot detection — DONE 2026-06-17. Exact dupes are already
+      prevented at ingest (sha256 unique index), so this is NEAR-dupe via CLIP embeddings
+      (cosine = dot, L2-normalized). Pure `DuplicateFinder.groups()` (union-find over pairwise
+      cosine ≥ 0.96, O(n²)) + DuplicateFinderTest (5). Repository `findDuplicateGroups()` (reads
+      embeddings via dao, no new ctor dep). UI: a gallery "Find near-duplicates" FilterChip (shown
+      when the image model is installed) that computes groups on tap and filters the grid to grouped
+      images, ordered so members sit adjacent; reuses the existing grid + detail, NO new destructive
+      delete subsystem (the app stays non-destructive; act via detail/reorg). Group count shown on
+      the chip.
 - [ ] Export/import of the tag database.
 - [ ] Widen the spike test set (real game, calendar, receipt, shopping screens;
       the v1 spike leaned on web consent walls for several categories).

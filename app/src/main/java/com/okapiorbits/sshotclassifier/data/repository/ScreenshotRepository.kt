@@ -20,6 +20,7 @@ import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore
 import com.okapiorbits.sshotclassifier.data.prefs.ResolveTrigger
 import com.okapiorbits.sshotclassifier.data.prefs.WatchedFoldersStore
 import com.okapiorbits.sshotclassifier.pipeline.clip.CustomCategoryScorer
+import com.okapiorbits.sshotclassifier.pipeline.clip.DuplicateFinder
 import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
 import com.okapiorbits.sshotclassifier.pipeline.clip.LabelEmbedder
 import com.okapiorbits.sshotclassifier.pipeline.clip.SemanticSearcher
@@ -59,6 +60,18 @@ class ScreenshotRepository @Inject constructor(
 
     /** Number of in-app camera captures (drives whether the gallery shows a source filter). */
     fun observeCaptureCount(): Flow<Int> = dao.observeSourceCount(SourceType.CAMERA.name)
+
+    /**
+     * Near-duplicate groups by CLIP embedding similarity (see [DuplicateFinder]). Returns
+     * groups of 2+ screenshot ids; empty if the visual model never ran (no embeddings).
+     * Computed on demand from the stored embeddings, not cached, since it is a user action.
+     */
+    suspend fun findDuplicateGroups(
+        threshold: Float = DuplicateFinder.DEFAULT_THRESHOLD,
+    ): List<List<Long>> {
+        val items = dao.allEmbeddings().map { it.screenshot_id to EmbeddingCodec.toFloats(it.vector) }
+        return DuplicateFinder.groups(items, threshold)
+    }
 
     fun observePendingCount(): Flow<Int> = dao.observeStatusCount()
 

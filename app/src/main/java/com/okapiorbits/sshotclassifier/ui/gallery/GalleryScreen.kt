@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Refresh
@@ -59,6 +60,8 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val reviewOnly by viewModel.reviewOnly.collectAsStateWithLifecycle()
     val captureCount by viewModel.captureCount.collectAsStateWithLifecycle()
     val sourceFilter by viewModel.sourceFilter.collectAsStateWithLifecycle()
+    val duplicatesOnly by viewModel.duplicatesOnly.collectAsStateWithLifecycle()
+    val duplicateGroupCount by viewModel.duplicateGroupCount.collectAsStateWithLifecycle()
 
     // In-tab navigation to a screenshot's tag editor; no NavHost needed.
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -135,6 +138,25 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                         label = { Text("Photos") },
                     )
                 }
+            }
+            // Near-duplicate review (needs visual embeddings, i.e. the image model).
+            if (modelState is ModelState.Installed) {
+                FilterChip(
+                    selected = duplicatesOnly,
+                    onClick = { viewModel.toggleDuplicatesOnly() },
+                    label = {
+                        Text(
+                            when {
+                                duplicatesOnly && duplicateGroupCount > 0 ->
+                                    "Duplicates: $duplicateGroupCount group${if (duplicateGroupCount == 1) "" else "s"} · tap to clear"
+                                duplicatesOnly -> "No near-duplicates found · tap to clear"
+                                else -> "Find near-duplicates"
+                            }
+                        )
+                    },
+                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                )
             }
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {

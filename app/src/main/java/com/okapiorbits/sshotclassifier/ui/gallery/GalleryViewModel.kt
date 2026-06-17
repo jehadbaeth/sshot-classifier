@@ -39,13 +39,38 @@ class GalleryViewModel @Inject constructor(
     private val _sourceFilter = MutableStateFlow<String?>(null)
     val sourceFilter: StateFlow<String?> = _sourceFilter.asStateFlow()
 
+    /** When true, show only near-duplicate images, grouped together (computed on toggle). */
+    private val _duplicatesOnly = MutableStateFlow(false)
+    val duplicatesOnly: StateFlow<Boolean> = _duplicatesOnly.asStateFlow()
+    private val _duplicateIds = MutableStateFlow<List<Long>>(emptyList())
+
+    /** Number of near-duplicate groups found by the last toggle; 0 until computed. */
+    private val _duplicateGroupCount = MutableStateFlow(0)
+    val duplicateGroupCount: StateFlow<Int> = _duplicateGroupCount.asStateFlow()
+
+    private data class Filters(
+        val reviewOnly: Boolean,
+        val source: String?,
+        val duplicatesOnly: Boolean,
+        val duplicateIds: List<Long>,
+    )
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val screenshots: StateFlow<List<ScreenshotWithTags>> =
-        combine(_reviewOnly, _sourceFilter, ::Pair)
-            .flatMapLatest { (only, source) ->
-                val base = if (only) repository.observeNeedsReview() else repository.observeGallery()
-                if (source == null) base
-                else base.map { list -> list.filter { it.screenshot.source_type == source } }
+        combine(_reviewOnly, _sourceFilter, _duplicatesOnly, _duplicateIds, ::Filters)
+            .flatMapLatest { f ->
+                val base = if (f.reviewOnly) repository.observeNeedsReview() else repository.observeGallery()
+                base.map { list ->
+                    var out = list
+                    if (f.source != null) out = out.filter { it.screenshot.source_type == f.source }
+                    if (f.duplicatesOnly) {
+                        // Keep only grouped images, ordered so group members sit adjacent.
+                        val order = f.duplicateIds.withIndex().associate { (i, id) -> id to i }
+                        out = out.filter { it.screenshot.id in order }
+                            .sortedBy { order[it.screenshot.id] }
+                    }
+                    out
+                }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -59,6 +84,23 @@ class GalleryViewModel @Inject constructor(
     }
 
     val sourceTypes: Pair<String, String> = SourceType.SCREENSHOT.name to SourceType.CAMERA.name
+
+    /**
+     * Toggle the near-duplicate filter. Turning it on computes groups from the stored CLIP
+     * embeddings (a one-off pass) and shows only grouped images; turning it off clears it.
+     */
+    fun toggleDuplicatesOnly() {
+        if (_duplicatesOnly.value) {
+            _duplicatesOnly.value = false
+            return
+        }
+        viewModelScope.launch {
+            val groups = repository.findDuplicateGroups()
+            _duplicateIds.value = groups.flatten()
+            _duplicateGroupCount.value = groups.size
+            _duplicatesOnly.value = true
+        }
+    }
 
     val pendingCount: StateFlow<Int> =
         repository.observePendingCount()

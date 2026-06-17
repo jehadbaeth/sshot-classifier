@@ -179,6 +179,13 @@ photo to open it.
 Once you have captures, the gallery shows an **All / Screenshots / Photos** filter so you
 can browse your screenshots and your real-world photos separately.
 
+**Finding near-duplicates.** Once the image model is installed, a **Find near-duplicates**
+chip on the gallery groups visually near-identical images (the same screen captured twice, a
+photo burst, a recompressed copy). Tapping it filters the grid to just those, with group
+members next to each other, so you can open and clean them up. Exact duplicates never get
+indexed twice in the first place, so this is about visually similar shots, not byte-identical
+ones. Nothing is deleted automatically.
+
 **Previewing where a QR link goes.** You can optionally let the app resolve a scanned link
 into a preview (its title, description, and image). This is the one part of the capture
 feature that uses the network, so it is **off by default**. Turn it on under **Settings >
