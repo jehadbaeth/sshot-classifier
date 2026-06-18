@@ -1,6 +1,8 @@
 package com.okapiorbits.sshotclassifier.ui.gallery
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +64,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val sourceFilter by viewModel.sourceFilter.collectAsStateWithLifecycle()
     val duplicatesOnly by viewModel.duplicatesOnly.collectAsStateWithLifecycle()
     val duplicateGroupCount by viewModel.duplicateGroupCount.collectAsStateWithLifecycle()
+    val processing by viewModel.processing.collectAsStateWithLifecycle()
 
     // In-tab navigation to a screenshot's tag editor; no NavHost needed.
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -102,6 +105,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            ProcessingBar(processing)
             ModelBanner(modelState, onDownload = viewModel::downloadModel)
             if (modelState is ModelState.Installed && reprocessable > 0 && pending == 0) {
                 ReprocessBanner(reprocessable, onReprocess = viewModel::reprocessMissing)
@@ -175,6 +179,37 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                 }
             }
         }
+        }
+    }
+}
+
+@Composable
+private fun ProcessingBar(state: ProcessingState) {
+    AnimatedVisibility(visible = state.active) {
+        val animated by animateFloatAsState(targetValue = state.fraction, label = "processingProgress")
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Processing images…", style = MaterialTheme.typography.labelLarge)
+                if (state.total > 0) {
+                    Text(
+                        "${state.done} / ${state.total}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (state.total > 0) {
+                LinearProgressIndicator(
+                    progress = { animated },
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                )
+            } else {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            }
         }
     }
 }

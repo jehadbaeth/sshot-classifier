@@ -407,6 +407,17 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Backlog / ideas (not scheduled)
 
+- [ ] **Arabic OCR quality tuning (needs real-device testing across modes).** Shipped v0.9.6/v0.9.7:
+      Tesseract `ara+eng` (mixed-script works), modes Latin/Arabic/Both/Auto, unicode61 FTS. User
+      feedback 2026-06-18: recognition "still not perfect" on real Arabic. NOT a quick fix — needs
+      hands-on testing to settle: (a) `fast` vs `best` trained-data (1.4 MB vs 12.6 MB for ara; eng
+      similar) — best is more accurate but much bigger; consider downloading best on opt-in instead of
+      bundling; (b) Tesseract page-seg mode (PSM) — current default may not suit screenshots; try
+      PSM 6/4/3 and measure; (c) image preprocessing (binarization/contrast/upscale small text) before
+      setImage; (d) whether Auto should run ara+eng more aggressively for partly-Latin images (cost
+      tradeoff). Needs a small labelled Arabic + mixed screenshot set to measure, like the Latin eval.
+      No single obvious win; budget real testing time.
+
 - [!] Follow-up spike: UI-domain model (SigLIP or CLIP fine-tuned on RICO / Screen2Words) to beat
       generic CLIP on text-heavy screens. DEFERRED-BY-DECISION (reviewed 2026-06-17): this is the
       real lever for the remaining CLIP-ceiling weaknesses (browser/web's CLIP-driven half, document/

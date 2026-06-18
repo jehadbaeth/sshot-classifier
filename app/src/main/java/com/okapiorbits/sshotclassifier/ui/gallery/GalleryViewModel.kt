@@ -106,6 +106,23 @@ class GalleryViewModel @Inject constructor(
         repository.observePendingCount()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    /**
+     * Progress of the current processing batch, for a determinate bar in the gallery. Derives a
+     * batch total from the high-water-mark of the pending count (which we can't otherwise know),
+     * so `done/total` advances as the worker drains the queue and resets when it empties.
+     */
+    private var batchTotal = 0
+    val processing: StateFlow<ProcessingState> =
+        repository.observePendingCount().map { pending ->
+            if (pending <= 0) {
+                batchTotal = 0
+                ProcessingState(active = false, done = 0, total = 0)
+            } else {
+                if (pending > batchTotal) batchTotal = pending
+                ProcessingState(active = true, done = batchTotal - pending, total = batchTotal)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProcessingState(false, 0, 0))
+
     /** Screenshots tagged before the visual model was installed (no embedding yet). */
     val reprocessableCount: StateFlow<Int> =
         repository.observeReprocessableCount()
@@ -164,4 +181,9 @@ sealed interface ModelState {
     data class Downloading(val progress: Float) : ModelState
     data object Installed : ModelState
     data class Error(val message: String) : ModelState
+}
+
+/** Determinate progress of the background processing queue. */
+data class ProcessingState(val active: Boolean, val done: Int, val total: Int) {
+    val fraction: Float get() = if (total > 0) done.toFloat() / total else 0f
 }
