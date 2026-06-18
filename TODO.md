@@ -426,8 +426,8 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [ ] Search bar pinned on the gallery/home (fold the separate Search tab into it).
          - [ ] Gallery→detail shared-element / zoom transition.
          - [ ] Swipe left/right between images in detail (HorizontalPager).
-         - [ ] Pull-to-refresh on the gallery to trigger a scan.
-         - [ ] Jump-to-top button when scrolled down; sticky date headers; fast-scroll.
+         - [x] Pull-to-refresh on the gallery to trigger a scan. (v0.9.18)
+         - [x] Jump-to-top button when scrolled down. (v0.9.18) — sticky headers / fast-scroll still open.
 
          Selection & bulk (build on v0.9.13)
          - [ ] Drag-to-select across multiple tiles; range select.
@@ -435,10 +435,10 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [ ] Tag-filter chips directly on the gallery (not only in Search).
 
          Motion & feedback
-         - [ ] List item enter/placement animations (animateItem); Coil crossfade on image load.
+         - [x] List item placement animations (animateItem) + Coil crossfade on image load. (v0.9.17)
+         - [x] Haptic feedback on long-press select and capture. (v0.9.17)
          - [ ] Skeleton/shimmer placeholders while the grid loads.
          - [ ] Snackbars with Undo for destructive/!reversible actions (reorg, remove tag, delete).
-         - [ ] Haptic feedback on long-press select and capture.
          - [ ] Animated transitions between the bottom-nav tabs.
 
          Detail & viewer
