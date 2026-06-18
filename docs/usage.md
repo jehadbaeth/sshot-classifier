@@ -84,14 +84,17 @@ The two rankings are fused so a screenshot that matches both rises to the top.
 
 The capture shows a search for "potted plant". None of the screenshots contain that
 text, yet the cactus photo ranks first because the app recognizes it visually. You can
-also tap a tag chip to filter by a tag instead of typing.
+also tap a tag chip to filter by a tag instead of typing. Tap any result to open it enlarged
+with its details (same view as the gallery).
 
 ---
 
 ## 5. Editing tags by hand
 
-Open any screenshot to see its tags. You can remove any tag, including a wrong automatic
-one, by tapping its X, and add your own with the **Add a tag** field.
+Open any screenshot (from the gallery or a search result) to see it enlarged with its tags.
+You can remove any tag, including a wrong automatic one, by tapping its X, and add your own
+with the **Add a tag** field. The screen also shows the **extracted text (OCR)** the app read
+from the image, which you can select and copy.
 
 <img src="images/tag-editor.png" width="280" alt="Tag editor for a receipt screenshot" />
 

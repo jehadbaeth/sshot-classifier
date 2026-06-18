@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.9.2" // Developer-mode: remove downloaded models to re-test download
+        versionCode = 15
+        versionName = "0.9.3" // Search results open detail; OCR text shown on detail
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
