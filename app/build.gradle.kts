@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 31
-        versionName = "0.9.19" // Swipe between images in the detail view
+        versionCode = 32
+        versionName = "0.9.20" // Safe scale+fade entrance animation for the detail view
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

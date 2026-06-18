@@ -2,7 +2,11 @@ package com.okapiorbits.sshotclassifier.ui.gallery
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -130,7 +134,19 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
             screenshots.indexOfFirst { it.screenshot.id == selectedId }.coerceAtLeast(0)
         }
         val pagerState = rememberPagerState(initialPage = startIndex) { screenshots.size }
-        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+        // Subtle scale+fade entrance when opening a screenshot (safe, no shared-element).
+        val enter = remember { Animatable(0.94f) }
+        val fade = remember { Animatable(0f) }
+        LaunchedEffect(Unit) {
+            launch { enter.animateTo(1f, tween(200)) }
+            launch { fade.animateTo(1f, tween(200)) }
+        }
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize().graphicsLayer {
+                scaleX = enter.value; scaleY = enter.value; alpha = fade.value
+            },
+        ) { page ->
             val s = screenshots.getOrNull(page)
             if (s != null) {
                 ScreenshotDetailScreen(
