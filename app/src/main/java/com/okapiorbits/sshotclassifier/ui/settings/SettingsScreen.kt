@@ -47,6 +47,7 @@ import com.okapiorbits.sshotclassifier.data.db.entity.CustomCategoryEntity
 import com.okapiorbits.sshotclassifier.data.media.WatchableFolder
 import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferences
 import com.okapiorbits.sshotclassifier.data.prefs.DescriptionSource
+import com.okapiorbits.sshotclassifier.data.prefs.OcrLanguage
 import com.okapiorbits.sshotclassifier.data.prefs.ResolveTrigger
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgMode
 import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferences
@@ -75,6 +76,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val vlmImport by viewModel.vlmImport.collectAsStateWithLifecycle()
     val devMode by viewModel.devMode.collectAsStateWithLifecycle()
     val logExportStatus by viewModel.logExportStatus.collectAsStateWithLifecycle()
+    val ocrLanguage by viewModel.ocrLanguage.collectAsStateWithLifecycle()
+    val ocrReprocessStatus by viewModel.ocrReprocessStatus.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.loadFolders() }
 
@@ -182,6 +185,15 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 "A background pass also runs every 6 hours.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Section("Text recognition (OCR)")
+            OcrLanguageSection(
+                current = ocrLanguage,
+                reprocessStatus = ocrReprocessStatus,
+                onSelect = viewModel::setOcrLanguage,
+                onReprocess = viewModel::reprocessAllForOcr,
+                onDismissStatus = viewModel::clearOcrReprocessStatus,
             )
 
             if (viewModel.reorganizeSupported) {
@@ -640,6 +652,65 @@ private fun VlmModelControls(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun OcrLanguageSection(
+    current: OcrLanguage,
+    reprocessStatus: String?,
+    onSelect: (OcrLanguage) -> Unit,
+    onReprocess: () -> Unit,
+    onDismissStatus: () -> Unit,
+) {
+    Text(
+        "Which script the app reads from images. Arabic uses a separate engine (Tesseract) since " +
+            "the default can't read it. Note: auto-tagging and visual search stay English/Latin-tuned, " +
+            "so Arabic gains text extraction, display, and keyword search — not automatic categories.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    RadioRow(
+        label = "Latin (default)",
+        subtitle = "English and other Latin-script text. Fast, on-device.",
+        selected = current == OcrLanguage.LATIN,
+        enabled = true,
+        onSelect = { onSelect(OcrLanguage.LATIN) },
+    )
+    RadioRow(
+        label = "Arabic",
+        subtitle = "Reads Arabic text. Slower than Latin; right-to-left text is preserved.",
+        selected = current == OcrLanguage.ARABIC,
+        enabled = true,
+        onSelect = { onSelect(OcrLanguage.ARABIC) },
+    )
+    RadioRow(
+        label = "Latin + Arabic",
+        subtitle = "Runs both engines on every image. Most coverage, slowest.",
+        selected = current == OcrLanguage.BOTH,
+        enabled = true,
+        onSelect = { onSelect(OcrLanguage.BOTH) },
+    )
+    RadioRow(
+        label = "Auto (recommended)",
+        subtitle = "Reads Latin first, falls back to Arabic only when an image isn't Latin. " +
+            "Cheap; favours whichever script dominates an image (use Latin + Arabic for mixed text).",
+        selected = current == OcrLanguage.AUTO,
+        enabled = true,
+        onSelect = { onSelect(OcrLanguage.AUTO) },
+    )
+    Text(
+        "A change applies to newly scanned images. To re-read images already processed, re-run OCR:",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+    OutlinedButton(onClick = onReprocess, modifier = Modifier.padding(top = 4.dp)) {
+        Text("Re-run OCR on existing images")
+    }
+    reprocessStatus?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+        LaunchedEffect(it) { kotlinx.coroutines.delay(4000); onDismissStatus() }
     }
 }
 

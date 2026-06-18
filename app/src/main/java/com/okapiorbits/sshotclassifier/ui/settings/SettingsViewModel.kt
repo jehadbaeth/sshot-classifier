@@ -356,6 +356,41 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    // ---- OCR language (Latin via ML Kit; Arabic via Tesseract) ----
+
+    val ocrLanguage: StateFlow<com.okapiorbits.sshotclassifier.data.prefs.OcrLanguage> =
+        uiPrefsStore.ocrLanguage.stateIn(
+            viewModelScope, SharingStarted.WhileSubscribed(5_000),
+            com.okapiorbits.sshotclassifier.data.prefs.OcrLanguage.LATIN,
+        )
+
+    fun setOcrLanguage(value: com.okapiorbits.sshotclassifier.data.prefs.OcrLanguage) =
+        viewModelScope.launch { uiPrefsStore.setOcrLanguage(value) }
+
+    private val _ocrReprocessStatus = MutableStateFlow<String?>(null)
+    val ocrReprocessStatus: StateFlow<String?> = _ocrReprocessStatus.asStateFlow()
+
+    /**
+     * Re-OCRs existing images with the current language setting. Required because changing the
+     * OCR language does not retroactively re-read already-processed images — without this the
+     * user would change to Arabic, open an old screenshot, and see nothing.
+     */
+    fun reprocessAllForOcr() {
+        viewModelScope.launch {
+            val count = repository.markAllForReprocessing()
+            if (count > 0) ScreenshotProcessingWorker.enqueue(context)
+            _ocrReprocessStatus.value = if (count > 0) {
+                "Re-running OCR on $count images…"
+            } else {
+                "Nothing to re-process yet"
+            }
+        }
+    }
+
+    fun clearOcrReprocessStatus() {
+        _ocrReprocessStatus.value = null
+    }
+
     // ---- Experimental generative VLM describer (model is user-imported, never bundled) ----
 
     private val _vlmInstalled = MutableStateFlow(vlmModelManager.isInstalled())
