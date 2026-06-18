@@ -16,6 +16,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -116,6 +120,19 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyStaggeredGridState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val bulkTagEvent by viewModel.bulkTagEvent.collectAsStateWithLifecycle()
+
+    // Confirm a bulk tag-add with an Undo snackbar.
+    LaunchedEffect(bulkTagEvent) {
+        val event = bulkTagEvent ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = "Added \"${event.label}\" to ${event.ids.size} ${if (event.ids.size == 1) "image" else "images"}",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) viewModel.undoBulkTag(event) else viewModel.clearBulkTagEvent()
+    }
     var showBulkTagDialog by remember { mutableStateOf(false) }
     var sortMenuOpen by remember { mutableStateOf(false) }
 
@@ -161,6 +178,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (selectedIds.isNotEmpty()) {
                 SelectionTopBar(

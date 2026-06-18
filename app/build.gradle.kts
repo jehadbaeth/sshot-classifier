@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 32
-        versionName = "0.9.20" // Safe scale+fade entrance animation for the detail view
+        versionCode = 33
+        versionName = "0.9.21" // Snackbar with Undo for bulk tag-add
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

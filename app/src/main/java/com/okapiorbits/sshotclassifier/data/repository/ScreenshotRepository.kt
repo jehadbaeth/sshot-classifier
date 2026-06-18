@@ -128,6 +128,11 @@ class ScreenshotRepository @Inject constructor(
         dao.updateNeedsReview(screenshotId, false)
     }
 
+    /** Undo for a bulk tag-add: removes the USER tag [label] from the given screenshots. */
+    suspend fun removeUserTagFromAll(ids: Set<Long>, label: String) {
+        if (ids.isNotEmpty()) dao.deleteUserTagFromAll(ids.toList(), label)
+    }
+
     // ---- User-defined auto-tag categories ----
 
     fun observeCategories(): Flow<List<CustomCategoryEntity>> = dao.observeCategories()

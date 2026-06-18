@@ -170,6 +170,12 @@ class GalleryViewModel @Inject constructor(
         _selectedIds.value = screenshots.value.map { it.screenshot.id }.toSet()
     }
 
+    /** One-shot result of a bulk tag-add, so the UI can confirm it with an Undo snackbar. */
+    data class BulkTagEvent(val label: String, val ids: Set<Long>)
+    private val _bulkTagEvent = MutableStateFlow<BulkTagEvent?>(null)
+    val bulkTagEvent: StateFlow<BulkTagEvent?> = _bulkTagEvent.asStateFlow()
+    fun clearBulkTagEvent() { _bulkTagEvent.value = null }
+
     /** Adds one tag to every selected image (bulk), then clears the selection. */
     fun addTagToSelected(label: String) {
         val ids = _selectedIds.value
@@ -177,7 +183,14 @@ class GalleryViewModel @Inject constructor(
         viewModelScope.launch {
             ids.forEach { repository.addUserTag(it, label) }
             _selectedIds.value = emptySet()
+            _bulkTagEvent.value = BulkTagEvent(label.trim().lowercase(), ids)
         }
+    }
+
+    /** Undo a bulk tag-add: remove that tag from the images it was applied to. */
+    fun undoBulkTag(event: BulkTagEvent) {
+        viewModelScope.launch { repository.removeUserTagFromAll(event.ids, event.label) }
+        _bulkTagEvent.value = null
     }
 
     /** Content URIs of the current selection, for a bulk share intent. */

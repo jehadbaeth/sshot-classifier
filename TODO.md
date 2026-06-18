@@ -438,7 +438,7 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [x] List item placement animations (animateItem) + Coil crossfade on image load. (v0.9.17)
          - [x] Haptic feedback on long-press select and capture. (v0.9.17)
          - [ ] Skeleton/shimmer placeholders while the grid loads.
-         - [ ] Snackbars with Undo for destructive/!reversible actions (reorg, remove tag, delete).
+         - [x] Snackbar with Undo for bulk tag-add. (v0.9.21) — reorg/remove-tag/delete still open.
          - [ ] Animated transitions between the bottom-nav tabs.
 
          Detail & viewer
