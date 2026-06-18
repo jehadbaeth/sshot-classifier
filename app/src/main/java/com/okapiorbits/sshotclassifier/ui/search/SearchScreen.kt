@@ -25,7 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailScreen
+import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryCell
 
 @Composable
@@ -34,6 +41,22 @@ fun SearchScreen(viewModel: SearchViewModel) {
     val selectedTag by viewModel.selectedTag.collectAsStateWithLifecycle()
     val tagCounts by viewModel.tagCounts.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
+
+    // In-tab navigation to a result's detail / tag editor (same as the gallery); no NavHost.
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val selected = selectedId?.let { id -> results.find { it.screenshot.id == id } }
+    BackHandler(enabled = selectedId != null) { selectedId = null }
+    if (selectedId != null && selected == null) selectedId = null // result vanished
+    if (selected != null) {
+        val detailVm: ScreenshotDetailViewModel = hiltViewModel()
+        ScreenshotDetailScreen(
+            screenshotId = selected.screenshot.id,
+            filePath = selected.screenshot.file_path,
+            viewModel = detailVm,
+            onBack = { selectedId = null },
+        )
+        return
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
         OutlinedTextField(
@@ -76,7 +99,7 @@ fun SearchScreen(viewModel: SearchViewModel) {
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         items(results, key = { it.screenshot.id }) { item ->
-                            GalleryCell(item)
+                            GalleryCell(item, onClick = { selectedId = item.screenshot.id })
                         }
                     }
                 }
