@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 17
-        versionName = "0.9.5" // In-app VLM model download (sha256-verified) from a public mirror
+        versionCode = 18
+        versionName = "0.9.6" // Arabic OCR (Tesseract) + OCR language config (Latin/Arabic/Both/Auto)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

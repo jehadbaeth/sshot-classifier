@@ -106,6 +106,17 @@ Tags you add or remove are treated as the final word: editing a screenshot marks
 reviewed and clears it from the Needs review list. Your tags show up as filter chips in
 Search just like the automatic ones.
 
+### Reading non-Latin text (Arabic)
+
+By default the app reads Latin-script text (English and similar). Arabic uses a separate engine,
+so under **Settings > Text recognition (OCR)** you can choose **Latin**, **Arabic**, **Latin +
+Arabic**, or **Auto**. Auto reads Latin first and only falls back to Arabic when an image isn't
+Latin, so it is cheap and picks the right script per image; use Latin + Arabic for images that
+mix both scripts heavily. Changing the setting applies to newly scanned images — tap **Re-run OCR
+on existing images** to re-read what is already indexed. Honest limitation: automatic tagging and
+visual (concept) search are tuned for English, so Arabic gains text extraction, display, and
+keyword search, but not auto-categories.
+
 ---
 
 ## 6. Custom categories
