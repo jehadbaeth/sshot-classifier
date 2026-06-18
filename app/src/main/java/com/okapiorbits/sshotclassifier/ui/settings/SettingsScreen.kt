@@ -678,23 +678,26 @@ private fun OcrLanguageSection(
         onSelect = { onSelect(OcrLanguage.LATIN) },
     )
     RadioRow(
-        label = "Arabic",
-        subtitle = "Reads Arabic text. Slower than Latin; right-to-left text is preserved.",
+        label = "Arabic (and mixed)",
+        subtitle = "Reads Arabic and Latin together in one pass — best for images that mix both " +
+            "scripts. Right-to-left text is preserved. Slower than Latin.",
         selected = current == OcrLanguage.ARABIC,
         enabled = true,
         onSelect = { onSelect(OcrLanguage.ARABIC) },
     )
     RadioRow(
-        label = "Latin + Arabic",
-        subtitle = "Runs both engines on every image. Most coverage, slowest.",
+        label = "Latin + Arabic (max)",
+        subtitle = "Runs the Latin engine and the Arabic+Latin engine and combines them. Most " +
+            "coverage, slowest; rarely needed over 'Arabic (and mixed)'.",
         selected = current == OcrLanguage.BOTH,
         enabled = true,
         onSelect = { onSelect(OcrLanguage.BOTH) },
     )
     RadioRow(
         label = "Auto (recommended)",
-        subtitle = "Reads Latin first, falls back to Arabic only when an image isn't Latin. " +
-            "Cheap; favours whichever script dominates an image (use Latin + Arabic for mixed text).",
+        subtitle = "Reads Latin first (fast); for images that aren't plain Latin it falls back to " +
+            "the Arabic+Latin engine, which also handles mixed text. For a library with many " +
+            "mixed-script images, 'Arabic (and mixed)' is more reliable.",
         selected = current == OcrLanguage.AUTO,
         enabled = true,
         onSelect = { onSelect(OcrLanguage.AUTO) },

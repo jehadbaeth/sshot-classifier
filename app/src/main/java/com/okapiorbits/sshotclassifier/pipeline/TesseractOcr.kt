@@ -17,9 +17,11 @@ import javax.inject.Singleton
 import kotlin.math.max
 
 /**
- * Arabic OCR via Tesseract (ML Kit has no Arabic recognizer). The `ara.traineddata` is bundled
- * in assets and copied to internal storage on first use, where Tesseract expects a `tessdata/`
- * dir next to the data path.
+ * Arabic OCR via Tesseract (ML Kit has no Arabic recognizer). Initialised multi-language as
+ * `ara+eng` so a single pass reads Arabic, Latin, AND images that mix both scripts — single-
+ * language `ara` mangles any Latin in the image (and vice-versa), which is what produced
+ * gibberish on mixed-language images. Both trained-data files are bundled in assets and copied to
+ * internal storage on first use, where Tesseract expects a `tessdata/` dir next to the data path.
  *
  * [TessBaseAPI] is not thread-safe and holds ~tens of MB once initialised, so it is created once
  * and reused under a [Mutex] (the worker OCRs sequentially anyway) — unlike the multi-GB VLM,
@@ -52,14 +54,15 @@ class TesseractOcr @Inject constructor(
         api?.let { return it }
         val dataPath = File(context.filesDir, "tesseract").apply { mkdirs() }
         val tessdataDir = File(dataPath, "tessdata").apply { mkdirs() }
-        val araFile = File(tessdataDir, "ara.traineddata")
-        if (!araFile.exists() || araFile.length() < 100_000) {
+        for (name in TRAINED_DATA) {
+            val out = File(tessdataDir, name)
+            if (out.exists() && out.length() > 100_000) continue
             runCatching {
-                context.assets.open("tessdata/ara.traineddata").use { input ->
-                    araFile.outputStream().use { input.copyTo(it) }
+                context.assets.open("tessdata/$name").use { input ->
+                    out.outputStream().use { input.copyTo(it) }
                 }
             }.onFailure {
-                Log.w(TAG, "Could not stage ara.traineddata", it)
+                Log.w(TAG, "Could not stage $name", it)
                 return null
             }
         }
@@ -90,7 +93,9 @@ class TesseractOcr @Inject constructor(
 
     companion object {
         private const val TAG = "TesseractOcr"
-        private const val LANG = "ara"
+        /** Multi-language: read Arabic and Latin (incl. mixed) in one pass. */
+        private const val LANG = "ara+eng"
+        private val TRAINED_DATA = listOf("ara.traineddata", "eng.traineddata")
         /** Cap longest side; Tesseract wants resolution but not a 4000px screenshot in RAM. */
         private const val MAX_DIM = 2200
     }
