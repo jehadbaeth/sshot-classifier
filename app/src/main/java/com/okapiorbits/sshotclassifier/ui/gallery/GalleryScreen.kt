@@ -26,6 +26,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
@@ -48,6 +49,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -141,6 +143,24 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         if (result == SnackbarResult.ActionPerformed) viewModel.undoBulkTag(event) else viewModel.clearBulkTagEvent()
     }
     var showBulkTagDialog by remember { mutableStateOf(false) }
+    var searchFocused by remember { mutableStateOf(false) }
+
+    // Collapse the search bar when scrolling down, reveal it when scrolling up (or at the top).
+    var showSearchBar by remember { mutableStateOf(true) }
+    LaunchedEffect(gridState) {
+        var prevIndex = gridState.firstVisibleItemIndex
+        var prevOffset = gridState.firstVisibleItemScrollOffset
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                showSearchBar = when {
+                    index == 0 && offset == 0 -> true
+                    index > prevIndex || (index == prevIndex && offset > prevOffset + 8) -> false // down
+                    index < prevIndex || (index == prevIndex && offset < prevOffset - 8) -> true  // up
+                    else -> showSearchBar
+                }
+                prevIndex = index; prevOffset = offset
+            }
+    }
     var sortMenuOpen by remember { mutableStateOf(false) }
 
     // Multi-select takes priority for the back button: exit selection before leaving the screen.
@@ -237,38 +257,45 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ProcessingBar(processing)
-            // Search folded in from the old Search tab: text query + tag chips.
-            OutlinedTextField(
-                value = query,
-                onValueChange = viewModel::setQuery,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setQuery("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear search")
+            // Search folded in from the old Search tab. Collapses on scroll-down; tag chips only
+            // appear once you engage search (focus / typing / a tag selected), to save space.
+            AnimatedVisibility(visible = showSearchBar || query.isNotEmpty() || selectedTags.isNotEmpty()) {
+              Column {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = viewModel::setQuery,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)
+                        .onFocusChanged { searchFocused = it.isFocused },
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setQuery("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    placeholder = {
+                        Text(if (viewModel.semanticReady) "Search text or visual concept" else "Search text in screenshots")
+                    },
+                )
+                val showTagChips = searchFocused || query.isNotEmpty() || selectedTags.isNotEmpty()
+                if (tagCounts.isNotEmpty() && showTagChips) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        lazyRowItems(tagCounts, key = { it.label }) { tc ->
+                            FilterChip(
+                                selected = tc.label in selectedTags,
+                                onClick = { viewModel.toggleTag(tc.label) },
+                                label = { Text("${tc.label} (${tc.cnt})") },
+                            )
                         }
                     }
-                },
-                placeholder = {
-                    Text(if (viewModel.semanticReady) "Search text or visual concept" else "Search text in screenshots")
-                },
-            )
-            if (tagCounts.isNotEmpty()) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    lazyRowItems(tagCounts, key = { it.label }) { tc ->
-                        FilterChip(
-                            selected = tc.label in selectedTags,
-                            onClick = { viewModel.toggleTag(tc.label) },
-                            label = { Text("${tc.label} (${tc.cnt})") },
-                        )
-                    }
                 }
+              }
             }
             ModelBanner(modelState, onDownload = viewModel::downloadModel)
             if (modelState is ModelState.Installed && reprocessable > 0 && pending == 0) {
