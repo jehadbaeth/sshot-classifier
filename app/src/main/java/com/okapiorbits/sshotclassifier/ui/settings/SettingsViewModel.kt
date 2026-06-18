@@ -74,7 +74,7 @@ class SettingsViewModel @Inject constructor(
     /** Material You opt-in. Default false = fixed brand palette. */
     val dynamicColor: StateFlow<Boolean> =
         uiPrefsStore.dynamicColor
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setDynamicColor(enabled: Boolean) =
         viewModelScope.launch { uiPrefsStore.setDynamicColor(enabled) }

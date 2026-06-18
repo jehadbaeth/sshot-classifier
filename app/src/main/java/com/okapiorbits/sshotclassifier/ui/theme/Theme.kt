@@ -9,14 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * App theme. Defaults to the fixed brand palette for a consistent identity.
- * [dynamicColor] opts into Material You (wallpaper-based) colour on Android 12+,
- * exposed as a user setting; it has no effect on older devices.
+ * App theme. [dynamicColor] (Material You, wallpaper-based) is the default on Android 12+ and
+ * can be turned off in Settings to use the fixed brand palette; on older devices it always
+ * falls back to the brand palette.
  */
 @Composable
 fun ScreenshotClassifierTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {

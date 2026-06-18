@@ -14,6 +14,8 @@ import javax.inject.Inject
 class AppearanceViewModel @Inject constructor(
     private val uiPrefs: UiPreferencesStore,
 ) : ViewModel() {
+    // Initial value matches the preference default (on) so the first frame doesn't flash the
+    // brand palette before the stored value loads.
     val dynamicColor: StateFlow<Boolean> =
-        uiPrefs.dynamicColor.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        uiPrefs.dynamicColor.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 }

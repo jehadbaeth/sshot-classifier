@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 22
-        versionName = "0.9.10" // Model-driven tag suggestions on the detail screen
+        versionCode = 23
+        versionName = "0.9.11" // Material You (dynamic color) on by default
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

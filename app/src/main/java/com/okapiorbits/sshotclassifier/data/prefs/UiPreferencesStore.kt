@@ -33,8 +33,12 @@ class UiPreferencesStore @Inject constructor(
         val OCR_LANGUAGE = androidx.datastore.preferences.core.stringPreferencesKey("ocr_language")
     }
 
-    /** false = fixed brand palette (default); true = Material You on Android 12+. */
-    val dynamicColor: Flow<Boolean> = context.uiDataStore.data.map { it[Keys.DYNAMIC_COLOR] ?: false }
+    /**
+     * true (default) = Material You (wallpaper-based colour) on Android 12+, falling back to the
+     * brand palette on older devices; false = always the fixed brand palette. Default-on so the
+     * app adopts the user's system colours out of the box.
+     */
+    val dynamicColor: Flow<Boolean> = context.uiDataStore.data.map { it[Keys.DYNAMIC_COLOR] ?: true }
 
     suspend fun setDynamicColor(enabled: Boolean) =
         context.uiDataStore.edit { it[Keys.DYNAMIC_COLOR] = enabled }
