@@ -7,7 +7,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -92,8 +96,10 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val duplicateGroupCount by viewModel.duplicateGroupCount.collectAsStateWithLifecycle()
     val processing by viewModel.processing.collectAsStateWithLifecycle()
     val selectedIds by viewModel.selectedIds.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showBulkTagDialog by remember { mutableStateOf(false) }
+    var sortMenuOpen by remember { mutableStateOf(false) }
 
     // Multi-select takes priority for the back button: exit selection before leaving the screen.
     BackHandler(enabled = selectedIds.isNotEmpty()) { viewModel.clearSelection() }
@@ -129,6 +135,24 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     title = {
                         val suffix = if (pending > 0) " · $pending pending" else ""
                         Text("Screenshots (${screenshots.size})$suffix")
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { sortMenuOpen = true }) {
+                                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
+                            }
+                            DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                                SortOrder.entries.forEach { order ->
+                                    DropdownMenuItem(
+                                        text = { Text(order.label) },
+                                        onClick = { viewModel.setSortOrder(order); sortMenuOpen = false },
+                                        leadingIcon = {
+                                            if (order == sortOrder) Icon(Icons.Default.Check, contentDescription = null)
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     },
                 )
             }
@@ -211,8 +235,10 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                 val now = remember { System.currentTimeMillis() }
                 // Group into date buckets only on the default (recency) view; filtered/duplicate
                 // views aren't time-ordered, so show them as a single flat section.
-                val grouped = remember(screenshots, now, duplicatesOnly) {
-                    if (duplicatesOnly) listOf("" to screenshots)
+                // Date sections only make sense on the default newest-first view; other sorts
+                // (oldest, recently tagged) and the duplicates view show a single flat section.
+                val grouped = remember(screenshots, now, duplicatesOnly, sortOrder) {
+                    if (duplicatesOnly || sortOrder != SortOrder.NEWEST) listOf("" to screenshots)
                     else groupByDateBucket(screenshots, now)
                 }
                 LazyVerticalStaggeredGrid(

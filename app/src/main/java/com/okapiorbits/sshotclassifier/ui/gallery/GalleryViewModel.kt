@@ -48,16 +48,24 @@ class GalleryViewModel @Inject constructor(
     private val _duplicateGroupCount = MutableStateFlow(0)
     val duplicateGroupCount: StateFlow<Int> = _duplicateGroupCount.asStateFlow()
 
+    /** How the grid is ordered. */
+    private val _sortOrder = MutableStateFlow(SortOrder.NEWEST)
+    val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
+    fun setSortOrder(order: SortOrder) { _sortOrder.value = order }
+
     private data class Filters(
         val reviewOnly: Boolean,
         val source: String?,
         val duplicatesOnly: Boolean,
         val duplicateIds: List<Long>,
+        val sort: SortOrder,
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val screenshots: StateFlow<List<ScreenshotWithTags>> =
-        combine(_reviewOnly, _sourceFilter, _duplicatesOnly, _duplicateIds, ::Filters)
+        combine(_reviewOnly, _sourceFilter, _duplicatesOnly, _duplicateIds, _sortOrder) {
+            r, s, d, ids, sort -> Filters(r, s, d, ids, sort)
+        }
             .flatMapLatest { f ->
                 val base = if (f.reviewOnly) repository.observeNeedsReview() else repository.observeGallery()
                 base.map { list ->
@@ -68,6 +76,14 @@ class GalleryViewModel @Inject constructor(
                         val order = f.duplicateIds.withIndex().associate { (i, id) -> id to i }
                         out = out.filter { it.screenshot.id in order }
                             .sortedBy { order[it.screenshot.id] }
+                    } else {
+                        // User-chosen ordering (duplicates view keeps its grouped order).
+                        out = when (f.sort) {
+                            SortOrder.NEWEST -> out.sortedByDescending { it.screenshot.date_added }
+                            SortOrder.OLDEST -> out.sortedBy { it.screenshot.date_added }
+                            SortOrder.RECENTLY_PROCESSED ->
+                                out.sortedByDescending { it.screenshot.date_processed ?: 0L }
+                        }
                     }
                     out
                 }
@@ -216,6 +232,13 @@ sealed interface ModelState {
     data class Downloading(val progress: Float) : ModelState
     data object Installed : ModelState
     data class Error(val message: String) : ModelState
+}
+
+/** Gallery ordering options. */
+enum class SortOrder(val label: String) {
+    NEWEST("Newest first"),
+    OLDEST("Oldest first"),
+    RECENTLY_PROCESSED("Recently tagged"),
 }
 
 /** Determinate progress of the background processing queue. */
