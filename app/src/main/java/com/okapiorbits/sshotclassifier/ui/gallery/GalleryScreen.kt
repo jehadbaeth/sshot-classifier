@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import com.okapiorbits.sshotclassifier.data.db.entity.ProcessingStatus
 import com.okapiorbits.sshotclassifier.ui.common.EmptyState
@@ -98,6 +100,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val selectedIds by viewModel.selectedIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     var showBulkTagDialog by remember { mutableStateOf(false) }
     var sortMenuOpen by remember { mutableStateOf(false) }
 
@@ -262,7 +265,11 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                                     if (selectedIds.isNotEmpty()) viewModel.toggleSelected(item.screenshot.id)
                                     else selectedId = item.screenshot.id
                                 },
-                                onLongClick = { viewModel.toggleSelected(item.screenshot.id) },
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.toggleSelected(item.screenshot.id)
+                                },
+                                modifier = Modifier.animateItem(),
                             )
                         }
                     }
@@ -416,6 +423,7 @@ fun GalleryCell(
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
     selected: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(12.dp)
     // Show each image at (close to) its real shape for a staggered, photos-app feel; clamp so an
@@ -425,7 +433,7 @@ fun GalleryCell(
     // Clamp tightly so portrait screenshots don't become very tall tiles (keeps the grid dense).
     val ratio = if (w > 0 && h > 0) (w.toFloat() / h).coerceIn(0.7f, 1.3f) else 0.75f
     Box(
-        modifier = Modifier
+        modifier = modifier
             .aspectRatio(ratio)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant) // placeholder while the image loads
