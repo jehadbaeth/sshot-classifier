@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -55,6 +56,8 @@ fun ScreenshotDetailScreen(
     val tags by remember(screenshotId) { viewModel.tags(screenshotId) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val screenshot by remember(screenshotId) { viewModel.screenshot(screenshotId) }
+        .collectAsStateWithLifecycle(initialValue = null)
+    val ocrText by remember(screenshotId) { viewModel.ocrText(screenshotId) }
         .collectAsStateWithLifecycle(initialValue = null)
     val capturePrefs by viewModel.capturePreferences.collectAsStateWithLifecycle(initialValue = null)
     val resolving by viewModel.resolving.collectAsStateWithLifecycle()
@@ -113,6 +116,8 @@ fun ScreenshotDetailScreen(
                 }
             }
 
+            ocrText?.takeIf { it.isNotBlank() }?.let { text -> OcrSection(text) }
+
             if (tags.isEmpty()) {
                 Text(
                     "No tags yet. Add one below.",
@@ -141,6 +146,27 @@ fun ScreenshotDetailScreen(
                 IconButton(onClick = { submit() }, enabled = newLabel.isNotBlank()) {
                     Icon(Icons.Default.Add, contentDescription = "Add tag")
                 }
+            }
+        }
+    }
+}
+
+/** Read-only display of the extracted OCR text, selectable so the user can copy it out. */
+@Composable
+private fun OcrSection(text: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            "Extracted text (OCR)",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+            SelectionContainer {
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(12.dp),
+                )
             }
         }
     }

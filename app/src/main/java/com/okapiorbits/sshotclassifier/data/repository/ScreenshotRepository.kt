@@ -97,6 +97,7 @@ class ScreenshotRepository @Inject constructor(
     /** Reactive screenshot + its tags for the detail editor. */
     fun observeScreenshot(id: Long): Flow<ScreenshotEntity?> = dao.observeScreenshot(id)
     fun observeTags(screenshotId: Long): Flow<List<TagEntity>> = dao.observeTagsFor(screenshotId)
+    fun observeOcrText(screenshotId: Long): Flow<String?> = dao.observeOcrText(screenshotId)
 
     /**
      * Adds a user-authored tag. Labels are trimmed and lowercased so they match

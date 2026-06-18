@@ -52,6 +52,10 @@ interface ScreenshotDao {
     @Query("SELECT * FROM tags WHERE screenshot_id = :screenshotId ORDER BY weight DESC, label ASC")
     fun observeTagsFor(screenshotId: Long): Flow<List<TagEntity>>
 
+    /** Extracted OCR text for one screenshot (null until processed / if none), for the detail view. */
+    @Query("SELECT full_text FROM ocr_entries WHERE screenshot_id = :screenshotId LIMIT 1")
+    fun observeOcrText(screenshotId: Long): Flow<String?>
+
     /** True if a tag with this exact label already exists on the screenshot (any source). */
     @Query("SELECT EXISTS(SELECT 1 FROM tags WHERE screenshot_id = :screenshotId AND label = :label)")
     suspend fun tagExists(screenshotId: Long, label: String): Boolean

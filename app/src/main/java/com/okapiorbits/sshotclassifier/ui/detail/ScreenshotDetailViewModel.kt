@@ -39,6 +39,9 @@ class ScreenshotDetailViewModel @Inject constructor(
     /** The image row itself, for the camera-capture description and QR payload/preview. */
     fun screenshot(screenshotId: Long): Flow<ScreenshotEntity?> = repository.observeScreenshot(screenshotId)
 
+    /** Extracted OCR text, shown read-only on the detail screen. */
+    fun ocrText(screenshotId: Long): Flow<String?> = repository.observeOcrText(screenshotId)
+
     /** Capture preferences (whether resolution is enabled, whether to load preview images). */
     val capturePreferences: Flow<CapturePreferences> = capturePreferencesStore.preferences
 
