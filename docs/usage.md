@@ -209,6 +209,8 @@ default, and only selectable after you import a model file, because the model is
 and is never bundled with the app. Tap **Import model**, pick a Gemma 3n `.task` file you
 downloaded yourself (accepting its licence at the source), and once it copies you can switch
 the source to Generative. It is slow (tens of seconds per photo on CPU) and falls back to the
-structured description on any error. On phones that do not qualify, the option is hidden or
-disabled with the reason shown. This path has not been verified by us on real hardware yet, so
-treat it as experimental.
+structured description on any error. On phones that do not qualify, the option is disabled with the
+reason shown — but you can force it on for testing via **Settings > Developer > Developer mode**,
+which also lets you export debug logs to report how a device behaved. Forcing it on an under-spec
+device may be slow or crash (it still falls back to a structured description). This path has not been
+verified by us on real hardware yet, so treat it as experimental.

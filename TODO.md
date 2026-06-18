@@ -123,6 +123,17 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
         confirm generation. Structured descriptions remain the default. FOLLOW-UPS: (a) on-device
         verification by the user; (b) drop x86/x86_64 ABIs from release builds (~32 MB of the 52 MB is
         emulator-only ABIs that can't run this); (c) batch-level model load instead of per-call.
+      * **Developer mode + debug-log export — ADDED 2026-06-18 (v0.9.1).** User hit the hard
+        capability gate on a Samsung S20 FE (couldn't reach the import step). Decision: keep the safe
+        gate as default but add a `devMode` preference (Settings → Developer, default off) that
+        force-allows the generative path on under-spec devices for testing, with a "may be slow or
+        crash" warning; `shouldUseGenerative` now allows `deviceCapable || devModeForced` (still falls
+        back to structured on failure). Same Developer section exports the app's own logcat
+        (`DebugLogExporter`, own-process, no privileged perm) so testers can report behaviour. Verified
+        on galaxy_s20fe_api33 (previously blocked by the emulator check): off=blocked with hint,
+        on=import controls + Export debug logs appear. NOTE device-identity: user's S20 FE is a 2020
+        6–8 GB upper-mid phone, NOT the Pixel 8/S23 the docs assume — they may be measuring the failure
+        boundary, not a working baseline. This testing pass is the go/no-go for keeping the feature.
 - [x] **Classification accuracy eval against datasets (done 2026-06-15, SCALED 2026-06-16).**
       Built an on-device eval harness (`app/src/androidTest/.../pipeline/ClassificationEvalTest.kt`)
       that runs the EXACT production path (OCR + heuristics + CLIP + `TagFuser.fuse` +

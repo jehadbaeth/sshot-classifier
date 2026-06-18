@@ -62,8 +62,13 @@ A device qualifies only if **all** hold:
 4. Not an emulator (the API does not reliably run there; also our own honesty: we can't claim it
    works where it isn't supported).
 
-On a non-qualifying device the Generative option stays **disabled** with a reason shown; the app
-silently keeps using the offline structured describer.
+On a non-qualifying device the Generative option is **disabled by default** with the reason shown,
+and the app keeps using the offline structured describer. **Developer mode** (Settings → Developer,
+added v0.9.1) overrides this: a tester can turn it on to force-enable the import + generative path on
+an under-spec device (with a "may be slow or crash" warning), so the real limits can be measured
+empirically rather than assumed. The gate is then advisory: `shouldUseGenerative` allows the path
+when `deviceCapable || devModeForced`, still falling back to structured on any failure. Developer
+mode also exposes a debug-log export (own-process logcat) for reporting how a device behaved.
 
 ## Delivery: why the model is user-imported, not downloaded by the app
 
@@ -119,9 +124,11 @@ The author cannot run these; the user must. Until step 4 passes, treat generatio
 
 1. **Get the model.** Download a Gemma 3n E2B multimodal `.task` (e.g. the litert-community / Kaggle
    build, ~3.1 GB), accepting the Gemma licence. Put it on the device.
-2. **Install + import.** Sideload the release APK. Settings → Camera capture: confirm the Generative
-   row shows "Import a model file below" (capable device). Tap **Import model**, pick the `.task`,
-   wait for the copy to finish (progress bar). Confirm it then reads "Model imported (~3.x GB)".
+2. **Install + import.** Sideload the release APK. Settings → Camera capture: on a high-end device
+   the Generative row shows "Import a model file below". On an under-spec device (e.g. a 6 GB S20 FE)
+   it is blocked with a hint — turn on **Settings → Developer → Developer mode** first, then the
+   import controls appear (with a warning). Tap **Import model**, pick the `.task`, wait for the copy
+   to finish (progress bar). Confirm it then reads "Model imported (~3.x GB)".
 3. **Enable + capture.** Select the **Generative** radio (now enabled). Take a camera capture of a
    real scene (a storefront, a product, a poster).
 4. **Verify the caption.** Open the capture's detail screen. Confirm the description is a sensible
