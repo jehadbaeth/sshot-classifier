@@ -40,7 +40,7 @@ import com.okapiorbits.sshotclassifier.ui.gallery.GalleryCell
 @Composable
 fun SearchScreen(viewModel: SearchViewModel) {
     val query by viewModel.query.collectAsStateWithLifecycle()
-    val selectedTag by viewModel.selectedTag.collectAsStateWithLifecycle()
+    val selectedTags by viewModel.selectedTags.collectAsStateWithLifecycle()
     val tagCounts by viewModel.tagCounts.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
 
@@ -83,7 +83,7 @@ fun SearchScreen(viewModel: SearchViewModel) {
             ) {
                 items(tagCounts, key = { it.label }) { tc ->
                     FilterChip(
-                        selected = selectedTag == tc.label,
+                        selected = tc.label in selectedTags,
                         onClick = { viewModel.toggleTag(tc.label) },
                         label = { Text("${tc.label} (${tc.cnt})") },
                     )
@@ -105,7 +105,7 @@ fun SearchScreen(viewModel: SearchViewModel) {
                         }
                     }
                 }
-                query.isBlank() && selectedTag == null -> EmptyState(
+                query.isBlank() && selectedTags.isEmpty() -> EmptyState(
                     icon = Icons.Default.Search,
                     title = "Search your library",
                     subtitle = if (viewModel.semanticReady)

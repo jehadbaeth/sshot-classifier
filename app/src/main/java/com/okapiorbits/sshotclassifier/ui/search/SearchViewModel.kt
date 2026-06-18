@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -34,18 +35,21 @@ class SearchViewModel @Inject constructor(
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
-    private val _selectedTag = MutableStateFlow<String?>(null)
-    val selectedTag: StateFlow<String?> = _selectedTag.asStateFlow()
+    private val _selectedTags = MutableStateFlow<Set<String>>(emptySet())
+    val selectedTags: StateFlow<Set<String>> = _selectedTags.asStateFlow()
 
     val tagCounts: StateFlow<List<TagCount>> =
         repository.observeTagCounts()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val results: StateFlow<List<ScreenshotWithTags>> =
-        combine(_query.debounce(250), _selectedTag) { q, tag -> q to tag }
-            .flatMapLatest { (q, tag) ->
+        combine(_query.debounce(250), _selectedTags) { q, tags -> q to tags }
+            .flatMapLatest { (q, tags) ->
                 when {
-                    tag != null -> repository.observeByTag(tag)
+                    // Multiple tags = intersection: an image must carry ALL selected tags.
+                    tags.isNotEmpty() -> repository.observeGallery().map { list ->
+                        list.filter { s -> tags.all { t -> s.tags.any { it.label == t } } }
+                    }
                     q.isNotBlank() -> flow { emit(repository.hybridSearch(q)) }
                     else -> flowOf(emptyList())
                 }
@@ -54,11 +58,15 @@ class SearchViewModel @Inject constructor(
 
     fun setQuery(q: String) {
         _query.value = q
-        if (q.isNotBlank()) _selectedTag.value = null
+        if (q.isNotBlank()) _selectedTags.value = emptySet()
     }
 
     fun toggleTag(label: String) {
-        _selectedTag.value = if (_selectedTag.value == label) null else label
-        if (_selectedTag.value != null) _query.value = ""
+        _selectedTags.value = _selectedTags.value.let { if (label in it) it - label else it + label }
+        if (_selectedTags.value.isNotEmpty()) _query.value = ""
+    }
+
+    fun clearTags() {
+        _selectedTags.value = emptySet()
     }
 }
