@@ -425,7 +425,7 @@ Mirrors docs/design.md section 14, with task-level detail.
          Navigation & flow
          - [ ] Search bar pinned on the gallery/home (fold the separate Search tab into it).
          - [ ] Gallery→detail shared-element / zoom transition.
-         - [ ] Swipe left/right between images in detail (HorizontalPager).
+         - [x] Swipe left/right between images in detail (HorizontalPager). (v0.9.19)
          - [x] Pull-to-refresh on the gallery to trigger a scan. (v0.9.18)
          - [x] Jump-to-top button when scrolled down. (v0.9.18) — sticky headers / fast-scroll still open.
 

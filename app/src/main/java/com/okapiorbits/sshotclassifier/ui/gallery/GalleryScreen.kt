@@ -7,6 +7,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.SmallFloatingActionButton
@@ -123,12 +125,22 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     if (selectedId != null && selected == null) selectedId = null // row vanished
     if (selected != null) {
         val detailVm: ScreenshotDetailViewModel = hiltViewModel()
-        ScreenshotDetailScreen(
-            screenshotId = selected.screenshot.id,
-            filePath = selected.screenshot.file_path,
-            viewModel = detailVm,
-            onBack = { selectedId = null },
-        )
+        // Swipe left/right to move between screenshots, in the current sort/filter order.
+        val startIndex = remember(selectedId) {
+            screenshots.indexOfFirst { it.screenshot.id == selectedId }.coerceAtLeast(0)
+        }
+        val pagerState = rememberPagerState(initialPage = startIndex) { screenshots.size }
+        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            val s = screenshots.getOrNull(page)
+            if (s != null) {
+                ScreenshotDetailScreen(
+                    screenshotId = s.screenshot.id,
+                    filePath = s.screenshot.file_path,
+                    viewModel = detailVm,
+                    onBack = { selectedId = null },
+                )
+            }
+        }
         return
     }
 

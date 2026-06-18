@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 30
-        versionName = "0.9.18" // Pull-to-refresh + scroll-to-top in the gallery
+        versionCode = 31
+        versionName = "0.9.19" // Swipe between images in the detail view
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
