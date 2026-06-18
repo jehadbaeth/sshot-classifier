@@ -411,18 +411,18 @@ Mirrors docs/design.md section 14, with task-level detail.
       (e.g. fixed palettes like Indigo+amber / Teal+coral + dynamic). Add a theme picker in Settings
       backed by a stored enum; define the palettes in Color.kt. Low priority vs the real UX redesign.
 - [~] **UX feedback from user testing v0.9.12 (2026-06-18) — concrete punch list:**
-      1. [ ] **Gallery tiles too big** — at most ~2 fit on screen. Make the grid denser (more
-         columns, shorter tiles). (quick fix this increment)
-      2. [ ] **Multi-select + bulk actions** — long-press an image should enter selection mode;
-         tap toggles; a contextual bar with bulk actions (share, add tag, …). Currently actions
-         only exist when viewing a single image. (high value)
-      3. [ ] **Camera capture feedback** — the camera view is plain: no indication a photo was
-         taken. Add a screen flash on capture + a thumbnail carousel at the bottom of recent
-         captures.
-      4. [ ] **Settings watched-folders list is way too long** — needs grouping / a compact,
-         searchable view instead of a flat list of every folder containing images.
+      1. [x] **Gallery tiles too big** — denser grid (smaller columns + tighter aspect clamp,
+         ~3 cols). v0.9.13.
+      2. [x] **Multi-select + bulk actions** — long-press to select, tap toggles, contextual bar
+         (Share / Add-tag-to-all / Select-all), check overlay. v0.9.13.
+      3. [x] **Camera capture feedback** — shutter flash + recent-captures carousel. v0.9.14.
+         (capture→carousel flow needs real-camera verification; emulator can't complete takePicture.)
+      4. [x] **Settings watched-folders list too long** — sorted (watched + busiest first) and
+         collapsed to top 5 with a "Show all N folders" expander. v0.9.15.
       5. [ ] Ongoing: "plenty of other UX quality stuff" — keep finding + fixing (loading states,
-         affordances, gestures, transitions, consistency).
+         affordances, gestures, transitions, consistency). Candidates not yet done: gallery→detail
+         shared-element/zoom transition, list item enter animations, search bar on the home,
+         folder search/filter, swipe gestures, detail screen hero layout.
 - [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
       processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
       (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);

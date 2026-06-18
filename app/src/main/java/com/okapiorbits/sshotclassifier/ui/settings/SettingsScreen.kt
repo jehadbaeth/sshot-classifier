@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -795,7 +796,16 @@ private fun WatchedFoldersSection(
         return
     }
 
-    for (name in names) {
+    // Watched folders first, then the busiest — so the relevant ones are up top and the long
+    // tail of tiny folders is collapsed behind a "show all".
+    val ordered = names.sortedWith(
+        compareByDescending<String> { it in watched }.thenByDescending { byName[it]?.imageCount ?: 0 },
+    )
+    var expanded by remember { mutableStateOf(false) }
+    val collapsedCount = 5
+    val visible = if (expanded || ordered.size <= collapsedCount) ordered else ordered.take(collapsedCount)
+
+    for (name in visible) {
         val count = byName[name]?.imageCount
         LabeledSwitch(
             label = name,
@@ -804,6 +814,11 @@ private fun WatchedFoldersSection(
             enabled = true,
             onCheckedChange = { onToggle(name, it) },
         )
+    }
+    if (ordered.size > collapsedCount) {
+        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(top = 4.dp)) {
+            Text(if (expanded) "Show fewer" else "Show all ${ordered.size} folders")
+        }
     }
 }
 

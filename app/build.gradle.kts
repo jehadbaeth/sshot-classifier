@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 26
-        versionName = "0.9.14" // Camera: shutter flash + recent-captures carousel
+        versionCode = 27
+        versionName = "0.9.15" // Settings: collapse the long watched-folders list
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
