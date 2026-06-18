@@ -6,6 +6,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -85,6 +88,58 @@ class VlmModelManager @Inject constructor(
             }
         }
 
+    /**
+     * Downloads the model from [MODEL_URL] into [modelFile], streaming to a `.part` file,
+     * verifying [MODEL_SHA256], then renaming on success. The checksum is the trust anchor:
+     * the URL points at a community re-host (it can change or vanish), so a swapped or corrupt
+     * file is rejected rather than loaded. No resume: a failure restarts the ~3 GB download.
+     */
+    suspend fun download(onProgress: (Float) -> Unit = {}): ImportResult =
+        withContext(Dispatchers.IO) {
+            val tmp = File(modelDir, "$MODEL_NAME.part")
+            try {
+                val conn = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 30_000
+                    readTimeout = 60_000
+                }
+                conn.connect()
+                if (conn.responseCode !in 200..299) {
+                    return@withContext ImportResult.Failed("Download failed (HTTP ${conn.responseCode})")
+                }
+                val total = conn.contentLengthLong.coerceAtLeast(MODEL_SIZE_BYTES)
+                val digest = MessageDigest.getInstance("SHA-256")
+                conn.inputStream.use { input ->
+                    tmp.outputStream().use { out ->
+                        val buf = ByteArray(1 shl 20) // 1 MB
+                        var copied = 0L
+                        var read = input.read(buf)
+                        while (read >= 0) {
+                            out.write(buf, 0, read)
+                            digest.update(buf, 0, read)
+                            copied += read
+                            if (total > 0) onProgress((copied.toFloat() / total).coerceIn(0f, 1f))
+                            read = input.read(buf)
+                        }
+                    }
+                }
+                val actual = digest.digest().joinToString("") { "%02x".format(it) }
+                if (!actual.equals(MODEL_SHA256, ignoreCase = true)) {
+                    tmp.delete()
+                    return@withContext ImportResult.Failed("Checksum mismatch (download corrupt or model changed)")
+                }
+                if (modelFile.exists()) modelFile.delete()
+                if (!tmp.renameTo(modelFile)) {
+                    tmp.delete()
+                    return@withContext ImportResult.Failed("Could not save the model")
+                }
+                onProgress(1f)
+                ImportResult.Done(modelFile.length())
+            } catch (e: Exception) {
+                tmp.delete()
+                ImportResult.Failed(e.message ?: "Download failed")
+            }
+        }
+
     /** SAF document size via OpenableColumns, or -1 if the provider does not report it. */
     private fun querySize(uri: Uri): Long = runCatching {
         context.contentResolver.query(uri, null, null, null, null)?.use { c ->
@@ -99,5 +154,17 @@ class VlmModelManager @Inject constructor(
 
         /** Floor to reject an obviously-wrong import; the real model is ~3.1 GB. */
         const val MIN_VALID_BYTES = 100_000_000L
+
+        /**
+         * Gemma 3n E2B int4 `.task`. This is a COMMUNITY re-host (Gemma is gated on the official
+         * source, so there is no first-party no-auth link). It can change or disappear; the
+         * sha256 below is the trust + integrity anchor. Swap this to a self-owned public mirror
+         * for durability. See docs/spikes/vlm-device-research.md.
+         */
+        const val MODEL_URL =
+            "https://huggingface.co/xiaohan1/gemma3n/resolve/main/gemma-3n-E2B-it-int4.task"
+        const val MODEL_SHA256 =
+            "a7f544cfee68f579fabadb22aa9284faa4020a0f5358d0e15b49fdd4cefe4200"
+        const val MODEL_SIZE_BYTES = 3_136_226_711L
     }
 }

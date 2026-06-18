@@ -437,6 +437,20 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /** Downloads the model from the configured mirror (sha256-verified), then refreshes state. */
+    fun downloadVlmModel() {
+        if (_vlmImport.value is VlmImportState.Running) return
+        viewModelScope.launch {
+            _vlmImport.value = VlmImportState.Running(0f)
+            val result = vlmModelManager.download { p -> _vlmImport.value = VlmImportState.Running(p) }
+            _vlmImport.value = when (result) {
+                is VlmModelManager.ImportResult.Done -> VlmImportState.Idle
+                is VlmModelManager.ImportResult.Failed -> VlmImportState.Failed(result.message)
+            }
+            _vlmInstalled.value = vlmModelManager.isInstalled()
+        }
+    }
+
     /** Removes the imported model (reclaims ~3 GB) and falls back to structured descriptions. */
     fun deleteVlmModel() {
         viewModelScope.launch {

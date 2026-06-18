@@ -208,6 +208,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 vlmInstalled = vlmInstalled,
                 vlmModelBytes = viewModel.vlmModelBytes(),
                 vlmImport = vlmImport,
+                onDownloadModel = viewModel::downloadVlmModel,
                 onImportModel = { vlmImportLauncher.launch(arrayOf("*/*")) },
                 onDeleteModel = viewModel::deleteVlmModel,
                 onDecodeQrChange = viewModel::setDecodeQrCodes,
@@ -475,6 +476,7 @@ private fun CameraCaptureSection(
     vlmInstalled: Boolean,
     vlmModelBytes: Long,
     vlmImport: SettingsViewModel.VlmImportState,
+    onDownloadModel: () -> Unit,
     onImportModel: () -> Unit,
     onDeleteModel: () -> Unit,
     onDecodeQrChange: (Boolean) -> Unit,
@@ -564,6 +566,7 @@ private fun CameraCaptureSection(
             installed = vlmInstalled,
             modelBytes = vlmModelBytes,
             importState = vlmImport,
+            onDownload = onDownloadModel,
             onImport = onImportModel,
             onDelete = onDeleteModel,
         )
@@ -591,6 +594,7 @@ private fun VlmModelControls(
     installed: Boolean,
     modelBytes: Long,
     importState: SettingsViewModel.VlmImportState,
+    onDownload: () -> Unit,
     onImport: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -598,12 +602,12 @@ private fun VlmModelControls(
     Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Text(
             if (installed) {
-                "Model imported (${"%.1f".format(modelBytes / 1_000_000_000.0)} GB). " +
+                "Model installed (${"%.1f".format(modelBytes / 1_000_000_000.0)} GB). " +
                     "You can switch the description source to Generative above."
             } else {
-                "No model imported. Download a multimodal model file (a Gemma 3n .task bundle) " +
-                    "from its official source, accept its licence, then import it here. It is " +
-                    "large (~3 GB) and is never bundled with the app."
+                "No model yet. Download the Gemma 3n model (~3 GB, verified by checksum) over the " +
+                    "network, or import a .task file you downloaded yourself. The model is never " +
+                    "bundled with the app. Keep this screen open while it downloads."
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -614,23 +618,23 @@ private fun VlmModelControls(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
             Text(
-                "Importing… ${(running.progress * 100).toInt()}%",
+                "Working… ${(running.progress * 100).toInt()}%",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp),
             )
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                OutlinedButton(onClick = onImport) {
-                    Text(if (installed) "Replace model" else "Import model")
-                }
-                if (installed) {
+                if (!installed) {
+                    Button(onClick = onDownload) { Text("Download (~3 GB)") }
+                    OutlinedButton(onClick = onImport) { Text("Import file") }
+                } else {
                     OutlinedButton(onClick = onDelete) { Text("Remove model") }
                 }
             }
         }
         (importState as? SettingsViewModel.VlmImportState.Failed)?.let {
             Text(
-                "Import failed: ${it.message}",
+                it.message,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = 4.dp),
