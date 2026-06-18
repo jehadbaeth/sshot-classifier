@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 34
-        versionName = "0.9.22" // Configurable theme picker (Material You/Brand/Indigo/Teal)
+        versionCode = 35
+        versionName = "0.9.23" // Folder search + animated tab transitions
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -809,10 +810,35 @@ private fun WatchedFoldersSection(
     val ordered = names.sortedWith(
         compareByDescending<String> { it in watched }.thenByDescending { byName[it]?.imageCount ?: 0 },
     )
-    var expanded by remember { mutableStateOf(false) }
     val collapsedCount = 5
-    val visible = if (expanded || ordered.size <= collapsedCount) ordered else ordered.take(collapsedCount)
+    var expanded by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
 
+    // Search box appears once there are enough folders to be worth filtering.
+    if (names.size > collapsedCount) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search folders") },
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        )
+    }
+
+    val filtered = if (query.isBlank()) ordered else ordered.filter { it.contains(query, ignoreCase = true) }
+    // While searching, show all matches; otherwise collapse the long tail.
+    val showAll = query.isNotBlank() || expanded || filtered.size <= collapsedCount
+    val visible = if (showAll) filtered else filtered.take(collapsedCount)
+
+    if (filtered.isEmpty()) {
+        Text(
+            "No folders match \"$query\".",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
     for (name in visible) {
         val count = byName[name]?.imageCount
         LabeledSwitch(
@@ -823,9 +849,9 @@ private fun WatchedFoldersSection(
             onCheckedChange = { onToggle(name, it) },
         )
     }
-    if (ordered.size > collapsedCount) {
+    if (query.isBlank() && filtered.size > collapsedCount) {
         TextButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(top = 4.dp)) {
-            Text(if (expanded) "Show fewer" else "Show all ${ordered.size} folders")
+            Text(if (expanded) "Show fewer" else "Show all ${filtered.size} folders")
         }
     }
 }

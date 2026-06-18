@@ -1,5 +1,7 @@
 package com.okapiorbits.sshotclassifier
 
+import androidx.compose.animation.Crossfade
+
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -126,24 +128,26 @@ private fun MainScaffold() {
         },
     ) { padding ->
         Surface(modifier = Modifier.fillMaxSize().padding(padding)) {
-            when (tab) {
-                0 -> {
-                    var showCamera by rememberSaveable { mutableStateOf(false) }
-                    if (showCamera) {
-                        val camVm: CameraCaptureViewModel = hiltViewModel()
-                        CameraCaptureScreen(camVm, onClose = { showCamera = false })
-                    } else {
-                        val vm: GalleryViewModel = hiltViewModel()
-                        GalleryScreen(vm, onOpenCamera = { showCamera = true })
+            Crossfade(targetState = tab, label = "tab") { current ->
+                when (current) {
+                    0 -> {
+                        var showCamera by rememberSaveable { mutableStateOf(false) }
+                        if (showCamera) {
+                            val camVm: CameraCaptureViewModel = hiltViewModel()
+                            CameraCaptureScreen(camVm, onClose = { showCamera = false })
+                        } else {
+                            val vm: GalleryViewModel = hiltViewModel()
+                            GalleryScreen(vm, onOpenCamera = { showCamera = true })
+                        }
                     }
-                }
-                1 -> {
-                    val vm: SearchViewModel = hiltViewModel()
-                    SearchScreen(vm)
-                }
-                else -> {
-                    val vm: SettingsViewModel = hiltViewModel()
-                    SettingsScreen(vm)
+                    1 -> {
+                        val vm: SearchViewModel = hiltViewModel()
+                        SearchScreen(vm)
+                    }
+                    else -> {
+                        val vm: SettingsViewModel = hiltViewModel()
+                        SettingsScreen(vm)
+                    }
                 }
             }
         }

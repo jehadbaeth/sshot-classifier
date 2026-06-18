@@ -439,7 +439,7 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [x] Haptic feedback on long-press select and capture. (v0.9.17)
          - [ ] Skeleton/shimmer placeholders while the grid loads.
          - [x] Snackbar with Undo for bulk tag-add. (v0.9.21) — reorg/remove-tag/delete still open.
-         - [ ] Animated transitions between the bottom-nav tabs.
+         - [x] Animated (crossfade) transitions between the bottom-nav tabs. (v0.9.23)
 
          Detail & viewer
          - [ ] Edge-to-edge hero image on the detail screen; cleaner section layout.
@@ -447,7 +447,7 @@ Mirrors docs/design.md section 14, with task-level detail.
 
          Settings & structure
          - [ ] Group the 13 Settings sections into collapsible cards (the long-scroll item).
-         - [ ] Folder search/filter in watched folders (complements the collapse already shipped).
+         - [x] Folder search/filter in watched folders. (v0.9.23)
          - [x] Configurable theme picker (Material You / Brand / Indigo / Teal). (v0.9.22)
 
          Polish & a11y
