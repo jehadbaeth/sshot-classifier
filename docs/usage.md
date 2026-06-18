@@ -109,13 +109,16 @@ Search just like the automatic ones.
 ### Reading non-Latin text (Arabic)
 
 By default the app reads Latin-script text (English and similar). Arabic uses a separate engine,
-so under **Settings > Text recognition (OCR)** you can choose **Latin**, **Arabic**, **Latin +
-Arabic**, or **Auto**. Auto reads Latin first and only falls back to Arabic when an image isn't
-Latin, so it is cheap and picks the right script per image; use Latin + Arabic for images that
-mix both scripts heavily. Changing the setting applies to newly scanned images — tap **Re-run OCR
-on existing images** to re-read what is already indexed. Honest limitation: automatic tagging and
-visual (concept) search are tuned for English, so Arabic gains text extraction, display, and
-keyword search, but not auto-categories.
+so under **Settings > Text recognition (OCR)** you can choose **Latin**, **Arabic (and mixed)**,
+**Latin + Arabic (max)**, or **Auto**. For images that mix Arabic and Latin, use **Arabic (and
+mixed)** — it reads both scripts together in one pass (a single-script engine garbles the other
+script, which is why a mixed image looks like gibberish under Latin-only). Auto reads Latin first
+and falls back to that Arabic+Latin engine when an image isn't plain Latin, so it stays fast for
+mostly-Latin libraries; if most of your images mix scripts, pick **Arabic (and mixed)** directly.
+Changing the setting applies to newly scanned images — tap **Re-run OCR on existing images** to
+re-read what is already indexed. Honest limitation: automatic tagging and visual (concept) search
+are tuned for English, so Arabic gains text extraction, display, and keyword search, but not
+auto-categories.
 
 ---
 

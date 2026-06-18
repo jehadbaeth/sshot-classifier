@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "0.9.6" // Arabic OCR (Tesseract) + OCR language config (Latin/Arabic/Both/Auto)
+        versionCode = 19
+        versionName = "0.9.7" // OCR: Tesseract ara+eng so mixed Arabic/Latin images aren't garbled
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
