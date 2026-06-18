@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 37
-        versionName = "0.9.25" // Compact search: tag chips hidden until engaged; search bar collapses on scroll
+        versionCode = 38
+        versionName = "0.9.26" // Settings sections grouped into collapsible cards (no more long scroll)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

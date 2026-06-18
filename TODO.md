@@ -446,7 +446,7 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [ ] Copy-QR-payload button; quick actions row (share/open/info) on detail itself.
 
          Settings & structure
-         - [ ] Group the 13 Settings sections into collapsible cards (the long-scroll item).
+         - [x] Group the Settings sections into collapsible cards (the long-scroll item). (v0.9.26)
          - [x] Folder search/filter in watched folders. (v0.9.23)
          - [x] Configurable theme picker (Material You / Brand / Indigo / Teal). (v0.9.22)
 

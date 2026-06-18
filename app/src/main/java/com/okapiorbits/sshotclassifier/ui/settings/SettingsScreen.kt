@@ -3,9 +3,11 @@ package com.okapiorbits.sshotclassifier.ui.settings
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -17,11 +19,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,28 +113,46 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         pendingDelete?.let { deleteLauncher.launch(it.request) }
     }
 
+    // Each section is a collapsible card so the screen opens as a short, scannable list
+    // instead of one long scroll. Library starts open (cheap stats); AI models opens itself
+    // when a download is in flight so its progress isn't hidden behind a closed card.
+    var libraryExpanded by rememberSaveable { mutableStateOf(true) }
+    var foldersExpanded by rememberSaveable { mutableStateOf(false) }
+    var modelsExpanded by rememberSaveable { mutableStateOf(download is DownloadState.Running) }
+    var maintenanceExpanded by rememberSaveable { mutableStateOf(false) }
+    var ocrExpanded by rememberSaveable { mutableStateOf(false) }
+    var reorgExpanded by rememberSaveable { mutableStateOf(false) }
+    var cameraExpanded by rememberSaveable { mutableStateOf(false) }
+    var categoriesExpanded by rememberSaveable { mutableStateOf(false) }
+    var backupExpanded by rememberSaveable { mutableStateOf(false) }
+    var appearanceExpanded by rememberSaveable { mutableStateOf(false) }
+    var developerExpanded by rememberSaveable { mutableStateOf(false) }
+    var aboutExpanded by rememberSaveable { mutableStateOf(false) }
+
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Section("Library")
+            SettingsCard("Library", libraryExpanded, { libraryExpanded = !libraryExpanded }) {
             Stat("Screenshots indexed", total.toString())
             if (pending > 0) Stat("Waiting to be processed", pending.toString())
             if (reprocessable > 0 && models.imageInstalled) Stat("Awaiting visual tags", reprocessable.toString())
+            }
 
-            Section("Watched folders")
+            SettingsCard("Watched folders", foldersExpanded, { foldersExpanded = !foldersExpanded }) {
             WatchedFoldersSection(
                 available = availableFolders,
                 watched = watchedFolders,
                 onToggle = viewModel::setFolderWatched,
             )
+            }
 
-            Section("AI models")
+            SettingsCard("AI models", modelsExpanded, { modelsExpanded = !modelsExpanded }) {
             ModelRow("Image encoder (tagging + visual search)", models.imageInstalled, models.imageBytes)
             ModelRow("Text encoder (free-text search)", models.textInstalled, models.textBytes)
             when (val d = download) {
@@ -173,8 +196,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     modifier = Modifier.padding(top = 8.dp),
                 ) { Text("Remove downloaded models (re-test download)") }
             }
+            }
 
-            Section("Maintenance")
+            SettingsCard("Maintenance", maintenanceExpanded, { maintenanceExpanded = !maintenanceExpanded }) {
             if (reprocessable > 0 && models.imageInstalled) {
                 OutlinedButton(onClick = viewModel::reprocessMissing, modifier = Modifier.padding(top = 4.dp)) {
                     Text("Reprocess $reprocessable older screenshots")
@@ -188,8 +212,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            }
 
-            Section("Text recognition (OCR)")
+            SettingsCard("Text recognition (OCR)", ocrExpanded, { ocrExpanded = !ocrExpanded }) {
             OcrLanguageSection(
                 current = ocrLanguage,
                 reprocessStatus = ocrReprocessStatus,
@@ -197,9 +222,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 onReprocess = viewModel::reprocessAllForOcr,
                 onDismissStatus = viewModel::clearOcrReprocessStatus,
             )
+            }
 
             if (viewModel.reorganizeSupported) {
-                Section("Reorganization")
+                SettingsCard("Reorganization", reorgExpanded, { reorgExpanded = !reorgExpanded }) {
                 ReorganizationSection(
                     prefs = reorgPrefs,
                     moveSupported = viewModel.moveSupported,
@@ -213,9 +239,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     onNeedsReviewChange = viewModel::setNeedsReviewToUncategorized,
                     onAutoRunChange = viewModel::setAutoRun,
                 )
+                }
             }
 
-            Section("Camera capture")
+            SettingsCard("Camera capture", cameraExpanded, { cameraExpanded = !cameraExpanded }) {
             CameraCaptureSection(
                 prefs = capturePrefs,
                 generativeUi = generativeUi,
@@ -233,8 +260,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 onDescriptionSourceChange = viewModel::setDescriptionSource,
                 onAlbumRootChange = viewModel::setCaptureAlbumRoot,
             )
+            }
 
-            Section("Custom categories")
+            SettingsCard("Custom categories", categoriesExpanded, { categoriesExpanded = !categoriesExpanded }) {
             CategoriesSection(
                 categories = categories,
                 canAdd = models.textInstalled,
@@ -243,8 +271,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 onRemove = viewModel::removeCategory,
                 onDismissStatus = viewModel::clearCategoryStatus,
             )
+            }
 
-            Section("Backup")
+            SettingsCard("Backup", backupExpanded, { backupExpanded = !backupExpanded }) {
             Text(
                 "Export your manual tags and custom categories to a file you can keep or move to a " +
                     "new device, then import them back. Tags re-attach to the same images by content, " +
@@ -263,8 +292,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             backupStatus?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
             }
+            }
 
-            Section("Appearance")
+            SettingsCard("Appearance", appearanceExpanded, { appearanceExpanded = !appearanceExpanded }) {
             Text(
                 "Theme",
                 style = MaterialTheme.typography.bodyMedium,
@@ -284,8 +314,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     onSelect = { viewModel.setAppTheme(t) },
                 )
             }
+            }
 
-            Section("Developer")
+            SettingsCard("Developer", developerExpanded, { developerExpanded = !developerExpanded }) {
             LabeledSwitch(
                 label = "Developer mode",
                 subtitle = "Unlocks experimental configs on devices that don't meet the " +
@@ -311,16 +342,18 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
                 }
             }
+            }
 
-            Section("About")
+            SettingsCard("About", aboutExpanded, { aboutExpanded = !aboutExpanded }) {
             Stat("Version", viewModel.versionName)
             Text(
                 "Fully offline. Screenshots are classified and searched on this device; " +
                     "the only network use is the one-time model download above.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
+                modifier = Modifier.padding(top = 4.dp),
             )
+            }
         }
     }
 }
@@ -857,14 +890,41 @@ private fun WatchedFoldersSection(
 }
 
 @Composable
-private fun Section(title: String) {
-    HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
-    Text(
-        title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-    )
+private fun SettingsCard(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = 1.dp,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggle)
+                    .padding(vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse $title" else "Expand $title",
+                )
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.padding(bottom = 12.dp)) { content() }
+            }
+        }
+    }
 }
 
 @Composable
