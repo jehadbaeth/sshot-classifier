@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 29
-        versionName = "0.9.17" // Motion + feedback: image crossfade, animated grid items, haptics
+        versionCode = 30
+        versionName = "0.9.18" // Pull-to-refresh + scroll-to-top in the gallery
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

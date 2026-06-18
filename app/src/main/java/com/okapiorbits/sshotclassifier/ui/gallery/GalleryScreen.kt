@@ -7,6 +7,13 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
@@ -101,6 +108,8 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val gridState = rememberLazyStaggeredGridState()
     var showBulkTagDialog by remember { mutableStateOf(false) }
     var sortMenuOpen by remember { mutableStateOf(false) }
 
@@ -244,7 +253,13 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     if (duplicatesOnly || sortOrder != SortOrder.NEWEST) listOf("" to screenshots)
                     else groupByDateBucket(screenshots, now)
                 }
+                PullToRefreshBox(
+                    isRefreshing = pending > 0,
+                    onRefresh = { viewModel.scan() },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
                 LazyVerticalStaggeredGrid(
+                    state = gridState,
                     columns = StaggeredGridCells.Adaptive(minSize = 100.dp),
                     contentPadding = PaddingValues(6.dp),
                     verticalItemSpacing = 4.dp,
@@ -273,6 +288,18 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                             )
                         }
                     }
+                }
+                }
+                // Jump back to the top once scrolled down a few rows.
+                val showTop by remember { derivedStateOf { gridState.firstVisibleItemIndex > 8 } }
+                // Bottom-START so it doesn't collide with the camera/scan FABs at bottom-end.
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showTop,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+                ) {
+                    SmallFloatingActionButton(
+                        onClick = { scope.launch { gridState.animateScrollToItem(0) } },
+                    ) { Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Scroll to top") }
                 }
             }
         }
