@@ -22,9 +22,11 @@ import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository.AddC
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
+import com.okapiorbits.sshotclassifier.diagnostics.DebugLogExporter
 import com.okapiorbits.sshotclassifier.pipeline.vlm.DeviceCapability
 import com.okapiorbits.sshotclassifier.pipeline.vlm.DeviceCapabilityChecker
 import com.okapiorbits.sshotclassifier.pipeline.vlm.VlmModelManager
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -63,6 +65,7 @@ class SettingsViewModel @Inject constructor(
     private val capturePrefsStore: CapturePreferencesStore,
     deviceCapabilityChecker: DeviceCapabilityChecker,
     private val vlmModelManager: VlmModelManager,
+    private val debugLogExporter: DebugLogExporter,
 ) : ViewModel() {
 
     /** Device check for the experimental on-device VLM describer (see docs/spikes/vlm-device-research.md). */
@@ -322,10 +325,30 @@ class SettingsViewModel @Inject constructor(
         capturePrefsStore.preferences
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CapturePreferences())
 
-    // ---- Experimental generative VLM describer (model is user-imported, never bundled) ----
+    // ---- Developer mode (force-enable gated configs + export debug logs) ----
 
-    /** Whether to offer the model-import UI at all: only on a capable device. */
-    val vlmImportSupported: Boolean = deviceCapability.isCapable
+    /** Whether this device meets the recommended bar for the generative VLM. */
+    private val deviceCapable: Boolean = deviceCapability.isCapable
+    private val capabilityReason: String? =
+        (deviceCapability as? DeviceCapability.Result.NotCapable)?.reason
+
+    val devMode: StateFlow<Boolean> =
+        uiPrefsStore.devMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setDevMode(enabled: Boolean) {
+        viewModelScope.launch {
+            uiPrefsStore.setDevMode(enabled)
+            // Turning dev mode off on an under-spec device removes the only thing allowing the
+            // generative source there, so revert the stored preference to avoid a stuck selection.
+            if (!enabled && !deviceCapable &&
+                capturePrefsStore.current().descriptionSource == DescriptionSource.GENERATIVE
+            ) {
+                capturePrefsStore.setDescriptionSource(DescriptionSource.STRUCTURED)
+            }
+        }
+    }
+
+    // ---- Experimental generative VLM describer (model is user-imported, never bundled) ----
 
     private val _vlmInstalled = MutableStateFlow(vlmModelManager.isInstalled())
     val vlmModelInstalled: StateFlow<Boolean> = _vlmInstalled.asStateFlow()
@@ -343,20 +366,53 @@ class SettingsViewModel @Inject constructor(
     val vlmImport: StateFlow<VlmImportState> = _vlmImport.asStateFlow()
 
     /**
-     * Why the experimental Generative describer can't be selected, or null if it can.
-     * Reacts to model install state: a non-qualifying device shows the capability reason; a
-     * capable device without an imported model asks the user to import one; once a capable
-     * device has a model it becomes selectable (null). See docs/spikes/vlm-device-research.md.
+     * UI state for the generative description option, reacting to device capability, the imported
+     * model, and Developer mode. A capable device works as designed; an under-spec device can
+     * force it on via Developer mode (with a warning) so testers can probe the real limits.
      */
-    val generativeUnavailableReason: StateFlow<String?> =
-        _vlmInstalled.map { installed -> generativeReason(installed) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), generativeReason(_vlmInstalled.value))
+    data class GenerativeUi(
+        /** Show the model import/replace/remove controls. */
+        val controlsVisible: Boolean,
+        /** The Generative radio is selectable. */
+        val selectable: Boolean,
+        /** Subtitle / caution under the Generative option. */
+        val note: String,
+    )
 
-    private fun generativeReason(modelInstalled: Boolean): String? = when (val c = deviceCapability) {
-        is DeviceCapability.Result.NotCapable -> "${c.reason}. (Experimental, high-end only.)"
-        is DeviceCapability.Result.Capable ->
-            if (modelInstalled) null
-            else "Experimental. Import a model file below to enable on-device captions."
+    val generativeUi: StateFlow<GenerativeUi> =
+        combine(devMode, _vlmInstalled) { dev, installed -> computeGenerativeUi(dev, installed) }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000),
+                computeGenerativeUi(false, _vlmInstalled.value),
+            )
+
+    private fun computeGenerativeUi(devMode: Boolean, modelInstalled: Boolean): GenerativeUi {
+        val allowedHere = deviceCapable || devMode
+        if (!allowedHere) {
+            return GenerativeUi(
+                controlsVisible = false,
+                selectable = false,
+                note = "${capabilityReason ?: "Not available"}. Experimental, high-end only — " +
+                    "turn on Developer mode below to try it on this device anyway.",
+            )
+        }
+        if (!modelInstalled) {
+            return GenerativeUi(
+                controlsVisible = true,
+                selectable = false,
+                note = "Experimental. Import a model file below to enable on-device captions.",
+            )
+        }
+        val forced = !deviceCapable && devMode
+        val note = if (forced) {
+            "Forced via Developer mode. This device is under spec (${capabilityReason ?: "below the recommended bar"}); " +
+                "generation may be slow or crash. Falls back to structured on any error."
+        } else {
+            "A vision-language model writes a free-form caption on-device. Slow (tens of seconds " +
+                "per photo) and falls back to structured on any error."
+        }
+        return GenerativeUi(controlsVisible = true, selectable = true, note = note)
     }
 
     /** Copies a user-selected model file into app storage, then refreshes install state. */
@@ -384,6 +440,30 @@ class SettingsViewModel @Inject constructor(
             }
             _vlmInstalled.value = vlmModelManager.isInstalled()
         }
+    }
+
+    // ---- Debug log export (Developer mode) ----
+
+    private val _logExportStatus = MutableStateFlow<String?>(null)
+    val logExportStatus: StateFlow<String?> = _logExportStatus.asStateFlow()
+
+    /** Writes the app's own logcat to the user-chosen file (for diagnosing the experimental path). */
+    fun exportDebugLogsTo(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val result = runCatching {
+                val text = debugLogExporter.collect()
+                context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) }
+                    ?: error("could not open file for writing")
+            }
+            _logExportStatus.value = result.fold(
+                onSuccess = { "Debug log exported" },
+                onFailure = { "Log export failed: ${it.message}" },
+            )
+        }
+    }
+
+    fun clearLogExportStatus() {
+        _logExportStatus.value = null
     }
 
     fun setResolveQrLinks(v: Boolean) = viewModelScope.launch { capturePrefsStore.setResolveQrLinks(v) }

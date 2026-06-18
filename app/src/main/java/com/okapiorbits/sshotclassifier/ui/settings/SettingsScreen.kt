@@ -70,9 +70,11 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
     val capturePrefs by viewModel.capturePrefs.collectAsStateWithLifecycle()
     val backupStatus by viewModel.backupStatus.collectAsStateWithLifecycle()
-    val generativeReason by viewModel.generativeUnavailableReason.collectAsStateWithLifecycle()
+    val generativeUi by viewModel.generativeUi.collectAsStateWithLifecycle()
     val vlmInstalled by viewModel.vlmModelInstalled.collectAsStateWithLifecycle()
     val vlmImport by viewModel.vlmImport.collectAsStateWithLifecycle()
+    val devMode by viewModel.devMode.collectAsStateWithLifecycle()
+    val logExportStatus by viewModel.logExportStatus.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.loadFolders() }
 
@@ -86,6 +88,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val vlmImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let(viewModel::importVlmModel) }
+    val logExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri -> uri?.let(viewModel::exportDebugLogsTo) }
 
     // MOVE mode: launch the system delete-consent dialog when one is pending.
     val deleteLauncher = rememberLauncherForActivityResult(
@@ -191,8 +196,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             Section("Camera capture")
             CameraCaptureSection(
                 prefs = capturePrefs,
-                generativeUnavailableReason = generativeReason,
-                vlmImportSupported = viewModel.vlmImportSupported,
+                generativeUi = generativeUi,
                 vlmInstalled = vlmInstalled,
                 vlmModelBytes = viewModel.vlmModelBytes(),
                 vlmImport = vlmImport,
@@ -249,6 +253,33 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 enabled = viewModel.dynamicColorSupported,
                 onCheckedChange = viewModel::setDynamicColor,
             )
+
+            Section("Developer")
+            LabeledSwitch(
+                label = "Developer mode",
+                subtitle = "Unlocks experimental configs on devices that don't meet the " +
+                    "recommended bar (they may be slow or crash) and lets you export debug logs. " +
+                    "For testing.",
+                checked = devMode,
+                enabled = true,
+                onCheckedChange = viewModel::setDevMode,
+            )
+            if (devMode) {
+                Text(
+                    "Export this session's app logs to a file you can share when reporting how a " +
+                        "device behaved (especially the experimental generative captions).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                OutlinedButton(
+                    onClick = { logExportLauncher.launch("sshot-debug-log.txt") },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { Text("Export debug logs") }
+                logExportStatus?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
 
             Section("About")
             Stat("Version", viewModel.versionName)
@@ -432,8 +463,7 @@ private fun ReorganizationSection(
 @Composable
 private fun CameraCaptureSection(
     prefs: CapturePreferences,
-    generativeUnavailableReason: String?,
-    vlmImportSupported: Boolean,
+    generativeUi: SettingsViewModel.GenerativeUi,
     vlmInstalled: Boolean,
     vlmModelBytes: Long,
     vlmImport: SettingsViewModel.VlmImportState,
@@ -512,17 +542,16 @@ private fun CameraCaptureSection(
     )
     RadioRow(
         label = "Generative (experimental)",
-        subtitle = generativeUnavailableReason
-            ?: "A vision-language model writes a free-form caption on-device. Slow (tens of " +
-                "seconds per photo) and falls back to structured on any error.",
+        subtitle = generativeUi.note,
         selected = prefs.descriptionSource == DescriptionSource.GENERATIVE,
-        enabled = generativeUnavailableReason == null,
+        enabled = generativeUi.selectable,
         onSelect = { onDescriptionSourceChange(DescriptionSource.GENERATIVE) },
     )
 
-    // Model import: only meaningful on a capable device. The model is large and never bundled,
-    // so the user imports a file they downloaded themselves (see docs/spikes/vlm-device-research.md).
-    if (vlmImportSupported) {
+    // Model import: shown on a capable device, or on any device once Developer mode forces it.
+    // The model is large and never bundled, so the user imports a file they downloaded themselves
+    // (see docs/spikes/vlm-device-research.md).
+    if (generativeUi.controlsVisible) {
         VlmModelControls(
             installed = vlmInstalled,
             modelBytes = vlmModelBytes,
