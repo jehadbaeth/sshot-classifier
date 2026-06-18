@@ -6,66 +6,47 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The generative path is attempted only when every gate passes. */
+/**
+ * The generative path is attempted only when opted in, a model is present, there is an image,
+ * and the device qualifies — or Developer mode force-allows an under-spec device.
+ */
 class CaptureDescriberRouterTest {
 
+    private fun gen(
+        source: DescriptionSource = DescriptionSource.GENERATIVE,
+        hasImage: Boolean = true,
+        deviceCapable: Boolean = true,
+        devModeForced: Boolean = false,
+        modelInstalled: Boolean = true,
+    ) = shouldUseGenerative(source, hasImage, deviceCapable, devModeForced, modelInstalled)
+
     @Test
-    fun all_conditions_met_uses_generative() {
-        assertTrue(
-            shouldUseGenerative(
-                source = DescriptionSource.GENERATIVE,
-                hasImage = true,
-                deviceCapable = true,
-                modelInstalled = true,
-            )
-        )
+    fun capable_device_opted_in_with_model_uses_generative() {
+        assertTrue(gen())
     }
 
     @Test
     fun structured_source_never_generative() {
-        assertFalse(
-            shouldUseGenerative(
-                source = DescriptionSource.STRUCTURED,
-                hasImage = true,
-                deviceCapable = true,
-                modelInstalled = true,
-            )
-        )
+        assertFalse(gen(source = DescriptionSource.STRUCTURED))
     }
 
     @Test
     fun no_image_never_generative() {
-        assertFalse(
-            shouldUseGenerative(
-                source = DescriptionSource.GENERATIVE,
-                hasImage = false,
-                deviceCapable = true,
-                modelInstalled = true,
-            )
-        )
+        assertFalse(gen(hasImage = false))
     }
 
     @Test
-    fun incapable_device_never_generative() {
-        assertFalse(
-            shouldUseGenerative(
-                source = DescriptionSource.GENERATIVE,
-                hasImage = true,
-                deviceCapable = false,
-                modelInstalled = true,
-            )
-        )
+    fun missing_model_never_generative_even_when_forced() {
+        assertFalse(gen(deviceCapable = false, devModeForced = true, modelInstalled = false))
     }
 
     @Test
-    fun missing_model_never_generative() {
-        assertFalse(
-            shouldUseGenerative(
-                source = DescriptionSource.GENERATIVE,
-                hasImage = true,
-                deviceCapable = true,
-                modelInstalled = false,
-            )
-        )
+    fun incapable_device_blocked_without_dev_mode() {
+        assertFalse(gen(deviceCapable = false, devModeForced = false))
+    }
+
+    @Test
+    fun incapable_device_allowed_when_dev_mode_forces_it() {
+        assertTrue(gen(deviceCapable = false, devModeForced = true))
     }
 }
