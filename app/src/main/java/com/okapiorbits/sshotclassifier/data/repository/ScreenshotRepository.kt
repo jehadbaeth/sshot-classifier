@@ -91,6 +91,7 @@ class ScreenshotRepository @Inject constructor(
 
     /** Resets DONE-but-unembedded screenshots to PENDING. Returns how many. */
     suspend fun markForReprocessing(): Int = dao.markMissingEmbeddingsForReprocessing()
+    suspend fun markAllForReprocessing(): Int = dao.markAllForReprocessing()
 
     suspend fun pendingScreenshots(): List<ScreenshotEntity> = dao.pending()
 

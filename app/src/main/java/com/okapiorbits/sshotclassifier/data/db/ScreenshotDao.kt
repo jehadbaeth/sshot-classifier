@@ -226,6 +226,13 @@ interface ScreenshotDao {
     )
     suspend fun markMissingEmbeddingsForReprocessing(): Int
 
+    /**
+     * Resets every processed screenshot back to PENDING so the worker re-runs the full pipeline
+     * (used when the OCR language changes — existing rows must be re-OCR'd). Idempotent pipeline.
+     */
+    @Query("UPDATE screenshots SET status = 'PENDING' WHERE status IN ('DONE','FAILED')")
+    suspend fun markAllForReprocessing(): Int
+
     /** OCR full-text match -> screenshot ids, recency-ordered, for hybrid fusion. */
     @Query(
         """

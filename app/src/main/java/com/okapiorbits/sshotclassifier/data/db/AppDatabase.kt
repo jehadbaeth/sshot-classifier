@@ -20,7 +20,8 @@ import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
         CustomCategoryEntity::class,
         ReorgMoveEntity::class,
     ],
-    version = 7,
+    // v8: ocr_fts switched to the unicode61 tokenizer (Arabic OCR). Destructive recreate.
+    version = 8,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

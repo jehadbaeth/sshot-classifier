@@ -42,6 +42,7 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
     private val organizer: ScreenshotOrganizer,
     private val reorgPrefsStore: ReorgPreferencesStore,
     private val capturePrefsStore: CapturePreferencesStore,
+    private val uiPrefsStore: com.okapiorbits.sshotclassifier.data.prefs.UiPreferencesStore,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -55,11 +56,12 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
             // Read capture prefs once (not per image): decode toggle drives processing; the
             // automatic-resolve trigger is re-checked inside maybeAutoResolve.
             val decodeQrCodes = capturePrefsStore.current().decodeQrCodes
+            val ocrLanguage = uiPrefsStore.ocrLanguageNow()
             val total = pending.size
             runCatching { setForeground(foregroundInfo(0, total)) }
             var done = 0
             for (shot in pending) {
-                processor.process(shot, decodeQrCodes = decodeQrCodes)
+                processor.process(shot, decodeQrCodes = decodeQrCodes, ocrLanguage = ocrLanguage)
                 // Only camera captures can carry a QR link; auto-resolve when the user opted in.
                 if (shot.source_type == SourceType.CAMERA.name) {
                     runCatching { repository.maybeAutoResolve(shot.id) }

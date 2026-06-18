@@ -48,11 +48,16 @@ class ImageProcessor @Inject constructor(
      *   preference, read once by the worker and passed in so this stays off the prefs/IO
      *   path and the existing test call sites keep working via the default).
      */
-    suspend fun process(screenshot: ScreenshotEntity, decodeQrCodes: Boolean = true): Boolean {
+    suspend fun process(
+        screenshot: ScreenshotEntity,
+        decodeQrCodes: Boolean = true,
+        ocrLanguage: com.okapiorbits.sshotclassifier.data.prefs.OcrLanguage =
+            com.okapiorbits.sshotclassifier.data.prefs.OcrLanguage.LATIN,
+    ): Boolean {
         dao.updateStatus(screenshot.id, ProcessingStatus.PROCESSING.name, null)
         val uri = Uri.parse(screenshot.file_path)
 
-        val ocrResult = ocr.extract(uri)
+        val ocrResult = ocr.extract(uri, ocrLanguage)
         if (ocrResult == null) {
             dao.updateStatus(screenshot.id, ProcessingStatus.FAILED.name, System.currentTimeMillis())
             return false
