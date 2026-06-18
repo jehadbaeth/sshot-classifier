@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20
-        versionName = "0.9.8" // Processing progress bar in the gallery
+        versionCode = 21
+        versionName = "0.9.9" // UX: empty states + polished gallery cells
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
