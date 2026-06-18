@@ -94,7 +94,11 @@ with its details (same view as the gallery).
 Open any screenshot (from the gallery or a search result) to see it enlarged with its tags.
 You can remove any tag, including a wrong automatic one, by tapping its X, and add your own
 with the **Add a tag** field. The screen also shows the **extracted text (OCR)** the app read
-from the image, which you can select and copy.
+from the image; select it, or tap the copy button to put it on the clipboard.
+
+**Tap the image** to open it full screen: pinch or double-tap to zoom, drag to pan, rotate
+the view, **share** the file or **open it in another app**, and view its info (name, date,
+dimensions, size). Rotating and zooming only change what you see, never the saved file.
 
 <img src="images/tag-editor.png" width="280" alt="Tag editor for a receipt screenshot" />
 
