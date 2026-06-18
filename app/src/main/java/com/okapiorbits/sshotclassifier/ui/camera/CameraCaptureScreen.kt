@@ -15,13 +15,26 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -79,6 +92,17 @@ fun CameraCaptureScreen(viewModel: CameraCaptureViewModel, onClose: () -> Unit) 
     var capturing by remember { mutableStateOf(false) }
     val captured by viewModel.capturedCount.collectAsStateWithLifecycle()
     val relativePath by viewModel.captureRelativePath.collectAsStateWithLifecycle()
+    val recentCaptures by viewModel.recentCaptures.collectAsStateWithLifecycle()
+
+    // Shutter flash: a white overlay snapped to near-opaque then faded out for tactile feedback.
+    val scope = rememberCoroutineScope()
+    val flash = remember { Animatable(0f) }
+    fun triggerFlash() {
+        scope.launch {
+            flash.snapTo(0.85f)
+            flash.animateTo(0f, animationSpec = tween(durationMillis = 350))
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -107,6 +131,11 @@ fun CameraCaptureScreen(viewModel: CameraCaptureViewModel, onClose: () -> Unit) 
             },
         )
 
+        // Shutter flash overlay (alpha 0 most of the time; doesn't intercept touches).
+        if (flash.value > 0f) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = flash.value)))
+        }
+
         IconButton(
             onClick = onClose,
             modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
@@ -123,29 +152,55 @@ fun CameraCaptureScreen(viewModel: CameraCaptureViewModel, onClose: () -> Unit) 
             )
         }
 
-        FloatingActionButton(
-            onClick = {
-                if (!capturing) {
-                    capturing = true
-                    takePicture(
-                        context = context,
-                        imageCapture = imageCapture,
-                        relativePath = relativePath,
-                        onSaved = { uri ->
-                            capturing = false
-                            viewModel.onCaptured(uri)
-                        },
-                        onError = { msg ->
-                            capturing = false
-                            Toast.makeText(context, "Capture failed: $msg", Toast.LENGTH_LONG).show()
-                        },
-                    )
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp).size(72.dp),
-            shape = CircleShape,
+        Column(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(Icons.Default.PhotoCamera, contentDescription = "Capture")
+            // Carousel of this session's captures, newest first.
+            if (recentCaptures.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(recentCaptures) { uri ->
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.2f)),
+                        )
+                    }
+                }
+            }
+            FloatingActionButton(
+                onClick = {
+                    if (!capturing) {
+                        capturing = true
+                        triggerFlash()
+                        takePicture(
+                            context = context,
+                            imageCapture = imageCapture,
+                            relativePath = relativePath,
+                            onSaved = { uri ->
+                                capturing = false
+                                viewModel.onCaptured(uri)
+                            },
+                            onError = { msg ->
+                                capturing = false
+                                Toast.makeText(context, "Capture failed: $msg", Toast.LENGTH_LONG).show()
+                            },
+                        )
+                    }
+                },
+                modifier = Modifier.size(72.dp),
+                shape = CircleShape,
+            ) {
+                Icon(Icons.Default.PhotoCamera, contentDescription = "Capture")
+            }
         }
     }
 }

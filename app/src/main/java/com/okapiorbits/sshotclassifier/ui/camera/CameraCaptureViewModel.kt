@@ -29,6 +29,10 @@ class CameraCaptureViewModel @Inject constructor(
     private val _capturedCount = MutableStateFlow(0)
     val capturedCount: StateFlow<Int> = _capturedCount.asStateFlow()
 
+    /** Most recent captures this session (newest first), for the on-screen thumbnail strip. */
+    private val _recentCaptures = MutableStateFlow<List<Uri>>(emptyList())
+    val recentCaptures: StateFlow<List<Uri>> = _recentCaptures.asStateFlow()
+
     /** MediaStore relative path captures are written to, from the user's album preference. */
     val captureRelativePath: StateFlow<String> =
         capturePreferencesStore.preferences
@@ -44,6 +48,7 @@ class CameraCaptureViewModel @Inject constructor(
             val id = repository.indexCapture(uri)
             if (id != null) {
                 _capturedCount.value += 1
+                _recentCaptures.value = (listOf(uri) + _recentCaptures.value).take(12)
                 ScreenshotProcessingWorker.enqueue(context)
             }
         }

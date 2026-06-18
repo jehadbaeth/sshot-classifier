@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 25
-        versionName = "0.9.13" // Denser grid + multi-select with bulk actions
+        versionCode = 26
+        versionName = "0.9.14" // Camera: shutter flash + recent-captures carousel
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
