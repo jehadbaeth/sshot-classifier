@@ -407,6 +407,9 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Backlog / ideas (not scheduled)
 
+- [ ] **Configurable themes.** Material You is default (v0.9.11); user wants selectable themes too
+      (e.g. fixed palettes like Indigo+amber / Teal+coral + dynamic). Add a theme picker in Settings
+      backed by a stored enum; define the palettes in Color.kt. Low priority vs the real UX redesign.
 - [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
       processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
       (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);

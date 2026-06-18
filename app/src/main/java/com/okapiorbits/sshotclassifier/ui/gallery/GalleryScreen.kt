@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import com.okapiorbits.sshotclassifier.data.db.entity.ProcessingStatus
 import com.okapiorbits.sshotclassifier.ui.common.EmptyState
 import androidx.compose.foundation.layout.Arrangement
@@ -24,9 +25,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Flag
@@ -178,15 +180,29 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
             if (screenshots.isEmpty()) {
                 EmptyState()
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 110.dp),
-                    contentPadding = PaddingValues(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                val now = remember { System.currentTimeMillis() }
+                // Group into date buckets only on the default (recency) view; filtered/duplicate
+                // views aren't time-ordered, so show them as a single flat section.
+                val grouped = remember(screenshots, now, duplicatesOnly) {
+                    if (duplicatesOnly) listOf("" to screenshots)
+                    else groupByDateBucket(screenshots, now)
+                }
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Adaptive(minSize = 120.dp),
+                    contentPadding = PaddingValues(8.dp),
+                    verticalItemSpacing = 6.dp,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(screenshots, key = { it.screenshot.id }) { item ->
-                        GalleryCell(item, onClick = { selectedId = item.screenshot.id })
+                    grouped.forEach { (label, list) ->
+                        if (label.isNotEmpty()) {
+                            item(span = StaggeredGridItemSpan.FullLine, key = "hdr_$label") {
+                                SectionHeader(label)
+                            }
+                        }
+                        items(list, key = { it.screenshot.id }) { item ->
+                            GalleryCell(item, onClick = { selectedId = item.screenshot.id })
+                        }
                     }
                 }
             }
@@ -270,9 +286,14 @@ private fun ReprocessBanner(count: Int, onReprocess: () -> Unit) {
 @Composable
 fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
     val shape = RoundedCornerShape(12.dp)
+    // Show each image at (close to) its real shape for a staggered, photos-app feel; clamp so an
+    // extreme panorama or tall screenshot can't produce a giant tile.
+    val w = item.screenshot.width
+    val h = item.screenshot.height
+    val ratio = if (w > 0 && h > 0) (w.toFloat() / h).coerceIn(0.55f, 1.4f) else 0.62f
     Box(
         modifier = Modifier
-            .aspectRatio(0.62f)
+            .aspectRatio(ratio)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant) // placeholder while the image loads
             .clickable(onClick = onClick),
@@ -344,6 +365,51 @@ private fun CellStatusBadge(status: String, needsReview: Boolean, modifier: Modi
             )
         }
     }
+}
+
+@Composable
+private fun SectionHeader(label: String) {
+    Text(
+        label,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp),
+    )
+}
+
+/**
+ * Buckets screenshots into Today / This week / This month / Earlier by date_added, preserving the
+ * incoming recency order. MediaStore stores seconds; other rows may store millis, so normalise.
+ * Returns ordered (label, items) pairs, empty buckets omitted.
+ */
+private fun groupByDateBucket(
+    items: List<ScreenshotWithTags>,
+    now: Long,
+): List<Pair<String, List<ScreenshotWithTags>>> {
+    val cal = java.util.Calendar.getInstance().apply {
+        timeInMillis = now
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    val startOfToday = cal.timeInMillis
+    val startOfWeek = startOfToday - 6L * 24 * 3600 * 1000
+    val startOfMonth = startOfToday - 29L * 24 * 3600 * 1000
+
+    fun bucket(epoch: Long): String {
+        val ms = if (epoch < 1_000_000_000_000L) epoch * 1000 else epoch
+        return when {
+            ms >= startOfToday -> "Today"
+            ms >= startOfWeek -> "This week"
+            ms >= startOfMonth -> "This month"
+            else -> "Earlier"
+        }
+    }
+
+    val order = listOf("Today", "This week", "This month", "Earlier")
+    val byBucket = items.groupBy { bucket(it.screenshot.date_added) }
+    return order.mapNotNull { label -> byBucket[label]?.let { label to it } }
 }
 
 @Composable
