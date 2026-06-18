@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 19
-        versionName = "0.9.7" // OCR: Tesseract ara+eng so mixed Arabic/Latin images aren't garbled
+        versionCode = 20
+        versionName = "0.9.8" // Processing progress bar in the gallery
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
