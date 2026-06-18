@@ -25,3 +25,8 @@
 -dontwarn javax.annotation.**
 -dontwarn javax.lang.model.**
 -dontwarn sun.misc.**
+
+# Tesseract4Android (Arabic OCR): JNI binds to these classes/methods by name, so R8 must not
+# strip or rename them or the native calls fail at runtime.
+-keep class com.googlecode.tesseract.android.** { *; }
+-keep class com.googlecode.leptonica.android.** { *; }
