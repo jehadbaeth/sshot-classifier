@@ -6,12 +6,18 @@ import com.okapiorbits.sshotclassifier.data.db.entity.ScreenshotEntity
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
 import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferences
 import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore
+import com.okapiorbits.sshotclassifier.data.db.entity.SourceType
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
+import com.okapiorbits.sshotclassifier.pipeline.clip.EmbeddingCodec
+import com.okapiorbits.sshotclassifier.pipeline.clip.ZeroShotClassifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,6 +31,7 @@ import javax.inject.Inject
 class ScreenshotDetailViewModel @Inject constructor(
     private val repository: ScreenshotRepository,
     private val capturePreferencesStore: CapturePreferencesStore,
+    private val zeroShot: ZeroShotClassifier,
 ) : ViewModel() {
 
     /** Transient feedback for a QR resolution attempt; null when idle. */
@@ -44,6 +51,34 @@ class ScreenshotDetailViewModel @Inject constructor(
 
     /** Capture preferences (whether resolution is enabled, whether to load preview images). */
     val capturePreferences: Flow<CapturePreferences> = capturePreferencesStore.preferences
+
+    /**
+     * Tags the model thinks fit this image but that aren't applied yet, for one-tap adding. Runs
+     * the same CLIP zero-shot scoring as the pipeline over the stored embedding, keeps labels with
+     * meaningful probability mass, and drops ones already on the image. Empty when there's no
+     * embedding (model not installed / not reprocessed). Reacts to the tag list so a suggestion
+     * disappears once added.
+     */
+    fun suggestions(screenshotId: Long): Flow<List<String>> =
+        repository.observeTags(screenshotId).combine(rankedCandidates(screenshotId)) { tags, candidates ->
+            val existing = tags.map { it.label.lowercase() }.toSet()
+            candidates.filter { it.lowercase() !in existing }.take(MAX_SUGGESTIONS)
+        }
+
+    private fun rankedCandidates(screenshotId: Long): Flow<List<String>> = flow {
+        val bytes = repository.embeddingFor(screenshotId)
+        if (bytes == null) {
+            emit(emptyList()); return@flow
+        }
+        val isCamera = repository.observeScreenshot(screenshotId).first()?.source_type == SourceType.CAMERA.name
+        val scores = zeroShot.classify(EmbeddingCodec.toFloats(bytes), includeRealWorld = isCamera)
+        emit(
+            scores.entries
+                .filter { it.value >= SUGGESTION_FLOOR && it.key != "other" }
+                .sortedByDescending { it.value }
+                .map { it.key }
+        )
+    }
 
     fun addTag(screenshotId: Long, label: String) {
         viewModelScope.launch { repository.addUserTag(screenshotId, label) }
@@ -77,5 +112,11 @@ class ScreenshotDetailViewModel @Inject constructor(
 
     fun clearResolveMessage() {
         _resolveMessage.value = null
+    }
+
+    private companion object {
+        /** Minimum softmax probability mass for a label to be worth suggesting. */
+        const val SUGGESTION_FLOOR = 0.04f
+        const val MAX_SUGGESTIONS = 6
     }
 }

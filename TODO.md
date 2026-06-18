@@ -407,6 +407,20 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Backlog / ideas (not scheduled)
 
+- [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
+      processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
+      (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);
+      model-driven tag suggestions on the detail screen (this release). REMAINING (user picked all):
+      (a) Settings cleanup — group the 13-section scroll into tidy/collapsible cards; (b) gallery &
+      detail polish + a gallery→detail transition; (c) theme / colour / type refresh — NEEDS USER
+      VISUAL INPUT (assistant verifies via a11y dumps, can't judge aesthetics; bring 2-3 palette/type
+      options to pick from); (d) "cool animations" — list item, screen transitions, etc. Do (a)/(b)
+      blind (verifiable); do (c)/(d) with user reviewing on-device.
+- [ ] **On-device verification pending (user is testing).** (1) Generative VLM caption on real
+      hardware — BUILT + downloadable (v0.9.5) but UNVERIFIED by us (emulator can't run it); user has
+      a device + the checklist in docs/spikes/vlm-device-research.md. (2) Whether the in-app community
+      mirror for the Gemma .task stays alive / should move to a self-owned public repo for durability
+      (VlmModelManager.MODEL_URL is a one-line swap). Fold findings back here as the user reports.
 - [ ] **Arabic OCR quality tuning (needs real-device testing across modes).** Shipped v0.9.6/v0.9.7:
       Tesseract `ara+eng` (mixed-script works), modes Latin/Arabic/Both/Auto, unicode61 FTS. User
       feedback 2026-06-18: recognition "still not perfect" on real Arabic. NOT a quick fix — needs

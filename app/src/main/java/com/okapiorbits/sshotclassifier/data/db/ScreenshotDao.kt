@@ -199,6 +199,10 @@ interface ScreenshotDao {
     @Query("SELECT screenshot_id, vector FROM embeddings")
     suspend fun allEmbeddings(): List<EmbeddingRow>
 
+    /** One screenshot's image embedding, for on-the-fly tag suggestions on the detail screen. */
+    @Query("SELECT vector FROM embeddings WHERE screenshot_id = :screenshotId LIMIT 1")
+    suspend fun embeddingFor(screenshotId: Long): ByteArray?
+
     /**
      * Screenshots already processed (DONE) but with no image embedding. These were
      * tagged before the CLIP model was installed, so they have OCR-only tags and

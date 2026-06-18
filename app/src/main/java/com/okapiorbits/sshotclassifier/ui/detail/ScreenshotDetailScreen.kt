@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -62,6 +63,8 @@ fun ScreenshotDetailScreen(
         .collectAsStateWithLifecycle(initialValue = null)
     val ocrText by remember(screenshotId) { viewModel.ocrText(screenshotId) }
         .collectAsStateWithLifecycle(initialValue = null)
+    val suggestions by remember(screenshotId) { viewModel.suggestions(screenshotId) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val capturePrefs by viewModel.capturePreferences.collectAsStateWithLifecycle(initialValue = null)
     val resolving by viewModel.resolving.collectAsStateWithLifecycle()
     val resolveMessage by viewModel.resolveMessage.collectAsStateWithLifecycle()
@@ -143,6 +146,13 @@ fun ScreenshotDetailScreen(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     tags.forEach { tag -> TagChip(tag, onRemove = { viewModel.removeTag(tag) }) }
                 }
+            }
+
+            if (suggestions.isNotEmpty()) {
+                SuggestionSection(
+                    suggestions = suggestions,
+                    onAdd = { viewModel.addTag(screenshotId, it) },
+                )
             }
 
             Row(
@@ -269,6 +279,37 @@ private fun QrCaptureSection(
             }
             if (message != null) {
                 Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+/**
+ * Tags the model suggests for this image (CLIP zero-shot, not yet applied). Tapping a chip adds
+ * it as a user tag. Helps the user accept what the model saw without typing.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SuggestionSection(suggestions: List<String>, onAdd: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            "Suggested tags",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            suggestions.forEach { label ->
+                AssistChip(
+                    onClick = { onAdd(label) },
+                    label = { Text(label) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add $label",
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                )
             }
         }
     }
