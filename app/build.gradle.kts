@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = "0.9.15" // Settings: collapse the long watched-folders list
+        versionCode = 28
+        versionName = "0.9.16" // Rounded shapes, gallery sort, multi-tag filter
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
