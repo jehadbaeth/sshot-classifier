@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "0.9.4" // Full-screen image viewer: zoom/pan/rotate/share/open/info + copy OCR
+        versionCode = 17
+        versionName = "0.9.5" // In-app VLM model download (sha256-verified) from a public mirror
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

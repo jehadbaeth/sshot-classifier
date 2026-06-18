@@ -84,11 +84,24 @@ Decided with the user 2026-06-17, after ruling out every hosting path we control
 - **An ungated model (SmolVLM, Apache-2.0) — would allow a direct link, but has no turnkey Android
   runtime** (see below), so it's a much larger build, not a quick swap.
 
-**Decision: user-provided via SAF.** The user downloads the `.task` model from its official source
-(accepting Google's licence, which is the correct legal path anyway) and imports it with the system
-file picker. `VlmModelManager` streams it into app-internal storage (`.part` temp + rename so a
-half-copy never looks installed) and validates the size. No hosting cost, no licence violation, no
-dead-link risk. The friction is real but honest.
+**Decision (v0.9.0): user-provided via SAF.** The user downloads the `.task` from its official source
+and imports it with the system file picker. `VlmModelManager.importFrom` streams it into app-internal
+storage (`.part` temp + rename) and validates the size.
+
+**Update (v0.9.5): in-app download from a public community mirror, sha256-verified.** Re-checked the
+ecosystem at the user's request: the only loadable `.task` on the official source
+(`google/gemma-3n-E2B-it-litert-preview`) is `gated = manual` (401 without a token); the ungated
+copies (unsloth/ggml/onnx) are GGUF/ONNX which MediaPipe can't load. BUT several community re-hosts
+carry the genuine `.task` ungated and serve it with no auth (HF public CDN, `user_id=public`),
+byte-identical across mirrors (sha256 `a7f544cf…4200`, 3,136,226,711 bytes). So `VlmModelManager.download`
+now pulls from one such mirror (`xiaohan1/gemma3n`) with the **sha256 as the trust + integrity anchor**
+— a swapped/corrupt file is rejected, never loaded. Gemma's Terms (§3.1) permit redistribution and
+impose no gating requirement, so a public re-host is within the licence (pass along terms + NOTICE).
+TRADE-OFFS (honest): a community repo can be deleted/renamed (then the download 404s — not under our
+control), and the sha proves byte-stability, not that the bytes equal Google's official file (can't
+fetch the gated original to compare). The URL is a single constant
+(`VlmModelManager.MODEL_URL`) to swap to a self-owned public mirror for durability. SAF import remains
+as the fallback. No resume yet: a failed ~3 GB download restarts.
 
 ## Hard constraints / honesty
 
@@ -122,13 +135,12 @@ dead-link risk. The friction is real but honest.
 
 The author cannot run these; the user must. Until step 4 passes, treat generation as unproven.
 
-1. **Get the model.** Download a Gemma 3n E2B multimodal `.task` (e.g. the litert-community / Kaggle
-   build, ~3.1 GB), accepting the Gemma licence. Put it on the device.
-2. **Install + import.** Sideload the release APK. Settings → Camera capture: on a high-end device
-   the Generative row shows "Import a model file below". On an under-spec device (e.g. a 6 GB S20 FE)
-   it is blocked with a hint — turn on **Settings → Developer → Developer mode** first, then the
-   import controls appear (with a warning). Tap **Import model**, pick the `.task`, wait for the copy
-   to finish (progress bar). Confirm it then reads "Model imported (~3.x GB)".
+1. **Get the model (in-app).** Sideload the release APK. Settings → Camera capture → under the
+   Generative option tap **Download (~3 GB)** — it fetches the sha256-verified `.task` from the mirror.
+   (Or **Import file** to pick a `.task` you downloaded yourself.) On an under-spec device (e.g. a 6 GB
+   S20 FE) the controls are hidden until you turn on **Settings → Developer → Developer mode**.
+2. **Confirm install.** Wait for the progress bar to finish; confirm it then reads "Model installed
+   (~3.x GB)". Keep the screen open during download (no resume yet).
 3. **Enable + capture.** Select the **Generative** radio (now enabled). Take a camera capture of a
    real scene (a storefront, a product, a poster).
 4. **Verify the caption.** Open the capture's detail screen. Confirm the description is a sensible
