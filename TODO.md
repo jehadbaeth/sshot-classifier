@@ -419,10 +419,41 @@ Mirrors docs/design.md section 14, with task-level detail.
          (capture→carousel flow needs real-camera verification; emulator can't complete takePicture.)
       4. [x] **Settings watched-folders list too long** — sorted (watched + busiest first) and
          collapsed to top 5 with a "Show all N folders" expander. v0.9.15.
-      5. [ ] Ongoing: "plenty of other UX quality stuff" — keep finding + fixing (loading states,
-         affordances, gestures, transitions, consistency). Candidates not yet done: gallery→detail
-         shared-element/zoom transition, list item enter animations, search bar on the home,
-         folder search/filter, swipe gestures, detail screen hero layout.
+      5. [~] Ongoing: "plenty of other UX quality stuff". Scoped backlog (2026-06-18), roughly by
+         value; assistant can verify structure/behaviour but NOT aesthetics — user judges look:
+
+         Navigation & flow
+         - [ ] Search bar pinned on the gallery/home (fold the separate Search tab into it).
+         - [ ] Gallery→detail shared-element / zoom transition.
+         - [ ] Swipe left/right between images in detail (HorizontalPager).
+         - [ ] Pull-to-refresh on the gallery to trigger a scan.
+         - [ ] Jump-to-top button when scrolled down; sticky date headers; fast-scroll.
+
+         Selection & bulk (build on v0.9.13)
+         - [ ] Drag-to-select across multiple tiles; range select.
+         - [ ] More bulk actions: remove a tag, reorganize selected, delete (with system consent).
+         - [ ] Tag-filter chips directly on the gallery (not only in Search).
+
+         Motion & feedback
+         - [ ] List item enter/placement animations (animateItem); Coil crossfade on image load.
+         - [ ] Skeleton/shimmer placeholders while the grid loads.
+         - [ ] Snackbars with Undo for destructive/!reversible actions (reorg, remove tag, delete).
+         - [ ] Haptic feedback on long-press select and capture.
+         - [ ] Animated transitions between the bottom-nav tabs.
+
+         Detail & viewer
+         - [ ] Edge-to-edge hero image on the detail screen; cleaner section layout.
+         - [ ] Copy-QR-payload button; quick actions row (share/open/info) on detail itself.
+
+         Settings & structure
+         - [ ] Group the 13 Settings sections into collapsible cards (the long-scroll item).
+         - [ ] Folder search/filter in watched folders (complements the collapse already shipped).
+         - [ ] Configurable theme picker (see the separate themes item above).
+
+         Polish & a11y
+         - [ ] Consistent spacing/typography tokens; audit touch-target sizes + content descriptions.
+         - [ ] Proper edge-to-edge inset handling (status/nav bars) on all screens.
+         - [ ] More empty/error states (e.g. search with no visual model, offline link-preview).
 - [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
       processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
       (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);
