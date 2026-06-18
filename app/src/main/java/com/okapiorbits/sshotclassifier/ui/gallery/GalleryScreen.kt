@@ -3,7 +3,19 @@ package com.okapiorbits.sshotclassifier.ui.gallery
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import com.okapiorbits.sshotclassifier.data.db.entity.ProcessingStatus
+import com.okapiorbits.sshotclassifier.ui.common.EmptyState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -257,7 +269,14 @@ private fun ReprocessBanner(count: Int, onReprocess: () -> Unit) {
 
 @Composable
 fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
-    Box(modifier = Modifier.aspectRatio(0.62f).clickable(onClick = onClick)) {
+    val shape = RoundedCornerShape(12.dp)
+    Box(
+        modifier = Modifier
+            .aspectRatio(0.62f)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant) // placeholder while the image loads
+            .clickable(onClick = onClick),
+    ) {
         AsyncImage(
             model = item.screenshot.file_path,
             contentDescription = null,
@@ -266,12 +285,62 @@ fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
         )
         val top = item.tags.maxByOrNull { it.weight }
         if (top != null) {
-            Text(
-                text = top.label,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.align(Alignment.BottomStart).padding(4.dp),
+            // Gradient scrim so the label stays readable over any image.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.55f),
+                        )
+                    ),
+            ) {
+                Text(
+                    text = top.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                )
+            }
+        }
+        CellStatusBadge(
+            status = item.screenshot.status,
+            needsReview = item.screenshot.needs_review,
+            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+        )
+    }
+}
+
+/** Small corner badge: still-processing spinner, queued clock, or a needs-review flag. */
+@Composable
+private fun CellStatusBadge(status: String, needsReview: Boolean, modifier: Modifier = Modifier) {
+    val processing = status == ProcessingStatus.PROCESSING.name
+    val pending = status == ProcessingStatus.PENDING.name
+    if (!processing && !pending && !needsReview) return
+    Box(
+        modifier = modifier
+            .size(20.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.45f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            processing -> CircularProgressIndicator(
+                modifier = Modifier.size(12.dp),
+                strokeWidth = 1.5.dp,
+                color = Color.White,
+            )
+            pending -> Icon(
+                Icons.Default.Schedule, contentDescription = "Queued",
+                tint = Color.White, modifier = Modifier.size(13.dp),
+            )
+            else -> Icon(
+                Icons.Default.Flag, contentDescription = "Needs review",
+                tint = Color.White, modifier = Modifier.size(13.dp),
             )
         }
     }
@@ -279,13 +348,10 @@ fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
 
 @Composable
 private fun EmptyState() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("No screenshots indexed yet", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Tap Scan to find and classify screenshots on this device",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
+    EmptyState(
+        icon = Icons.Default.PhotoLibrary,
+        title = "No screenshots yet",
+        subtitle = "Tap Scan to find and classify screenshots on this device, or use the camera " +
+            "button to capture something.",
+    )
 }

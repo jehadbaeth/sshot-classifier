@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.okapiorbits.sshotclassifier.ui.common.EmptyState
 import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailScreen
 import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryCell
@@ -103,20 +105,19 @@ fun SearchScreen(viewModel: SearchViewModel) {
                         }
                     }
                 }
-                query.isBlank() && selectedTag == null -> Hint(
-                    if (viewModel.semanticReady)
-                        "Search by what's written in a screenshot or what it looks like, or pick a tag"
-                    else "Type to search OCR text, or pick a tag"
+                query.isBlank() && selectedTag == null -> EmptyState(
+                    icon = Icons.Default.Search,
+                    title = "Search your library",
+                    subtitle = if (viewModel.semanticReady)
+                        "Find screenshots by the text in them or by what they look like, or pick a tag."
+                    else "Type to search the text in your screenshots, or pick a tag.",
                 )
-                else -> Hint("No matches")
+                else -> EmptyState(
+                    icon = Icons.Default.SearchOff,
+                    title = "No matches",
+                    subtitle = "Try different words, or clear the tag filter.",
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun Hint(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
