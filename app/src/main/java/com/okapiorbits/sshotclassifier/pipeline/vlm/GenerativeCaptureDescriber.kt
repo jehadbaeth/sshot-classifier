@@ -53,15 +53,19 @@ class GenerativeCaptureDescriber @Inject constructor(
         if (!modelManager.isInstalled()) return null
         return mutex.withLock {
             withContext(Dispatchers.Default) {
+                Log.i(TAG, "Generative caption: loading model (${modelManager.sizeBytes() / 1_000_000} MB) for $uri")
                 runCatching { runInference(uri, ctx) }
-                    .onFailure { Log.w(TAG, "Generative caption failed; falling back", it) }
+                    .onFailure { Log.w(TAG, "Generative caption failed; falling back to structured", it) }
                     .getOrNull()
             }
         }
     }
 
     private fun runInference(uri: Uri, ctx: CaptureContext): String? {
-        val bitmap = loadDownscaledBitmap(uri) ?: return null
+        val bitmap = loadDownscaledBitmap(uri) ?: run {
+            Log.w(TAG, "Could not decode capture image; falling back")
+            return null
+        }
         val options = LlmInference.LlmInferenceOptions.builder()
             .setModelPath(modelManager.modelFile.absolutePath)
             .setMaxNumImages(1)
@@ -75,7 +79,9 @@ class GenerativeCaptureDescriber @Inject constructor(
                 session.addQueryChunk(buildPrompt(ctx))
                 session.addImage(BitmapImageBuilder(bitmap).build())
                 val raw = session.generateResponse()
-                return raw?.let(::tidy)?.takeIf { it.isNotBlank() }
+                val caption = raw?.let(::tidy)?.takeIf { it.isNotBlank() }
+                Log.i(TAG, "Generative caption ${if (caption != null) "ok (${caption.length} chars)" else "empty"}")
+                return caption
             }
         }
     }
