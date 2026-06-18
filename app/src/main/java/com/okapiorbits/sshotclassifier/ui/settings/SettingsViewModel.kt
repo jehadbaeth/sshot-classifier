@@ -155,6 +155,14 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /** Deletes the downloaded CLIP models so the download flow can be tested again (Developer mode). */
+    fun removeDownloadedModels() {
+        viewModelScope.launch {
+            modelManager.deleteModels()
+            _models.value = readModelInfo()
+        }
+    }
+
     /** Re-runs already-tagged screenshots that lack a visual embedding. */
     fun reprocessMissing() {
         viewModelScope.launch {

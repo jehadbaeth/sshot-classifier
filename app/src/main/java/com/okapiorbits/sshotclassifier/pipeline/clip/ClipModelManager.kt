@@ -35,6 +35,17 @@ class ClipModelManager @Inject constructor(
 
     private fun isInstalled(f: File): Boolean = f.exists() && f.length() > 1_000_000
 
+    /**
+     * Deletes both downloaded encoder files so the next launch re-downloads them. Intended for
+     * testing the download flow without uninstalling (app updates keep internal storage, so the
+     * models otherwise persist across installs). Returns true if nothing remains afterward.
+     */
+    fun deleteModels(): Boolean {
+        modelFile.takeIf { it.exists() }?.delete()
+        textModelFile.takeIf { it.exists() }?.delete()
+        return !modelFile.exists() && !textModelFile.exists()
+    }
+
     companion object {
         const val MODEL_NAME = "clip_image_b32_int8w.tflite"
         const val TEXT_MODEL_NAME = "clip_text_b32_int8w.tflite"

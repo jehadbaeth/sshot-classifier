@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 13
-        versionName = "0.9.1" // VLM dev-mode force-allow + debug-log export
+        versionCode = 14
+        versionName = "0.9.2" // Developer-mode: remove downloaded models to re-test download
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

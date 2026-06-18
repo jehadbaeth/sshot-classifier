@@ -160,6 +160,14 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            // Developer aid: app updates keep the downloaded models in internal storage, so the
+            // download flow can't be re-tested without clearing data. This removes them in-app.
+            if (devMode && (models.imageInstalled || models.textInstalled) && download !is DownloadState.Running) {
+                OutlinedButton(
+                    onClick = viewModel::removeDownloadedModels,
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { Text("Remove downloaded models (re-test download)") }
+            }
 
             Section("Maintenance")
             if (reprocessable > 0 && models.imageInstalled) {
