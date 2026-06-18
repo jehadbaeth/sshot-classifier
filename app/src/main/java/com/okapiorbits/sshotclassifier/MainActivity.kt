@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -44,8 +43,6 @@ import com.okapiorbits.sshotclassifier.ui.camera.CameraCaptureScreen
 import com.okapiorbits.sshotclassifier.ui.camera.CameraCaptureViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryScreen
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryViewModel
-import com.okapiorbits.sshotclassifier.ui.search.SearchScreen
-import com.okapiorbits.sshotclassifier.ui.search.SearchViewModel
 import com.okapiorbits.sshotclassifier.ui.settings.SettingsScreen
 import com.okapiorbits.sshotclassifier.ui.settings.SettingsViewModel
 import com.okapiorbits.sshotclassifier.ui.theme.ScreenshotClassifierTheme
@@ -98,7 +95,7 @@ private fun AppRoot() {
     }
 }
 
-private enum class Tab(val label: String) { Gallery("Gallery"), Search("Search"), Settings("Settings") }
+private enum class Tab(val label: String) { Gallery("Gallery"), Settings("Settings") }
 
 @Composable
 private fun MainScaffold() {
@@ -115,12 +112,6 @@ private fun MainScaffold() {
                 NavigationBarItem(
                     selected = tab == 1,
                     onClick = { tab = 1 },
-                    icon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    label = { Text(Tab.Search.label) },
-                )
-                NavigationBarItem(
-                    selected = tab == 2,
-                    onClick = { tab = 2 },
                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     label = { Text(Tab.Settings.label) },
                 )
@@ -139,10 +130,6 @@ private fun MainScaffold() {
                             val vm: GalleryViewModel = hiltViewModel()
                             GalleryScreen(vm, onOpenCamera = { showCamera = true })
                         }
-                    }
-                    1 -> {
-                        val vm: SearchViewModel = hiltViewModel()
-                        SearchScreen(vm)
                     }
                     else -> {
                         val vm: SettingsViewModel = hiltViewModel()

@@ -1,5 +1,6 @@
 package com.okapiorbits.sshotclassifier.pipeline
 
+
 import android.net.Uri
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -65,7 +66,7 @@ class CameraCapturePipelineTest {
         val modelManager = ClipModelManager(appContext)
         return ImageProcessor(
             dao = dao,
-            ocr = OcrExtractor(appContext),
+            ocr = OcrExtractor(appContext, TesseractOcr(appContext)),
             heuristics = OcrHeuristics(),
             clipEncoder = ClipEncoder(appContext, modelManager),
             zeroShot = ZeroShotClassifier(ClipLabels(appContext)),

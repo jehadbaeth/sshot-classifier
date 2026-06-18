@@ -11,13 +11,18 @@ import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import com.okapiorbits.sshotclassifier.data.db.entity.SourceType
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -62,7 +67,7 @@ class GalleryViewModel @Inject constructor(
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val screenshots: StateFlow<List<ScreenshotWithTags>> =
+    private val baseScreenshots: Flow<List<ScreenshotWithTags>> =
         combine(_reviewOnly, _sourceFilter, _duplicatesOnly, _duplicateIds, _sortOrder) {
             r, s, d, ids, sort -> Filters(r, s, d, ids, sort)
         }
@@ -86,6 +91,48 @@ class GalleryViewModel @Inject constructor(
                         }
                     }
                     out
+                }
+            }
+
+    // ---- Search (folded in from the old Search tab): text query + multi-tag filter ----
+
+    /** Whether free-text visual search is available (text model installed). */
+    val semanticReady: Boolean = modelManager.isTextModelInstalled()
+
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+    fun setQuery(q: String) { _query.value = q }
+
+    private val _selectedTags = MutableStateFlow<Set<String>>(emptySet())
+    val selectedTags: StateFlow<Set<String>> = _selectedTags.asStateFlow()
+    fun toggleTag(label: String) {
+        _selectedTags.value = _selectedTags.value.let { if (label in it) it - label else it + label }
+    }
+
+    /** Tag chips with counts, for the gallery filter row. */
+    val tagCounts: StateFlow<List<com.okapiorbits.sshotclassifier.data.db.TagCount>> =
+        repository.observeTagCounts()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** True when a text query or tag filter is narrowing the grid. */
+    val searchActive: StateFlow<Boolean> =
+        combine(_query, _selectedTags) { q, t -> q.isNotBlank() || t.isNotEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    val screenshots: StateFlow<List<ScreenshotWithTags>> =
+        combine(_query.debounce(250), _selectedTags, baseScreenshots) { q, tags, base -> Triple(q, tags, base) }
+            .flatMapLatest { (q, tags, base) ->
+                fun hasAll(s: ScreenshotWithTags) = tags.all { t -> s.tags.any { it.label == t } }
+                when {
+                    // Text query: hybrid (visual + OCR) search, optionally narrowed by selected tags.
+                    q.isNotBlank() -> flow {
+                        val r = repository.hybridSearch(q)
+                        emit(if (tags.isEmpty()) r else r.filter(::hasAll))
+                    }
+                    // Tags only: intersect the current (filtered/sorted) gallery.
+                    tags.isNotEmpty() -> flowOf(base.filter(::hasAll))
+                    else -> flowOf(base)
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

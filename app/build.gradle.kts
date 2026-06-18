@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 35
-        versionName = "0.9.23" // Folder search + animated tab transitions
+        versionCode = 36
+        versionName = "0.9.24" // Search + tag filter folded into the gallery; Search tab removed
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

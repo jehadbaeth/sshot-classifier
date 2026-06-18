@@ -11,6 +11,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyRowItems
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
@@ -116,6 +119,10 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val processing by viewModel.processing.collectAsStateWithLifecycle()
     val selectedIds by viewModel.selectedIds.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val query by viewModel.query.collectAsStateWithLifecycle()
+    val selectedTags by viewModel.selectedTags.collectAsStateWithLifecycle()
+    val tagCounts by viewModel.tagCounts.collectAsStateWithLifecycle()
+    val searchActive by viewModel.searchActive.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -230,6 +237,39 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ProcessingBar(processing)
+            // Search folded in from the old Search tab: text query + tag chips.
+            OutlinedTextField(
+                value = query,
+                onValueChange = viewModel::setQuery,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.setQuery("") }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear search")
+                        }
+                    }
+                },
+                placeholder = {
+                    Text(if (viewModel.semanticReady) "Search text or visual concept" else "Search text in screenshots")
+                },
+            )
+            if (tagCounts.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    lazyRowItems(tagCounts, key = { it.label }) { tc ->
+                        FilterChip(
+                            selected = tc.label in selectedTags,
+                            onClick = { viewModel.toggleTag(tc.label) },
+                            label = { Text("${tc.label} (${tc.cnt})") },
+                        )
+                    }
+                }
+            }
             ModelBanner(modelState, onDownload = viewModel::downloadModel)
             if (modelState is ModelState.Installed && reprocessable > 0 && pending == 0) {
                 ReprocessBanner(reprocessable, onReprocess = viewModel::reprocessMissing)
@@ -288,15 +328,23 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
             }
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {
-                EmptyState()
+                if (searchActive) {
+                    EmptyState(
+                        icon = Icons.Default.Search,
+                        title = "No matches",
+                        subtitle = "Try different words, or clear the search and tag filters.",
+                    )
+                } else {
+                    EmptyState()
+                }
             } else {
                 val now = remember { System.currentTimeMillis() }
                 // Group into date buckets only on the default (recency) view; filtered/duplicate
                 // views aren't time-ordered, so show them as a single flat section.
                 // Date sections only make sense on the default newest-first view; other sorts
                 // (oldest, recently tagged) and the duplicates view show a single flat section.
-                val grouped = remember(screenshots, now, duplicatesOnly, sortOrder) {
-                    if (duplicatesOnly || sortOrder != SortOrder.NEWEST) listOf("" to screenshots)
+                val grouped = remember(screenshots, now, duplicatesOnly, sortOrder, searchActive) {
+                    if (duplicatesOnly || searchActive || sortOrder != SortOrder.NEWEST) listOf("" to screenshots)
                     else groupByDateBucket(screenshots, now)
                 }
                 PullToRefreshBox(

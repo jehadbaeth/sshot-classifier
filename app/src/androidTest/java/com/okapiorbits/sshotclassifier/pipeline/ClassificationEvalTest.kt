@@ -1,5 +1,6 @@
 package com.okapiorbits.sshotclassifier.pipeline
 
+
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -84,7 +85,7 @@ class ClassificationEvalTest {
         assumeTrue("eval/ has no class subdirectories", classDirs.isNotEmpty())
 
         val encoder = ClipEncoder(ctx, modelManager)
-        val ocr = OcrExtractor(ctx)
+        val ocr = OcrExtractor(ctx, TesseractOcr(ctx))
         val heuristics = OcrHeuristics()
         val zeroShot = ZeroShotClassifier(ClipLabels(ctx))
         val fuser = TagFuser()

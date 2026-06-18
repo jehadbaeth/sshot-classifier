@@ -423,7 +423,7 @@ Mirrors docs/design.md section 14, with task-level detail.
          value; assistant can verify structure/behaviour but NOT aesthetics — user judges look:
 
          Navigation & flow
-         - [ ] Search bar pinned on the gallery/home (fold the separate Search tab into it).
+         - [x] Search bar + tag chips on the gallery; Search tab removed (2 tabs now). (v0.9.24)
          - [ ] Gallery→detail shared-element / zoom transition.
          - [x] Swipe left/right between images in detail (HorizontalPager). (v0.9.19)
          - [x] Pull-to-refresh on the gallery to trigger a scan. (v0.9.18)

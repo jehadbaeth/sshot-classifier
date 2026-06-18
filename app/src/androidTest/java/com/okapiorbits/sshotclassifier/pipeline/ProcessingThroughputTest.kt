@@ -1,5 +1,6 @@
 package com.okapiorbits.sshotclassifier.pipeline
 
+
 import android.net.Uri
 import android.util.Log
 import androidx.room.Room
@@ -108,7 +109,7 @@ class ProcessingThroughputTest {
         )
         val processor = ImageProcessor(
             dao = dao,
-            ocr = OcrExtractor(appContext),
+            ocr = OcrExtractor(appContext, TesseractOcr(appContext)),
             heuristics = OcrHeuristics(),
             clipEncoder = ClipEncoder(appContext, modelManager),
             zeroShot = ZeroShotClassifier(ClipLabels(appContext)),
