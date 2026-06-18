@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 33
-        versionName = "0.9.21" // Snackbar with Undo for bulk tag-add
+        versionCode = 34
+        versionName = "0.9.22" // Configurable theme picker (Material You/Brand/Indigo/Teal)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

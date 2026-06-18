@@ -22,6 +22,14 @@ private val Context.uiDataStore: DataStore<Preferences> by preferencesDataStore(
  */
 enum class OcrLanguage { LATIN, ARABIC, BOTH, AUTO }
 
+/** Selectable colour theme. DYNAMIC = Material You (Android 12+), else fixed palettes. */
+enum class AppTheme(val label: String) {
+    DYNAMIC("Match my wallpaper (Material You)"),
+    BRAND("Brand blue"),
+    INDIGO("Indigo & amber"),
+    TEAL("Teal & coral"),
+}
+
 /** Persists appearance + developer preferences. */
 @Singleton
 class UiPreferencesStore @Inject constructor(
@@ -31,17 +39,20 @@ class UiPreferencesStore @Inject constructor(
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val DEV_MODE = booleanPreferencesKey("dev_mode")
         val OCR_LANGUAGE = androidx.datastore.preferences.core.stringPreferencesKey("ocr_language")
+        val APP_THEME = androidx.datastore.preferences.core.stringPreferencesKey("app_theme")
     }
 
     /**
-     * true (default) = Material You (wallpaper-based colour) on Android 12+, falling back to the
-     * brand palette on older devices; false = always the fixed brand palette. Default-on so the
-     * app adopts the user's system colours out of the box.
+     * Selected colour theme (default Material You). Migrates the old boolean Material You toggle:
+     * if a user had previously turned dynamic colour OFF, honour that as the Brand theme.
      */
-    val dynamicColor: Flow<Boolean> = context.uiDataStore.data.map { it[Keys.DYNAMIC_COLOR] ?: true }
+    val appTheme: Flow<AppTheme> = context.uiDataStore.data.map { prefs ->
+        prefs[Keys.APP_THEME]?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() }
+            ?: if (prefs[Keys.DYNAMIC_COLOR] == false) AppTheme.BRAND else AppTheme.DYNAMIC
+    }
 
-    suspend fun setDynamicColor(enabled: Boolean) =
-        context.uiDataStore.edit { it[Keys.DYNAMIC_COLOR] = enabled }
+    suspend fun setAppTheme(value: AppTheme) =
+        context.uiDataStore.edit { it[Keys.APP_THEME] = value.name }
 
     /**
      * Developer mode (default off). When on, normally-gated configs can be force-enabled for

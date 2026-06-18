@@ -56,8 +56,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val appearance: AppearanceViewModel = hiltViewModel()
-            val dynamicColor by appearance.dynamicColor.collectAsStateWithLifecycle()
-            ScreenshotClassifierTheme(dynamicColor = dynamicColor) {
+            val appTheme by appearance.appTheme.collectAsStateWithLifecycle()
+            ScreenshotClassifierTheme(theme = appTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppRoot()
                 }

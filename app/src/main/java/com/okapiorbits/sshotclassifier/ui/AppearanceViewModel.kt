@@ -2,6 +2,7 @@ package com.okapiorbits.sshotclassifier.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.okapiorbits.sshotclassifier.data.prefs.AppTheme
 import com.okapiorbits.sshotclassifier.data.prefs.UiPreferencesStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,8 +15,7 @@ import javax.inject.Inject
 class AppearanceViewModel @Inject constructor(
     private val uiPrefs: UiPreferencesStore,
 ) : ViewModel() {
-    // Initial value matches the preference default (on) so the first frame doesn't flash the
-    // brand palette before the stored value loads.
-    val dynamicColor: StateFlow<Boolean> =
-        uiPrefs.dynamicColor.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    // Initial value matches the preference default so the first frame doesn't flash a wrong theme.
+    val appTheme: StateFlow<AppTheme> =
+        uiPrefs.appTheme.stateIn(viewModelScope, SharingStarted.Eagerly, AppTheme.DYNAMIC)
 }

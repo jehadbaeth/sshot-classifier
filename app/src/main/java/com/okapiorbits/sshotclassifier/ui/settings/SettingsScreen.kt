@@ -69,7 +69,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val pendingDelete by viewModel.pendingDelete.collectAsStateWithLifecycle()
     val watchedFolders by viewModel.watchedFolders.collectAsStateWithLifecycle()
     val availableFolders by viewModel.availableFolders.collectAsStateWithLifecycle()
-    val dynamicColor by viewModel.dynamicColor.collectAsStateWithLifecycle()
+    val appTheme by viewModel.appTheme.collectAsStateWithLifecycle()
     val capturePrefs by viewModel.capturePrefs.collectAsStateWithLifecycle()
     val backupStatus by viewModel.backupStatus.collectAsStateWithLifecycle()
     val generativeUi by viewModel.generativeUi.collectAsStateWithLifecycle()
@@ -264,17 +264,25 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             }
 
             Section("Appearance")
-            LabeledSwitch(
-                label = "Use Material You colors",
-                subtitle = if (viewModel.dynamicColorSupported) {
-                    "Match the app palette to your wallpaper. Off uses the app's own colors."
-                } else {
-                    "Needs Android 12 or newer. The app uses its own colors here."
-                },
-                checked = dynamicColor,
-                enabled = viewModel.dynamicColorSupported,
-                onCheckedChange = viewModel::setDynamicColor,
+            Text(
+                "Theme",
+                style = MaterialTheme.typography.bodyMedium,
             )
+            com.okapiorbits.sshotclassifier.data.prefs.AppTheme.entries.forEach { t ->
+                val isDynamic = t == com.okapiorbits.sshotclassifier.data.prefs.AppTheme.DYNAMIC
+                RadioRow(
+                    label = t.label,
+                    subtitle = when {
+                        isDynamic && !viewModel.dynamicColorSupported ->
+                            "Needs Android 12+; uses the brand palette here."
+                        isDynamic -> "Colors follow your wallpaper. Light/dark follow the system."
+                        else -> "A fixed palette, independent of your wallpaper."
+                    },
+                    selected = appTheme == t,
+                    enabled = true,
+                    onSelect = { viewModel.setAppTheme(t) },
+                )
+            }
 
             Section("Developer")
             LabeledSwitch(

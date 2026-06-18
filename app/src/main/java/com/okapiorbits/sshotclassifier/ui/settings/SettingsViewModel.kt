@@ -71,13 +71,14 @@ class SettingsViewModel @Inject constructor(
     /** Device check for the experimental on-device VLM describer (see docs/spikes/vlm-device-research.md). */
     private val deviceCapability: DeviceCapability.Result = deviceCapabilityChecker.assess()
 
-    /** Material You opt-in. Default false = fixed brand palette. */
-    val dynamicColor: StateFlow<Boolean> =
-        uiPrefsStore.dynamicColor
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    /** Selected colour theme (default Material You). */
+    val appTheme: StateFlow<com.okapiorbits.sshotclassifier.data.prefs.AppTheme> =
+        uiPrefsStore.appTheme
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
+                com.okapiorbits.sshotclassifier.data.prefs.AppTheme.DYNAMIC)
 
-    fun setDynamicColor(enabled: Boolean) =
-        viewModelScope.launch { uiPrefsStore.setDynamicColor(enabled) }
+    fun setAppTheme(value: com.okapiorbits.sshotclassifier.data.prefs.AppTheme) =
+        viewModelScope.launch { uiPrefsStore.setAppTheme(value) }
 
     /** True on Android 12+ where Material You (wallpaper-based colour) is available. */
     val dynamicColorSupported: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S

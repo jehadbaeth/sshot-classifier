@@ -58,3 +58,55 @@ val BrandDarkColors = darkColorScheme(
     onSurfaceVariant = Color(0xFFC3C7CF),
     outline = Color(0xFF8D9199),
 )
+
+// Fixed alternative palettes for the theme picker. Indigo primary + amber accent.
+val IndigoLightColors = lightColorScheme(
+    primary = Color(0xFF3F51B5),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFDEE0FF),
+    onPrimaryContainer = Color(0xFF00105C),
+    secondary = Color(0xFF5C5D72),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFE1E0F9),
+    tertiary = Color(0xFF8C5000),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFDCBE),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+)
+val IndigoDarkColors = darkColorScheme(
+    primary = Color(0xFFBBC3FF),
+    onPrimary = Color(0xFF09218B),
+    primaryContainer = Color(0xFF2639A2),
+    onPrimaryContainer = Color(0xFFDEE0FF),
+    secondary = Color(0xFFC5C4DD),
+    tertiary = Color(0xFFFFB870),
+    onTertiary = Color(0xFF4A2800),
+    tertiaryContainer = Color(0xFF6A3C00),
+)
+
+// Teal primary + coral accent.
+val TealLightColors = lightColorScheme(
+    primary = Color(0xFF00897B),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF8DF8E6),
+    onPrimaryContainer = Color(0xFF00201C),
+    secondary = Color(0xFF4A6360),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFCCE8E3),
+    tertiary = Color(0xFFB1261E),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFDAD5),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+)
+val TealDarkColors = darkColorScheme(
+    primary = Color(0xFF70DBCA),
+    onPrimary = Color(0xFF003731),
+    primaryContainer = Color(0xFF005048),
+    onPrimaryContainer = Color(0xFF8DF8E6),
+    secondary = Color(0xFFB0CCC7),
+    tertiary = Color(0xFFFFB4A9),
+    onTertiary = Color(0xFF680A04),
+    tertiaryContainer = Color(0xFF8C1A14),
+)

@@ -407,9 +407,9 @@ Mirrors docs/design.md section 14, with task-level detail.
 
 ## Backlog / ideas (not scheduled)
 
-- [ ] **Configurable themes.** Material You is default (v0.9.11); user wants selectable themes too
-      (e.g. fixed palettes like Indigo+amber / Teal+coral + dynamic). Add a theme picker in Settings
-      backed by a stored enum; define the palettes in Color.kt. Low priority vs the real UX redesign.
+- [x] **Configurable themes (DONE v0.9.22).** Theme picker in Settings (AppTheme enum): Material You
+      (default), Brand blue, Indigo & amber, Teal & coral. Palettes in Color.kt; migrates the old
+      Material You boolean (off -> Brand).
 - [~] **UX feedback from user testing v0.9.12 (2026-06-18) — concrete punch list:**
       1. [x] **Gallery tiles too big** — denser grid (smaller columns + tighter aspect clamp,
          ~3 cols). v0.9.13.
@@ -448,7 +448,7 @@ Mirrors docs/design.md section 14, with task-level detail.
          Settings & structure
          - [ ] Group the 13 Settings sections into collapsible cards (the long-scroll item).
          - [ ] Folder search/filter in watched folders (complements the collapse already shipped).
-         - [ ] Configurable theme picker (see the separate themes item above).
+         - [x] Configurable theme picker (Material You / Brand / Indigo / Teal). (v0.9.22)
 
          Polish & a11y
          - [ ] Consistent spacing/typography tokens; audit touch-target sizes + content descriptions.
