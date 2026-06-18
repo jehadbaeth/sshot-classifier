@@ -137,6 +137,41 @@ class GalleryViewModel @Inject constructor(
         _reviewOnly.value = !_reviewOnly.value
     }
 
+    // ---- Multi-select (long-press to enter; bulk actions) ----
+
+    private val _selectedIds = MutableStateFlow<Set<Long>>(emptySet())
+    val selectedIds: StateFlow<Set<Long>> = _selectedIds.asStateFlow()
+
+    fun toggleSelected(id: Long) {
+        _selectedIds.value = _selectedIds.value.let { if (id in it) it - id else it + id }
+    }
+
+    fun clearSelection() {
+        _selectedIds.value = emptySet()
+    }
+
+    fun selectAll() {
+        _selectedIds.value = screenshots.value.map { it.screenshot.id }.toSet()
+    }
+
+    /** Adds one tag to every selected image (bulk), then clears the selection. */
+    fun addTagToSelected(label: String) {
+        val ids = _selectedIds.value
+        if (ids.isEmpty() || label.isBlank()) return
+        viewModelScope.launch {
+            ids.forEach { repository.addUserTag(it, label) }
+            _selectedIds.value = emptySet()
+        }
+    }
+
+    /** Content URIs of the current selection, for a bulk share intent. */
+    fun selectedUris(): List<android.net.Uri> {
+        val ids = _selectedIds.value
+        return screenshots.value
+            .filter { it.screenshot.id in ids }
+            .map { android.net.Uri.parse(it.screenshot.file_path) }
+    }
+
     private val _modelState = MutableStateFlow(
         if (modelManager.areAllModelsInstalled()) ModelState.Installed else ModelState.Missing
     )

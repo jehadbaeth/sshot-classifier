@@ -410,6 +410,19 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [ ] **Configurable themes.** Material You is default (v0.9.11); user wants selectable themes too
       (e.g. fixed palettes like Indigo+amber / Teal+coral + dynamic). Add a theme picker in Settings
       backed by a stored enum; define the palettes in Color.kt. Low priority vs the real UX redesign.
+- [~] **UX feedback from user testing v0.9.12 (2026-06-18) — concrete punch list:**
+      1. [ ] **Gallery tiles too big** — at most ~2 fit on screen. Make the grid denser (more
+         columns, shorter tiles). (quick fix this increment)
+      2. [ ] **Multi-select + bulk actions** — long-press an image should enter selection mode;
+         tap toggles; a contextual bar with bulk actions (share, add tag, …). Currently actions
+         only exist when viewing a single image. (high value)
+      3. [ ] **Camera capture feedback** — the camera view is plain: no indication a photo was
+         taken. Add a screen flash on capture + a thumbnail carousel at the bottom of recent
+         captures.
+      4. [ ] **Settings watched-folders list is way too long** — needs grouping / a compact,
+         searchable view instead of a flat list of every folder containing images.
+      5. [ ] Ongoing: "plenty of other UX quality stuff" — keep finding + fixing (loading states,
+         affordances, gestures, transitions, consistency).
 - [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
       processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
       (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);

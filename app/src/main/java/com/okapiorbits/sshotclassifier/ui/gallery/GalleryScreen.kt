@@ -3,8 +3,20 @@ package com.okapiorbits.sshotclassifier.ui.gallery
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.size
@@ -79,6 +91,12 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val duplicatesOnly by viewModel.duplicatesOnly.collectAsStateWithLifecycle()
     val duplicateGroupCount by viewModel.duplicateGroupCount.collectAsStateWithLifecycle()
     val processing by viewModel.processing.collectAsStateWithLifecycle()
+    val selectedIds by viewModel.selectedIds.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var showBulkTagDialog by remember { mutableStateOf(false) }
+
+    // Multi-select takes priority for the back button: exit selection before leaving the screen.
+    BackHandler(enabled = selectedIds.isNotEmpty()) { viewModel.clearSelection() }
 
     // In-tab navigation to a screenshot's tag editor; no NavHost needed.
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -98,12 +116,22 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    val suffix = if (pending > 0) " · $pending pending" else ""
-                    Text("Screenshots (${screenshots.size})$suffix")
-                },
-            )
+            if (selectedIds.isNotEmpty()) {
+                SelectionTopBar(
+                    count = selectedIds.size,
+                    onClose = { viewModel.clearSelection() },
+                    onSelectAll = { viewModel.selectAll() },
+                    onAddTag = { showBulkTagDialog = true },
+                    onShare = { shareImages(context, viewModel.selectedUris()) },
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        val suffix = if (pending > 0) " · $pending pending" else ""
+                        Text("Screenshots (${screenshots.size})$suffix")
+                    },
+                )
+            }
         },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -188,10 +216,10 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     else groupByDateBucket(screenshots, now)
                 }
                 LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Adaptive(minSize = 120.dp),
-                    contentPadding = PaddingValues(8.dp),
-                    verticalItemSpacing = 6.dp,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    columns = StaggeredGridCells.Adaptive(minSize = 100.dp),
+                    contentPadding = PaddingValues(6.dp),
+                    verticalItemSpacing = 4.dp,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     grouped.forEach { (label, list) ->
@@ -201,7 +229,15 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                             }
                         }
                         items(list, key = { it.screenshot.id }) { item ->
-                            GalleryCell(item, onClick = { selectedId = item.screenshot.id })
+                            GalleryCell(
+                                item = item,
+                                selected = item.screenshot.id in selectedIds,
+                                onClick = {
+                                    if (selectedIds.isNotEmpty()) viewModel.toggleSelected(item.screenshot.id)
+                                    else selectedId = item.screenshot.id
+                                },
+                                onLongClick = { viewModel.toggleSelected(item.screenshot.id) },
+                            )
                         }
                     }
                 }
@@ -209,6 +245,70 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         }
         }
     }
+
+    if (showBulkTagDialog) {
+        BulkTagDialog(
+            count = selectedIds.size,
+            onConfirm = { label ->
+                viewModel.addTagToSelected(label)
+                showBulkTagDialog = false
+            },
+            onDismiss = { showBulkTagDialog = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectionTopBar(
+    count: Int,
+    onClose: () -> Unit,
+    onSelectAll: () -> Unit,
+    onAddTag: () -> Unit,
+    onShare: () -> Unit,
+) {
+    TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onClose) { Icon(Icons.Default.Close, contentDescription = "Clear selection") }
+        },
+        title = { Text("$count selected") },
+        actions = {
+            IconButton(onClick = onShare) { Icon(Icons.Default.Share, contentDescription = "Share") }
+            IconButton(onClick = onAddTag) { Icon(Icons.Default.Label, contentDescription = "Add tag") }
+            IconButton(onClick = onSelectAll) { Icon(Icons.Default.SelectAll, contentDescription = "Select all") }
+        },
+    )
+}
+
+@Composable
+private fun BulkTagDialog(count: Int, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        title = { Text("Add tag to $count") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Tag") },
+                singleLine = true,
+            )
+        },
+    )
+}
+
+private fun shareImages(context: android.content.Context, uris: List<android.net.Uri>) {
+    if (uris.isEmpty()) return
+    val intent = android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "image/*"
+        putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, ArrayList(uris))
+        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(android.content.Intent.createChooser(intent, "Share ${uris.size} images"))
 }
 
 @Composable
@@ -283,20 +383,27 @@ private fun ReprocessBanner(count: Int, onReprocess: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
+fun GalleryCell(
+    item: ScreenshotWithTags,
+    onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {},
+    selected: Boolean = false,
+) {
     val shape = RoundedCornerShape(12.dp)
     // Show each image at (close to) its real shape for a staggered, photos-app feel; clamp so an
     // extreme panorama or tall screenshot can't produce a giant tile.
     val w = item.screenshot.width
     val h = item.screenshot.height
-    val ratio = if (w > 0 && h > 0) (w.toFloat() / h).coerceIn(0.55f, 1.4f) else 0.62f
+    // Clamp tightly so portrait screenshots don't become very tall tiles (keeps the grid dense).
+    val ratio = if (w > 0 && h > 0) (w.toFloat() / h).coerceIn(0.7f, 1.3f) else 0.75f
     Box(
         modifier = Modifier
             .aspectRatio(ratio)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant) // placeholder while the image loads
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         AsyncImage(
             model = item.screenshot.file_path,
@@ -304,6 +411,24 @@ fun GalleryCell(item: ScreenshotWithTags, onClick: () -> Unit = {}) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+            )
+            Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = "Selected",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(4.dp)
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+            )
+        }
         val top = item.tags.maxByOrNull { it.weight }
         if (top != null) {
             // Gradient scrim so the label stays readable over any image.

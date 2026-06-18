@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 24
-        versionName = "0.9.12" // Gallery redesign: staggered timeline grid with date sections
+        versionCode = 25
+        versionName = "0.9.13" // Denser grid + multi-select with bulk actions
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
