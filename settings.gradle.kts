@@ -16,6 +16,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Vendored Tesseract4Android AAR (Arabic OCR). Committed under app/libs to keep it off
+        // the release critical path (JitPack-only artifact; we don't want JitPack in CI).
+        flatDir { dirs("app/libs") }
     }
 }
 

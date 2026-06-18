@@ -124,6 +124,11 @@ dependencies {
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
 
+    // Arabic OCR (opt-in): ML Kit has no Arabic recognizer, so use Tesseract for that script.
+    // Vendored AAR under app/libs (see settings.gradle.kts); its only transitive dep is
+    // androidx.annotation, already present.
+    implementation(":tesseract4android-4.9.0@aar")
+
     // On-device generative VLM captions (experimental, opt-in, high-end devices only).
     // MediaPipe LLM Inference API; the Gemma .task model is user-provided, never bundled.
     // tasks-core supplies the framework MPImage/BitmapImageBuilder that addImage() needs
