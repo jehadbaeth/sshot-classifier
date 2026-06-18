@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,6 +39,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,10 +66,19 @@ fun ScreenshotDetailScreen(
     val resolving by viewModel.resolving.collectAsStateWithLifecycle()
     val resolveMessage by viewModel.resolveMessage.collectAsStateWithLifecycle()
     var newLabel by remember { mutableStateOf("") }
+    var viewerOpen by remember { mutableStateOf(false) }
 
     fun submit() {
         viewModel.addTag(screenshotId, newLabel)
         newLabel = ""
+    }
+
+    // Full-screen zoom/share/rotate/info viewer, opened by tapping the image.
+    screenshot?.let { shot ->
+        if (viewerOpen) {
+            FullScreenImageViewer(screenshot = shot, onClose = { viewerOpen = false })
+            return
+        }
     }
 
     Scaffold(
@@ -91,8 +103,11 @@ fun ScreenshotDetailScreen(
         ) {
             AsyncImage(
                 model = filePath,
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                contentDescription = "Tap to view full screen",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp)
+                    .clickable { viewerOpen = true },
             )
 
             // Camera captures carry a composed description and (optionally) a decoded QR payload.
@@ -151,15 +166,25 @@ fun ScreenshotDetailScreen(
     }
 }
 
-/** Read-only display of the extracted OCR text, selectable so the user can copy it out. */
+/** Read-only display of the extracted OCR text, selectable, with a one-tap copy. */
 @Composable
 private fun OcrSection(text: String) {
+    val clipboard = LocalClipboardManager.current
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            "Extracted text (OCR)",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "Extracted text (OCR)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            IconButton(onClick = { clipboard.setText(AnnotatedString(text)) }) {
+                Icon(Icons.Default.ContentCopy, contentDescription = "Copy text")
+            }
+        }
         Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
             SelectionContainer {
                 Text(
