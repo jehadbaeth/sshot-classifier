@@ -38,6 +38,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.automirrored.filled.LabelOff
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
@@ -521,8 +523,8 @@ private fun SelectionTopBar(
         title = { Text("$count selected") },
         actions = {
             IconButton(onClick = onShare) { Icon(Icons.Default.Share, contentDescription = "Share") }
-            IconButton(onClick = onAddTag) { Icon(Icons.Default.Label, contentDescription = "Add tag") }
-            IconButton(onClick = onRemoveTag) { Icon(Icons.Default.LabelOff, contentDescription = "Remove tag") }
+            IconButton(onClick = onAddTag) { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = "Add tag") }
+            IconButton(onClick = onRemoveTag) { Icon(Icons.AutoMirrored.Filled.LabelOff, contentDescription = "Remove tag") }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
             IconButton(onClick = onSelectAll) { Icon(Icons.Default.SelectAll, contentDescription = "Select all") }
         },
@@ -669,6 +671,7 @@ fun GalleryCell(
     val h = item.screenshot.height
     // Clamp tightly so portrait screenshots don't become very tall tiles (keeps the grid dense).
     val ratio = if (w > 0 && h > 0) (w.toFloat() / h).coerceIn(0.7f, 1.3f) else 0.75f
+    val topTag = item.tags.maxByOrNull { it.weight }
     Box(
         modifier = modifier
             .aspectRatio(ratio)
@@ -677,7 +680,7 @@ fun GalleryCell(
     ) {
         SubcomposeAsyncImage(
             model = item.screenshot.file_path,
-            contentDescription = null,
+            contentDescription = if (topTag != null) "Screenshot: ${topTag.label}" else "Screenshot",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
             loading = { ShimmerBox(Modifier.fillMaxSize()) },
@@ -701,8 +704,7 @@ fun GalleryCell(
                     .background(Color.White),
             )
         }
-        val top = item.tags.maxByOrNull { it.weight }
-        if (top != null) {
+        if (topTag != null) {
             // Gradient scrim so the label stays readable over any image.
             Box(
                 modifier = Modifier
@@ -716,7 +718,7 @@ fun GalleryCell(
                     ),
             ) {
                 Text(
-                    text = top.label,
+                    text = topTag.label,
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White,
                     maxLines = 1,

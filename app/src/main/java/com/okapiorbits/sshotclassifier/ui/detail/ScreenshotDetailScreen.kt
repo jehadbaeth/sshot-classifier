@@ -34,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -450,7 +451,9 @@ private fun TagChip(tag: TagEntity, onRemove: () -> Unit) {
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Remove ${tag.label}",
-                modifier = Modifier.clickable(onClick = onRemove),
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable(onClick = onRemove),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
