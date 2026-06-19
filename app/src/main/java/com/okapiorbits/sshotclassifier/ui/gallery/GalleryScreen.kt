@@ -398,10 +398,16 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (screenshots.isEmpty()) {
                 if (searchActive) {
+                    val modelsReady = modelState is ModelState.Installed
                     EmptyState(
                         icon = Icons.Default.Search,
                         title = "No matches",
-                        subtitle = "Try different words, or clear the search and tag filters.",
+                        subtitle = if (modelsReady)
+                            "Try different words, or clear the search and tag filters."
+                        else
+                            "Only text search (OCR) is running — the AI models aren't installed yet, " +
+                            "so visual concept searches won't find anything. Try words that appear " +
+                            "inside your screenshots, or install the models first.",
                     )
                 } else {
                     EmptyState()
