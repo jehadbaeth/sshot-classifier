@@ -431,14 +431,14 @@ Mirrors docs/design.md section 14, with task-level detail.
 
          Selection & bulk (build on v0.9.13)
          - [ ] Drag-to-select across multiple tiles; range select.
-         - [x] More bulk actions: remove a tag + delete with system consent (MediaStore.createDeleteRequest, API 30+). Done 2026-06-20. Reorganize-selected still open.
+         - [x] More bulk actions: remove a tag + delete with system consent + reorganize selected (copy/move to per-tag albums). Done 2026-06-20.
          - [x] Tag-filter chips directly on the gallery. (v0.9.24)
 
          Motion & feedback
          - [x] List item placement animations (animateItem) + Coil crossfade on image load. (v0.9.17)
          - [x] Haptic feedback on long-press select and capture. (v0.9.17)
          - [x] Skeleton/shimmer placeholders while the grid loads. (SubcomposeAsyncImage + ShimmerBox infinite-transition gradient, done 2026-06-20.)
-         - [x] Snackbar with Undo for bulk tag-add + bulk remove-tag + bulk delete confirm. Done 2026-06-20. Reorganize-selected undo still open.
+         - [x] Snackbar with Undo for bulk tag-add + bulk remove-tag + bulk delete confirm + reorganize result. Done 2026-06-20.
          - [x] Animated (crossfade) transitions between the bottom-nav tabs. (v0.9.23)
 
          Detail & viewer
