@@ -103,8 +103,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -142,6 +145,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val gridState = rememberLazyStaggeredGridState()
+    val currentSelectedIds by rememberUpdatedState(selectedIds)
     val snackbarHostState = remember { SnackbarHostState() }
     val bulkTagEvent by viewModel.bulkTagEvent.collectAsStateWithLifecycle()
     val bulkRemoveTagEvent by viewModel.bulkRemoveTagEvent.collectAsStateWithLifecycle()
@@ -441,7 +445,18 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     contentPadding = PaddingValues(start = 6.dp, top = 6.dp, end = 6.dp, bottom = 100.dp),
                     verticalItemSpacing = 4.dp,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                        detectDragGestures { change, _ ->
+                            if (currentSelectedIds.isEmpty()) return@detectDragGestures
+                            change.consume()
+                            val pos = change.position
+                            val key = gridState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                                pos.x >= info.offset.x && pos.x < info.offset.x + info.size.width &&
+                                    pos.y >= info.offset.y && pos.y < info.offset.y + info.size.height
+                            }?.key
+                            if (key is Long) viewModel.addToSelection(key)
+                        }
+                    },
                 ) {
                     grouped.forEach { (label, list) ->
                         if (label.isNotEmpty()) {

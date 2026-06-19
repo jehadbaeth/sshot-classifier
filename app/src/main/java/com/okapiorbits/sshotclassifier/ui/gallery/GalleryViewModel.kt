@@ -213,6 +213,10 @@ class GalleryViewModel @Inject constructor(
         _selectedIds.value = _selectedIds.value.let { if (id in it) it - id else it + id }
     }
 
+    fun addToSelection(id: Long) {
+        if (id !in _selectedIds.value) _selectedIds.value = _selectedIds.value + id
+    }
+
     fun clearSelection() {
         _selectedIds.value = emptySet()
     }
