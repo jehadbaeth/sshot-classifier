@@ -1,7 +1,7 @@
 # Screenshot Classifier — Design Document
 
-> Status: Phases 0-4 shipped (latest release v0.6.1)
-> Last updated: 2026-06-16
+> Status: Phases 0-4 + camera capture (A+B) + UX overhaul shipped (latest release v0.9.26)
+> Last updated: 2026-06-19
 > Owner: mohamed.baeth@okapiorbits.com
 
 > **Update 2026-06-14 (CLIP spike):** A zero-shot spike
@@ -428,12 +428,15 @@ encode still dominates a full re-embed and is the next thing to benchmark.
 - **Phase 2 (done, v0.3.0)**: CLIP image encoder, model download, embeddings, zero-shot tagging fused with OCR.
 - **Phase 3 (done, v0.4.0)**: Free-text visual + hybrid semantic search (CLIP text encoder + on-device BPE tokenizer + RRF fusion).
 - **Phase 4 (done, v0.5.0)**: Settings screen, reprocess action, custom user tags — manual per-image tags + user-defined auto-categories scored by an independent cosine threshold, a "needs review" surface for low-confidence/contradicted tags, and configurable user-triggered reorganization. Also cleared standing debt: OCR min-score floor, foreground-service processing.
-- **v0.6.0**: email/reddit OCR fix, configurable multi-folder watching, new icon + brand, release signing / AAB, and a large on-device classification eval (see below).
+- **v0.6.0**: email/reddit OCR fix, configurable multi-folder watching, new icon + brand, release signing / AAB, and a large on-device classification eval.
 - **v0.6.1**: error/crash classification fix (CLIP error label was firing on any modal dialog; remapped to `other`, error/crash is now OCR-only).
-- **Camera capture, Phase A (in development)**: in-app camera capture of real-world
-  things (storefronts, signs, ads, QR codes) classified into the same inventory as
-  screenshots. Fully offline. See section 15. Phase B (link-preview resolution for QR
-  URLs; optional generative description) is deferred — see TODO.md.
+- **v0.7.0**: Camera capture Phases A + B. In-app CameraX camera writes photos to the same gallery/search/tag inventory as screenshots. QR/barcode decoding on device (ML Kit). Real-world CLIP labels (storefront, street sign, business card, menu, poster, advertisement, product, qr code) appended and gated so the screenshot classifier candidate set is unchanged. QR link-preview resolution (off by default, fully configurable: on/off, manual/automatic, Wi-Fi-only, image download toggle). See section 15.
+- **v0.7.1**: browser/web OCR over-fire fix — URL scheme markers (`http://`, `https://`, `www.`) demoted from strong to weak so a bare URL in a code comment or chat message no longer votes browser.
+- **v0.8.0**: Near-duplicate detection (union-find over CLIP cosine ≥ 0.96; gallery FilterChip, no destructive delete). Tag backup: export/import of manual tags and custom categories as JSON via SAF.
+- **v0.9.0**: Experimental generative VLM captions for camera captures via MediaPipe LLM Inference + Gemma 3n E2B (user-imported, ~3.1 GB). Gated behind device capability check, opt-in, and model import. Falls back to structured description on any failure. Not verified on hardware.
+- **v0.9.1**: Developer mode (force-allow generative path on under-spec devices for testing) + debug log export.
+- **v0.9.6–v0.9.7**: Arabic OCR via Tesseract `ara+eng`. Four modes (Latin, Arabic+mixed, Latin+Arabic max, Auto). Re-run on existing images on demand.
+- **v0.9.8–v0.9.26 (UX overhaul)**: Staggered timeline gallery grid with date headers. Processing progress bar. Richer empty states, polished gallery cells. Model-driven tag suggestions on the detail screen. Denser grid + multi-select with bulk actions. Camera shutter flash + recent-captures carousel. Watched-folders list sorted and collapsible. Motion: image crossfade, animated grid items, haptics, tab crossfade transitions, detail entrance animation. Pull-to-refresh, scroll-to-top. Swipe left/right between images in detail. Bulk tag-add snackbar with Undo. Multi-tag intersection filter. Sort by newest/oldest/recently tagged. Rounded shapes app-wide. Search bar + tag filtering folded into the gallery (Search tab removed; now two tabs: Gallery and Settings). Folder search in Settings. Configurable theme picker (Material You, Brand, Indigo, Teal). Settings sections grouped into collapsible cards.md.
 
 **Measured quality and performance.** A repeatable on-device eval harness
 (`ClassificationEvalTest`) runs the exact production path over ~3,380 real screenshots

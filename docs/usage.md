@@ -56,23 +56,25 @@ model is installed, compute a visual embedding, classify it, and store weighted 
 
 ## 3. The gallery and tags
 
-The gallery is the home screen. Every screenshot shows its top tag in the corner.
-Tags are weighted, so an image can carry more than one, and the strongest one is the
-label you see on the thumbnail.
+The gallery is the home screen. Images are grouped by date and each thumbnail shows its
+top tag. Tags are weighted, so an image can carry more than one, and the strongest one is
+the label you see on the thumbnail. The search bar sits at the top of the gallery (see
+[Search](#4-search-text-and-visual) below); a "Needs review" chip filters down to
+screenshots that still want a human look (see [Needs review](#7-needs-review)).
 
 <img src="images/gallery.png" width="280" alt="Gallery grid with tagged screenshots" />
 
-In the capture above the receipt, a code screenshot, a street map, and a photo were each
-tagged on their own. The chip at the top filters the grid down to the screenshots that
-still want a human look (see [Needs review](#7-needs-review)).
-
-Tap any thumbnail to open it.
+Long-press any thumbnail to enter multi-select mode, then tap more thumbnails to add them
+to the selection. A toolbar appears at the bottom with bulk actions (share, add a tag to all).
+Tap any thumbnail normally to open it.
 
 ---
 
 ## 4. Search: text and visual
 
-The Search tab does two things at once and blends the results:
+The search bar lives at the top of the gallery. Tap it to type a query; the gallery
+immediately filters to matching images. The search does two things at once and blends
+the results:
 
 - **Text search** matches words the app read inside your screenshots (OCR).
 - **Visual search** matches what a screenshot *looks like*, even when none of those
@@ -84,8 +86,8 @@ The two rankings are fused so a screenshot that matches both rises to the top.
 
 The capture shows a search for "potted plant". None of the screenshots contain that
 text, yet the cactus photo ranks first because the app recognizes it visually. You can
-also tap a tag chip to filter by a tag instead of typing. Tap any result to open it enlarged
-with its details (same view as the gallery).
+also tap a tag chip below the search bar to filter by tag — tap multiple chips to narrow
+to images that carry all of them. Tap any result to open it enlarged with its details.
 
 ---
 
