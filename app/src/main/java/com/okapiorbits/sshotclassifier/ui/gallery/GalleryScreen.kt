@@ -136,6 +136,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val gridState = rememberLazyStaggeredGridState()
     val snackbarHostState = remember { SnackbarHostState() }
     val bulkTagEvent by viewModel.bulkTagEvent.collectAsStateWithLifecycle()
+    val bulkRemoveTagEvent by viewModel.bulkRemoveTagEvent.collectAsStateWithLifecycle()
     val pendingBulkDelete by viewModel.pendingBulkDelete.collectAsStateWithLifecycle()
 
     // Confirm a bulk tag-add with an Undo snackbar.
@@ -148,13 +149,33 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         )
         if (result == SnackbarResult.ActionPerformed) viewModel.undoBulkTag(event) else viewModel.clearBulkTagEvent()
     }
+    // Confirm a bulk tag-remove with an Undo snackbar.
+    LaunchedEffect(bulkRemoveTagEvent) {
+        val event = bulkRemoveTagEvent ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = "Removed \"${event.label}\" from ${event.ids.size} ${if (event.ids.size == 1) "image" else "images"}",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) viewModel.undoBulkRemoveTag(event) else viewModel.clearBulkRemoveTagEvent()
+    }
 
     // Launch the system delete-consent dialog when the VM requests it.
     val deleteLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) viewModel.onBulkDeleteApproved()
-        else viewModel.clearPendingBulkDelete()
+        if (result.resultCode == Activity.RESULT_OK) {
+            val count = pendingBulkDelete?.ids?.size ?: 0
+            viewModel.onBulkDeleteApproved()
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Deleted $count ${if (count == 1) "image" else "images"}",
+                    duration = SnackbarDuration.Short,
+                )
+            }
+        } else {
+            viewModel.clearPendingBulkDelete()
+        }
     }
     LaunchedEffect(pendingBulkDelete) {
         pendingBulkDelete?.let { deleteLauncher.launch(it.request) }

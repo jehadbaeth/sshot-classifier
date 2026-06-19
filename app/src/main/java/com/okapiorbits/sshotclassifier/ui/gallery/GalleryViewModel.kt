@@ -252,14 +252,28 @@ class GalleryViewModel @Inject constructor(
             .map { Uri.parse(it.screenshot.file_path) }
     }
 
+    /** One-shot result of a bulk tag-remove, so the UI can confirm it with an Undo snackbar. */
+    data class BulkRemoveTagEvent(val label: String, val ids: Set<Long>)
+    private val _bulkRemoveTagEvent = MutableStateFlow<BulkRemoveTagEvent?>(null)
+    val bulkRemoveTagEvent: StateFlow<BulkRemoveTagEvent?> = _bulkRemoveTagEvent.asStateFlow()
+    fun clearBulkRemoveTagEvent() { _bulkRemoveTagEvent.value = null }
+
     /** Removes [label] from every selected image (any source), then clears the selection. */
     fun removeTagFromSelected(label: String) {
         val ids = _selectedIds.value
         if (ids.isEmpty() || label.isBlank()) return
+        val normalised = label.trim().lowercase()
         viewModelScope.launch {
-            repository.removeTagFromAll(ids, label.trim().lowercase())
+            repository.removeTagFromAll(ids, normalised)
             _selectedIds.value = emptySet()
+            _bulkRemoveTagEvent.value = BulkRemoveTagEvent(normalised, ids)
         }
+    }
+
+    /** Undo a bulk tag-remove: re-adds that tag to the images it was removed from. */
+    fun undoBulkRemoveTag(event: BulkRemoveTagEvent) {
+        viewModelScope.launch { event.ids.forEach { repository.addUserTag(it, event.label) } }
+        _bulkRemoveTagEvent.value = null
     }
 
     /** Requests system consent to delete the selected images via [MediaStore.createDeleteRequest]. */
