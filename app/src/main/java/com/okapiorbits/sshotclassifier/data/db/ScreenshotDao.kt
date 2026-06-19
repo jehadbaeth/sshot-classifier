@@ -90,6 +90,14 @@ interface ScreenshotDao {
     @Query("DELETE FROM tags WHERE screenshot_id IN (:ids) AND label = :label AND source = 'USER'")
     suspend fun deleteUserTagFromAll(ids: List<Long>, label: String)
 
+    /** Removes any tag by label from a set of screenshots (used for bulk remove-tag action). */
+    @Query("DELETE FROM tags WHERE screenshot_id IN (:ids) AND label = :label")
+    suspend fun deleteTagFromAll(ids: List<Long>, label: String)
+
+    /** Deletes screenshot rows by id; cascades to tags/ocr/embeddings via foreign-key rules. */
+    @Query("DELETE FROM screenshots WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
     // ---- User-defined auto-tag categories ----
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

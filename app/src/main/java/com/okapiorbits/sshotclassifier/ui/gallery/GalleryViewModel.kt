@@ -1,6 +1,10 @@
 package com.okapiorbits.sshotclassifier.ui.gallery
 
 import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
@@ -240,13 +244,52 @@ class GalleryViewModel @Inject constructor(
         _bulkTagEvent.value = null
     }
 
-    /** Content URIs of the current selection, for a bulk share intent. */
-    fun selectedUris(): List<android.net.Uri> {
+    /** Content URIs of the current selection, for a bulk share or delete intent. */
+    fun selectedUris(): List<Uri> {
         val ids = _selectedIds.value
         return screenshots.value
             .filter { it.screenshot.id in ids }
-            .map { android.net.Uri.parse(it.screenshot.file_path) }
+            .map { Uri.parse(it.screenshot.file_path) }
     }
+
+    /** Removes [label] from every selected image (any source), then clears the selection. */
+    fun removeTagFromSelected(label: String) {
+        val ids = _selectedIds.value
+        if (ids.isEmpty() || label.isBlank()) return
+        viewModelScope.launch {
+            repository.removeTagFromAll(ids, label.trim().lowercase())
+            _selectedIds.value = emptySet()
+        }
+    }
+
+    /** Requests system consent to delete the selected images via [MediaStore.createDeleteRequest]. */
+    data class BulkDeleteConsent(val request: IntentSenderRequest, val ids: Set<Long>)
+    private val _pendingBulkDelete = MutableStateFlow<BulkDeleteConsent?>(null)
+    val pendingBulkDelete: StateFlow<BulkDeleteConsent?> = _pendingBulkDelete.asStateFlow()
+
+    fun requestBulkDelete() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val ids = _selectedIds.value
+        if (ids.isEmpty()) return
+        val uris = selectedUris()
+        val pi = MediaStore.createDeleteRequest(context.contentResolver, uris)
+        _pendingBulkDelete.value = BulkDeleteConsent(
+            IntentSenderRequest.Builder(pi.intentSender).build(),
+            ids,
+        )
+    }
+
+    /** Called after the user approves the system delete dialog; removes DB rows. */
+    fun onBulkDeleteApproved() {
+        val ids = _pendingBulkDelete.value?.ids ?: return
+        _pendingBulkDelete.value = null
+        viewModelScope.launch {
+            repository.deleteScreenshots(ids)
+            _selectedIds.value = emptySet()
+        }
+    }
+
+    fun clearPendingBulkDelete() { _pendingBulkDelete.value = null }
 
     private val _modelState = MutableStateFlow(
         if (modelManager.areAllModelsInstalled()) ModelState.Installed else ModelState.Missing

@@ -133,6 +133,19 @@ class ScreenshotRepository @Inject constructor(
         if (ids.isNotEmpty()) dao.deleteUserTagFromAll(ids.toList(), label)
     }
 
+    /** Removes any tag by [label] from a set of screenshots (bulk remove-tag action). */
+    suspend fun removeTagFromAll(ids: Set<Long>, label: String) {
+        if (ids.isNotEmpty()) dao.deleteTagFromAll(ids.toList(), label)
+    }
+
+    /**
+     * Deletes screenshot rows from the database after the system has already removed the files
+     * (i.e. after MediaStore.createDeleteRequest was approved). Cascades to tags/ocr/embeddings.
+     */
+    suspend fun deleteScreenshots(ids: Set<Long>) {
+        if (ids.isNotEmpty()) dao.deleteByIds(ids.toList())
+    }
+
     // ---- User-defined auto-tag categories ----
 
     fun observeCategories(): Flow<List<CustomCategoryEntity>> = dao.observeCategories()

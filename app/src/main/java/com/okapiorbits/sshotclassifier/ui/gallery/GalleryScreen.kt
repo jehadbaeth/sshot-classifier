@@ -1,6 +1,11 @@
 package com.okapiorbits.sshotclassifier.ui.gallery
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LabelOff
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
@@ -131,6 +136,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
     val gridState = rememberLazyStaggeredGridState()
     val snackbarHostState = remember { SnackbarHostState() }
     val bulkTagEvent by viewModel.bulkTagEvent.collectAsStateWithLifecycle()
+    val pendingBulkDelete by viewModel.pendingBulkDelete.collectAsStateWithLifecycle()
 
     // Confirm a bulk tag-add with an Undo snackbar.
     LaunchedEffect(bulkTagEvent) {
@@ -142,7 +148,20 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         )
         if (result == SnackbarResult.ActionPerformed) viewModel.undoBulkTag(event) else viewModel.clearBulkTagEvent()
     }
+
+    // Launch the system delete-consent dialog when the VM requests it.
+    val deleteLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) viewModel.onBulkDeleteApproved()
+        else viewModel.clearPendingBulkDelete()
+    }
+    LaunchedEffect(pendingBulkDelete) {
+        pendingBulkDelete?.let { deleteLauncher.launch(it.request) }
+    }
+
     var showBulkTagDialog by remember { mutableStateOf(false) }
+    var showBulkRemoveTagDialog by remember { mutableStateOf(false) }
     var searchFocused by remember { mutableStateOf(false) }
 
     // Collapse the search bar when scrolling down, reveal it when scrolling up (or at the top).
@@ -213,6 +232,8 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     onClose = { viewModel.clearSelection() },
                     onSelectAll = { viewModel.selectAll() },
                     onAddTag = { showBulkTagDialog = true },
+                    onRemoveTag = { showBulkRemoveTagDialog = true },
+                    onDelete = { viewModel.requestBulkDelete() },
                     onShare = { shareImages(context, viewModel.selectedUris()) },
                 )
             } else {
@@ -437,6 +458,16 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
             onDismiss = { showBulkTagDialog = false },
         )
     }
+    if (showBulkRemoveTagDialog) {
+        BulkRemoveTagDialog(
+            count = selectedIds.size,
+            onConfirm = { label ->
+                viewModel.removeTagFromSelected(label)
+                showBulkRemoveTagDialog = false
+            },
+            onDismiss = { showBulkRemoveTagDialog = false },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -446,6 +477,8 @@ private fun SelectionTopBar(
     onClose: () -> Unit,
     onSelectAll: () -> Unit,
     onAddTag: () -> Unit,
+    onRemoveTag: () -> Unit,
+    onDelete: () -> Unit,
     onShare: () -> Unit,
 ) {
     TopAppBar(
@@ -456,6 +489,8 @@ private fun SelectionTopBar(
         actions = {
             IconButton(onClick = onShare) { Icon(Icons.Default.Share, contentDescription = "Share") }
             IconButton(onClick = onAddTag) { Icon(Icons.Default.Label, contentDescription = "Add tag") }
+            IconButton(onClick = onRemoveTag) { Icon(Icons.Default.LabelOff, contentDescription = "Remove tag") }
+            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
             IconButton(onClick = onSelectAll) { Icon(Icons.Default.SelectAll, contentDescription = "Select all") }
         },
     )
@@ -470,12 +505,33 @@ private fun BulkTagDialog(count: Int, onConfirm: (String) -> Unit, onDismiss: ()
             TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-        title = { Text("Add tag to $count") },
+        title = { Text("Add tag to $count ${if (count == 1) "image" else "images"}") },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
                 label = { Text("Tag") },
+                singleLine = true,
+            )
+        },
+    )
+}
+
+@Composable
+private fun BulkRemoveTagDialog(count: Int, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text("Remove") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        title = { Text("Remove tag from $count ${if (count == 1) "image" else "images"}") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Tag to remove") },
                 singleLine = true,
             )
         },
