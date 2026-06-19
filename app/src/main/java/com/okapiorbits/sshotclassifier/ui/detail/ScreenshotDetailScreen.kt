@@ -1,11 +1,14 @@
 package com.okapiorbits.sshotclassifier.ui.detail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -17,12 +20,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
@@ -39,11 +45,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.okapiorbits.sshotclassifier.data.db.entity.TagEntity
@@ -71,12 +81,15 @@ fun ScreenshotDetailScreen(
     var newLabel by remember { mutableStateOf("") }
     var viewerOpen by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val fileUri = remember(filePath) { filePath.toUri() }
+
     fun submit() {
         viewModel.addTag(screenshotId, newLabel)
         newLabel = ""
     }
 
-    // Full-screen zoom/share/rotate/info viewer, opened by tapping the image.
+    // Full-screen zoom/share/rotate/info viewer opened by tapping the hero image.
     screenshot?.let { shot ->
         if (viewerOpen) {
             FullScreenImageViewer(screenshot = shot, onClose = { viewerOpen = false })
@@ -87,7 +100,7 @@ fun ScreenshotDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tags") },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -100,31 +113,103 @@ fun ScreenshotDetailScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .verticalScroll(rememberScrollState()),
         ) {
+            // Hero image — full bleed, aspect-ratio matched to the actual image dimensions.
+            val imageModifier = screenshot
+                ?.takeIf { it.width > 0 && it.height > 0 }
+                ?.let { Modifier.aspectRatio(it.width.toFloat() / it.height) }
+                ?: Modifier.heightIn(max = 320.dp)
+
             AsyncImage(
                 model = filePath,
                 contentDescription = "Tap to view full screen",
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 360.dp)
+                    .then(imageModifier)
                     .clickable { viewerOpen = true },
             )
 
-            // Camera captures carry a composed description and (optionally) a decoded QR payload.
-            screenshot?.description?.takeIf { it.isNotBlank() }?.let { description ->
-                Text(description, style = MaterialTheme.typography.bodyLarge)
-            }
-            screenshot?.let { shot ->
-                shot.qr_payload?.takeIf { it.isNotBlank() }?.let { payload ->
+            // Quick-action strip: share, open, copy QR (when present).
+            QuickActionsRow(
+                fileUri = fileUri,
+                qrPayload = screenshot?.qr_payload?.takeIf { it.isNotBlank() },
+                onOpenViewer = { viewerOpen = true },
+                onShare = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_SEND)
+                            .setType("image/*")
+                            .putExtra(Intent.EXTRA_STREAM, fileUri)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            .let { Intent.createChooser(it, null) }
+                    )
+                },
+                onOpenExternal = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW)
+                            .setDataAndType(fileUri, "image/*")
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    )
+                },
+            )
+
+            HorizontalDivider()
+
+            // Content sections — 16 dp horizontal gutter.
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+
+                // Tags
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Tags",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (tags.isEmpty()) {
+                        Text(
+                            "No tags yet — add one below.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            tags.forEach { tag -> TagChip(tag, onRemove = { viewModel.removeTag(tag) }) }
+                        }
+                    }
+                }
+
+                // CLIP tag suggestions (model-driven, not yet applied).
+                if (suggestions.isNotEmpty()) {
+                    SuggestionSection(
+                        suggestions = suggestions,
+                        onAdd = { viewModel.addTag(screenshotId, it) },
+                    )
+                }
+
+                // Camera capture description.
+                screenshot?.description?.takeIf { it.isNotBlank() }?.let { description ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "Description",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(description, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+
+                // QR / barcode section (camera captures only).
+                screenshot?.qr_payload?.takeIf { it.isNotBlank() }?.let { payload ->
                     QrCaptureSection(
                         payload = payload,
-                        resolved = shot.qr_resolved_at != null,
-                        title = shot.qr_title,
-                        description = shot.qr_description,
-                        imageUrl = shot.qr_image_url,
+                        resolved = screenshot?.qr_resolved_at != null,
+                        title = screenshot?.qr_title,
+                        description = screenshot?.qr_description,
+                        imageUrl = screenshot?.qr_image_url,
                         resolveEnabled = capturePrefs?.resolveQrLinks == true,
                         downloadImages = capturePrefs?.downloadPreviewImages == true,
                         resolving = resolving,
@@ -132,45 +217,58 @@ fun ScreenshotDetailScreen(
                         onResolve = { viewModel.resolveLink(screenshotId) },
                     )
                 }
-            }
 
-            ocrText?.takeIf { it.isNotBlank() }?.let { text -> OcrSection(text) }
+                // Extracted OCR text.
+                ocrText?.takeIf { it.isNotBlank() }?.let { text -> OcrSection(text) }
 
-            if (tags.isEmpty()) {
-                Text(
-                    "No tags yet. Add one below.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    tags.forEach { tag -> TagChip(tag, onRemove = { viewModel.removeTag(tag) }) }
+                // Add tag input.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = newLabel,
+                        onValueChange = { newLabel = it },
+                        label = { Text("Add a tag") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { submit() }),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { submit() }, enabled = newLabel.isNotBlank()) {
+                        Icon(Icons.Default.Add, contentDescription = "Add tag")
+                    }
                 }
             }
+        }
+    }
+}
 
-            if (suggestions.isNotEmpty()) {
-                SuggestionSection(
-                    suggestions = suggestions,
-                    onAdd = { viewModel.addTag(screenshotId, it) },
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = newLabel,
-                    onValueChange = { newLabel = it },
-                    label = { Text("Add a tag") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { submit() }),
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { submit() }, enabled = newLabel.isNotBlank()) {
-                    Icon(Icons.Default.Add, contentDescription = "Add tag")
-                }
+/** Share, open-externally, and copy-QR quick-action strip shown below the hero image. */
+@Composable
+private fun QuickActionsRow(
+    fileUri: Uri,
+    qrPayload: String?,
+    onShare: () -> Unit,
+    onOpenExternal: () -> Unit,
+    onOpenViewer: () -> Unit,
+) {
+    val clipboard = LocalClipboardManager.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
+    ) {
+        IconButton(onClick = onShare) {
+            Icon(Icons.Default.Share, contentDescription = "Share image")
+        }
+        IconButton(onClick = onOpenExternal) {
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open in another app")
+        }
+        if (qrPayload != null) {
+            IconButton(onClick = { clipboard.setText(AnnotatedString(qrPayload)) }) {
+                Icon(Icons.Default.ContentCopy, contentDescription = "Copy QR payload")
             }
         }
     }
@@ -183,7 +281,7 @@ private fun OcrSection(text: String) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
@@ -211,9 +309,8 @@ private fun isHttpUrl(s: String): Boolean =
     s.startsWith("http://", true) || s.startsWith("https://", true)
 
 /**
- * QR/barcode block on a capture. Shows the decoded payload; for a web link it offers
- * resolution (a preview card once resolved). The og:image is only loaded when the user
- * enabled preview images, so the toggle genuinely controls the network fetch.
+ * QR/barcode block. Shows the decoded payload with a copy button; for a web link it offers
+ * resolution. The og:image is only loaded when the user enabled preview images.
  */
 @Composable
 private fun QrCaptureSection(
@@ -228,18 +325,38 @@ private fun QrCaptureSection(
     message: String?,
     onResolve: () -> Unit,
 ) {
+    val clipboard = LocalClipboardManager.current
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            "QR / barcode",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "QR / barcode",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            IconButton(
+                onClick = { clipboard.setText(AnnotatedString(payload)) },
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    Icons.Default.ContentCopy,
+                    contentDescription = "Copy QR payload",
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
         Text(payload, style = MaterialTheme.typography.bodyMedium)
 
         if (isHttpUrl(payload)) {
             when {
                 resolved -> Surface(tonalElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         if (downloadImages && !imageUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = imageUrl,
@@ -278,7 +395,11 @@ private fun QrCaptureSection(
                 )
             }
             if (message != null) {
-                Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }
@@ -286,7 +407,7 @@ private fun QrCaptureSection(
 
 /**
  * Tags the model suggests for this image (CLIP zero-shot, not yet applied). Tapping a chip adds
- * it as a user tag. Helps the user accept what the model saw without typing.
+ * it as a user tag.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
