@@ -60,7 +60,16 @@ class ScreenshotOrganizer @Inject constructor(
     /** MOVE needs the batch delete-request API (R+). Below that, MOVE degrades to COPY. */
     val moveSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
 
-    suspend fun organizeIntoAlbums(prefs: ReorgPreferences): Result = withContext(Dispatchers.IO) {
+    suspend fun organizeIntoAlbums(prefs: ReorgPreferences): Result =
+        organizeItems(dao.doneWithTags(), prefs)
+
+    suspend fun organizeSelected(ids: Set<Long>, prefs: ReorgPreferences): Result =
+        organizeItems(dao.doneWithTags().filter { it.screenshot.id in ids }, prefs)
+
+    private suspend fun organizeItems(
+        items: List<com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags>,
+        prefs: ReorgPreferences,
+    ): Result = withContext(Dispatchers.IO) {
         if (!isSupported) return@withContext Result(0, 0, 0)
         val root = Reorganization.sanitizeRoot(prefs.albumRoot)
         val wantMove = prefs.mode == ReorgMode.MOVE && moveSupported
@@ -70,7 +79,7 @@ class ScreenshotOrganizer @Inject constructor(
         var failed = 0
         val pending = mutableListOf<PendingMove>()
 
-        for (item in dao.doneWithTags()) {
+        for (item in items) {
             val topLabel = item.tags.maxByOrNull { it.weight }?.label
             val album = Reorganization.albumFor(
                 item.screenshot.needs_review,

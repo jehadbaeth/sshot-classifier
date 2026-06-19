@@ -104,6 +104,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -193,6 +194,26 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
         pendingBulkDelete?.let { deleteLauncher.launch(it.request) }
     }
 
+    val pendingBulkReorganize by viewModel.pendingBulkReorganize.collectAsStateWithLifecycle()
+    val bulkReorganizeResult by viewModel.bulkReorganizeResult.collectAsStateWithLifecycle()
+
+    // Launch the system delete-consent dialog for MOVE mode reorganize.
+    val reorganizeLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) viewModel.onBulkReorganizeApproved()
+        else viewModel.clearPendingBulkReorganize()
+    }
+    LaunchedEffect(pendingBulkReorganize) {
+        pendingBulkReorganize?.let { reorganizeLauncher.launch(it.request) }
+    }
+    // Show reorganize result snackbar.
+    LaunchedEffect(bulkReorganizeResult) {
+        val msg = bulkReorganizeResult ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message = msg.message, duration = SnackbarDuration.Short)
+        viewModel.clearBulkReorganizeResult()
+    }
+
     var showBulkTagDialog by remember { mutableStateOf(false) }
     var showBulkRemoveTagDialog by remember { mutableStateOf(false) }
     var searchFocused by remember { mutableStateOf(false) }
@@ -266,6 +287,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     onSelectAll = { viewModel.selectAll() },
                     onAddTag = { showBulkTagDialog = true },
                     onRemoveTag = { showBulkRemoveTagDialog = true },
+                    onReorganize = { viewModel.reorganizeSelected() },
                     onDelete = { viewModel.requestBulkDelete() },
                     onShare = { shareImages(context, viewModel.selectedUris()) },
                 )
@@ -528,6 +550,7 @@ private fun SelectionTopBar(
     onSelectAll: () -> Unit,
     onAddTag: () -> Unit,
     onRemoveTag: () -> Unit,
+    onReorganize: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit,
 ) {
@@ -540,6 +563,7 @@ private fun SelectionTopBar(
             IconButton(onClick = onShare) { Icon(Icons.Default.Share, contentDescription = "Share") }
             IconButton(onClick = onAddTag) { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = "Add tag") }
             IconButton(onClick = onRemoveTag) { Icon(Icons.AutoMirrored.Filled.LabelOff, contentDescription = "Remove tag") }
+            IconButton(onClick = onReorganize) { Icon(Icons.Default.CreateNewFolder, contentDescription = "Copy to albums") }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
             IconButton(onClick = onSelectAll) { Icon(Icons.Default.SelectAll, contentDescription = "Select all") }
         },

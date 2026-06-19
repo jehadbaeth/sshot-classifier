@@ -8,10 +8,13 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
+import com.okapiorbits.sshotclassifier.data.media.ScreenshotOrganizer
+import com.okapiorbits.sshotclassifier.data.prefs.ReorgPreferencesStore
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelDownloader
 import com.okapiorbits.sshotclassifier.pipeline.clip.ClipModelManager
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,6 +41,8 @@ class GalleryViewModel @Inject constructor(
     private val repository: ScreenshotRepository,
     private val modelManager: ClipModelManager,
     private val downloader: ClipModelDownloader,
+    private val organizer: ScreenshotOrganizer,
+    private val reorgPrefsStore: ReorgPreferencesStore,
 ) : ViewModel() {
 
     /** When true, the grid shows only screenshots flagged for review. */
@@ -308,6 +313,55 @@ class GalleryViewModel @Inject constructor(
     }
 
     fun clearPendingBulkDelete() { _pendingBulkDelete.value = null }
+
+    // ---- Bulk reorganize (copy/move selected screenshots to per-tag album folders) ----
+
+    data class BulkReorganizeConsent(
+        val request: IntentSenderRequest,
+        val pendingMoves: List<ScreenshotOrganizer.PendingMove>,
+    )
+    private val _pendingBulkReorganize = MutableStateFlow<BulkReorganizeConsent?>(null)
+    val pendingBulkReorganize: StateFlow<BulkReorganizeConsent?> = _pendingBulkReorganize.asStateFlow()
+
+    data class BulkReorganizeResult(val message: String)
+    private val _bulkReorganizeResult = MutableStateFlow<BulkReorganizeResult?>(null)
+    val bulkReorganizeResult: StateFlow<BulkReorganizeResult?> = _bulkReorganizeResult.asStateFlow()
+    fun clearBulkReorganizeResult() { _bulkReorganizeResult.value = null }
+
+    fun reorganizeSelected() {
+        val ids = _selectedIds.value
+        if (ids.isEmpty() || !organizer.isSupported) return
+        viewModelScope.launch {
+            val prefs = reorgPrefsStore.preferences.first()
+            val result = organizer.organizeSelected(ids, prefs)
+            _selectedIds.value = emptySet()
+            if (result.pendingMoves.isNotEmpty()) {
+                val uris = result.pendingMoves.map { it.sourceUri }
+                val pi = MediaStore.createDeleteRequest(context.contentResolver, uris)
+                _pendingBulkReorganize.value = BulkReorganizeConsent(
+                    IntentSenderRequest.Builder(pi.intentSender).build(),
+                    result.pendingMoves,
+                )
+            } else {
+                _bulkReorganizeResult.value = BulkReorganizeResult(
+                    "Copied ${result.copied} screenshot${if (result.copied == 1) "" else "s"} to albums"
+                )
+            }
+        }
+    }
+
+    fun onBulkReorganizeApproved() {
+        val consent = _pendingBulkReorganize.value ?: return
+        _pendingBulkReorganize.value = null
+        viewModelScope.launch {
+            organizer.commitMoves(consent.pendingMoves)
+            _bulkReorganizeResult.value = BulkReorganizeResult(
+                "Moved ${consent.pendingMoves.size} screenshot${if (consent.pendingMoves.size == 1) "" else "s"} to albums"
+            )
+        }
+    }
+
+    fun clearPendingBulkReorganize() { _pendingBulkReorganize.value = null }
 
     private val _modelState = MutableStateFlow(
         if (modelManager.areAllModelsInstalled()) ModelState.Installed else ModelState.Missing
