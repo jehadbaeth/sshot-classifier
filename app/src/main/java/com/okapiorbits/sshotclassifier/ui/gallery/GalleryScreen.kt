@@ -8,8 +8,13 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LabelOff
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -106,6 +111,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.okapiorbits.sshotclassifier.data.db.ScreenshotWithTags
 import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailScreen
 import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailViewModel
@@ -667,14 +673,15 @@ fun GalleryCell(
         modifier = modifier
             .aspectRatio(ratio)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant) // placeholder while the image loads
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = item.screenshot.file_path,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
+            loading = { ShimmerBox(Modifier.fillMaxSize()) },
+            error = { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)) },
         )
         if (selected) {
             Box(
@@ -810,4 +817,24 @@ private fun EmptyState() {
         subtitle = "Tap Scan to find and classify screenshots on this device, or use the camera " +
             "button to capture something.",
     )
+}
+
+/** Animated shimmer box shown in gallery cells while the image is still loading from disk. */
+@Composable
+private fun ShimmerBox(modifier: Modifier = Modifier) {
+    val base = MaterialTheme.colorScheme.surfaceVariant
+    val highlight = base.copy(alpha = 0.4f)
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val offset by transition.animateFloat(
+        initialValue = -600f,
+        targetValue = 1200f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing)),
+        label = "shimmerOffset",
+    )
+    val brush = Brush.linearGradient(
+        colors = listOf(base, highlight, base),
+        start = Offset(offset, 0f),
+        end = Offset(offset + 600f, 0f),
+    )
+    Box(modifier = modifier.background(brush))
 }
