@@ -424,26 +424,26 @@ Mirrors docs/design.md section 14, with task-level detail.
 
          Navigation & flow
          - [x] Search bar + tag chips on the gallery; Search tab removed (2 tabs now). (v0.9.24)
-         - [ ] Gallery→detail shared-element / zoom transition.
+         - [!] Gallery→detail shared-element / zoom transition — DEFERRED 2026-06-20. The early-return pattern (gallery and detail never co-exist in composition) makes the standard SharedTransitionApi impossible without restructuring navigation. Scale+fade entrance animation is the current stand-in; re-evaluate if nav is ever refactored.
          - [x] Swipe left/right between images in detail (HorizontalPager). (v0.9.19)
          - [x] Pull-to-refresh on the gallery to trigger a scan. (v0.9.18)
          - [x] Jump-to-top button when scrolled down. (v0.9.18) — sticky headers / fast-scroll still open.
 
          Selection & bulk (build on v0.9.13)
          - [ ] Drag-to-select across multiple tiles; range select.
-         - [ ] More bulk actions: remove a tag, reorganize selected, delete (with system consent).
-         - [ ] Tag-filter chips directly on the gallery (not only in Search).
+         - [x] More bulk actions: remove a tag + delete with system consent (MediaStore.createDeleteRequest, API 30+). Done 2026-06-20. Reorganize-selected still open.
+         - [x] Tag-filter chips directly on the gallery. (v0.9.24)
 
          Motion & feedback
          - [x] List item placement animations (animateItem) + Coil crossfade on image load. (v0.9.17)
          - [x] Haptic feedback on long-press select and capture. (v0.9.17)
-         - [ ] Skeleton/shimmer placeholders while the grid loads.
-         - [x] Snackbar with Undo for bulk tag-add. (v0.9.21) — reorg/remove-tag/delete still open.
+         - [x] Skeleton/shimmer placeholders while the grid loads. (SubcomposeAsyncImage + ShimmerBox infinite-transition gradient, done 2026-06-20.)
+         - [x] Snackbar with Undo for bulk tag-add + bulk remove-tag + bulk delete confirm. Done 2026-06-20. Reorganize-selected undo still open.
          - [x] Animated (crossfade) transitions between the bottom-nav tabs. (v0.9.23)
 
          Detail & viewer
-         - [ ] Edge-to-edge hero image on the detail screen; cleaner section layout.
-         - [ ] Copy-QR-payload button; quick actions row (share/open/info) on detail itself.
+         - [x] Edge-to-edge hero image on the detail screen; cleaner section layout. (Done 2026-06-20: full-width AspectRatio hero, QuickActionsRow below, HorizontalDivider, imePadding scroll.)
+         - [x] Copy-QR-payload button; quick actions row (share/open/info) on detail. (Done 2026-06-20.)
 
          Settings & structure
          - [x] Group the Settings sections into collapsible cards (the long-scroll item). (v0.9.26)
@@ -451,9 +451,9 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [x] Configurable theme picker (Material You / Brand / Indigo / Teal). (v0.9.22)
 
          Polish & a11y
-         - [ ] Consistent spacing/typography tokens; audit touch-target sizes + content descriptions.
-         - [ ] Proper edge-to-edge inset handling (status/nav bars) on all screens.
-         - [ ] More empty/error states (e.g. search with no visual model, offline link-preview).
+         - [~] A11y audit: TagChip remove icon touch target (minimumInteractiveComponentSize), gallery cell contentDescription, deprecated AutoMirrored icon variants — done 2026-06-20. Typography/spacing tokens and full inset audit still open.
+         - [~] Edge-to-edge insets: imePadding on detail + settings, windowInsetsPadding(safeDrawing) on permission gate — done 2026-06-20. Full gallery/bottom-nav inset audit still needed.
+         - [~] More empty/error states: context-aware search empty state (OCR-only hint when models absent) done 2026-06-20. Offline link-preview error state still open.
 - [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
       processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
       (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);
