@@ -403,7 +403,7 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                 LazyVerticalStaggeredGrid(
                     state = gridState,
                     columns = StaggeredGridCells.Adaptive(minSize = 100.dp),
-                    contentPadding = PaddingValues(6.dp),
+                    contentPadding = PaddingValues(start = 6.dp, top = 6.dp, end = 6.dp, bottom = 100.dp),
                     verticalItemSpacing = 4.dp,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxSize(),
