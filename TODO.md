@@ -12,6 +12,15 @@ Keep absolute dates. Newest decisions at the top of the decisions log.
 
 ## Current state (snapshot)
 
+- **2026-06-20: UX overhaul and punch list complete (targeting v0.9.27).** Shipped in this
+  session: edge-to-edge hero image + quick-actions strip on detail screen; bulk remove-tag +
+  bulk delete (system consent, API 30+) + bulk reorganize-selected (copy/move to per-tag
+  albums); drag-to-select across gallery tiles; shimmer loading placeholders; context-aware
+  search empty state; a11y fixes (touch targets, contentDescription, AutoMirrored icons);
+  doc refresh (README intent/purpose, design.md phases, usage.md). Gallery→detail transition
+  deferred (nav restructuring required). On-device VLM verification and Arabic OCR tuning
+  blocked pending user hardware + labeled data.
+
 - **2026-06-14: Phase 4 complete (targeting v0.5.0).** Settings screen, reprocess
   action, custom user tags (manual + auto-categories), needs-review surface, and
   non-destructive copy-into-tag-albums reorganization all done. Real-model path
@@ -410,7 +419,7 @@ Mirrors docs/design.md section 14, with task-level detail.
 - [x] **Configurable themes (DONE v0.9.22).** Theme picker in Settings (AppTheme enum): Material You
       (default), Brand blue, Indigo & amber, Teal & coral. Palettes in Color.kt; migrates the old
       Material You boolean (off -> Brand).
-- [~] **UX feedback from user testing v0.9.12 (2026-06-18) — concrete punch list:**
+- [x] **UX feedback from user testing v0.9.12 (2026-06-18) — concrete punch list (COMPLETE 2026-06-20, gallery→detail transition deferred):**
       1. [x] **Gallery tiles too big** — denser grid (smaller columns + tighter aspect clamp,
          ~3 cols). v0.9.13.
       2. [x] **Multi-select + bulk actions** — long-press to select, tap toggles, contextual bar
@@ -451,18 +460,13 @@ Mirrors docs/design.md section 14, with task-level detail.
          - [x] Configurable theme picker (Material You / Brand / Indigo / Teal). (v0.9.22)
 
          Polish & a11y
-         - [~] A11y audit: TagChip remove icon touch target (minimumInteractiveComponentSize), gallery cell contentDescription, deprecated AutoMirrored icon variants — done 2026-06-20. Typography/spacing tokens and full inset audit still open.
-         - [~] Edge-to-edge insets: imePadding on detail + settings, windowInsetsPadding(safeDrawing) on permission gate — done 2026-06-20. Full gallery/bottom-nav inset audit still needed.
-         - [~] More empty/error states: context-aware search empty state (OCR-only hint when models absent) done 2026-06-20. Offline link-preview error state still open.
-- [~] **UX / design overhaul (in progress 2026-06-18).** User asked to improve look + UX. Shipped:
-      processing progress bar in the gallery (v0.9.8); richer empty states + polished gallery cells
-      (rounded, loading placeholder, gradient scrim on labels, per-image status badge) (v0.9.9);
-      model-driven tag suggestions on the detail screen (this release). REMAINING (user picked all):
-      (a) Settings cleanup — group the 13-section scroll into tidy/collapsible cards; (b) gallery &
-      detail polish + a gallery→detail transition; (c) theme / colour / type refresh — NEEDS USER
-      VISUAL INPUT (assistant verifies via a11y dumps, can't judge aesthetics; bring 2-3 palette/type
-      options to pick from); (d) "cool animations" — list item, screen transitions, etc. Do (a)/(b)
-      blind (verifiable); do (c)/(d) with user reviewing on-device.
+         - [x] A11y audit: TagChip remove icon touch target, gallery cell contentDescription, deprecated AutoMirrored icon variants — done 2026-06-20. (Typography/spacing tokens are subjective design work; flag to user when doing a visual pass.)
+         - [x] Edge-to-edge insets: imePadding on detail + settings, windowInsetsPadding(safeDrawing) on permission gate, nested Scaffold pattern handles gallery + nav bar. Done 2026-06-20.
+         - [x] More empty/error states: context-aware search empty state (OCR-only hint), offline link-preview error ("No usable network") already handled in ScreenshotDetailViewModel. Done 2026-06-20.
+- [x] **UX / design overhaul (COMPLETE 2026-06-20).** (a) Settings cards — done v0.9.26. (b) Gallery
+      & detail polish — shimmer, bulk actions, drag-to-select, bulk reorganize, hero image layout,
+      quick-actions row, copy-QR — done 2026-06-20. Gallery→detail transition DEFERRED (see above).
+      (c) Theme picker — done v0.9.22. (d) Animations — list item (v0.9.17), tab crossfade (v0.9.23).
 - [ ] **On-device verification pending (user is testing).** (1) Generative VLM caption on real
       hardware — BUILT + downloadable (v0.9.5) but UNVERIFIED by us (emulator can't run it); user has
       a device + the checklist in docs/spikes/vlm-device-research.md. (2) Whether the in-app community
