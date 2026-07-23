@@ -39,13 +39,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -140,6 +143,11 @@ fun DocumentScanScreen(
 /** Touch radius, in local (screen) pixels, within which a drag grabs a corner handle. */
 private const val HANDLE_TOUCH_RADIUS_PX = 80f
 
+/** How much the loupe magnifies the image content under the finger. */
+private const val LOUPE_ZOOM = 2.5f
+private val LOUPE_DIAMETER = 176.dp
+private val LOUPE_FINGER_OFFSET = 140.dp
+
 @Composable
 private fun CropEditor(
     corners: List<PointF>,
@@ -151,6 +159,8 @@ private fun CropEditor(
 ) {
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
     var activeIndex by remember { mutableStateOf<Int?>(null) }
+    // Raw finger position (local coords) while dragging a handle, for the magnifier loupe.
+    var dragPosition by remember { mutableStateOf<Offset?>(null) }
 
     fun toLocal(p: PointF): Offset {
         if (boxSize.width == 0 || boxSize.height == 0) return Offset.Zero
@@ -171,20 +181,23 @@ private fun CropEditor(
             .pointerInput(corners.size) {
                 detectDragGestures(
                     onDragStart = { start ->
-                        activeIndex = corners
+                        val idx = corners
                             .map { toLocal(it) }
                             .withIndex()
                             .minByOrNull { (_, pt) -> (pt - start).getDistance() }
                             ?.takeIf { (_, pt) -> (pt - start).getDistance() < HANDLE_TOUCH_RADIUS_PX }
                             ?.index
+                        activeIndex = idx
+                        dragPosition = if (idx != null) start else null
                     },
                     onDrag = { change, _ ->
                         change.consume()
                         val idx = activeIndex ?: return@detectDragGestures
+                        dragPosition = change.position
                         onCornerDrag(idx, toBitmap(change.position))
                     },
-                    onDragEnd = { activeIndex = null },
-                    onDragCancel = { activeIndex = null },
+                    onDragEnd = { activeIndex = null; dragPosition = null },
+                    onDragCancel = { activeIndex = null; dragPosition = null },
                 )
             },
     ) {
@@ -205,6 +218,54 @@ private fun CropEditor(
                 drawCircle(color = Color.White, radius = 24f, center = pt)
                 drawCircle(color = Color(0xFF2196F3), radius = 14f, center = pt)
             }
+
+            val finger = dragPosition ?: return@Canvas
+            val margin = 8.dp.toPx()
+            val loupeRadius = LOUPE_DIAMETER.toPx() / 2f
+            val fingerOffsetPx = LOUPE_FINGER_OFFSET.toPx()
+
+            var loupeCenterY = finger.y - fingerOffsetPx
+            if (loupeCenterY - loupeRadius < margin) loupeCenterY = finger.y + fingerOffsetPx
+            loupeCenterY = loupeCenterY.coerceIn(loupeRadius + margin, size.height - loupeRadius - margin)
+            val loupeCenterX = finger.x.coerceIn(loupeRadius + margin, size.width - loupeRadius - margin)
+            val loupeCenter = Offset(loupeCenterX, loupeCenterY)
+
+            // Source crop is centered on the finger's bitmap-space position, sized so it
+            // fills the loupe at LOUPE_ZOOM magnification.
+            val scale = boxSize.width / bitmapWidth.toFloat()
+            val bitmapPoint = toBitmap(finger)
+            val halfSrc = (loupeRadius / LOUPE_ZOOM) / scale
+            val maxHalfSrcW = bitmapWidth / 2f
+            val maxHalfSrcH = bitmapHeight / 2f
+            val clampedHalfSrc = halfSrc.coerceAtMost(minOf(maxHalfSrcW, maxHalfSrcH))
+            val srcLeft = bitmapPoint.x.coerceIn(clampedHalfSrc, bitmapWidth - clampedHalfSrc) - clampedHalfSrc
+            val srcTop = bitmapPoint.y.coerceIn(clampedHalfSrc, bitmapHeight - clampedHalfSrc) - clampedHalfSrc
+            val srcSize = (clampedHalfSrc * 2f).toInt().coerceAtLeast(1)
+
+            clipPath(Path().apply { addOval(Rect(center = loupeCenter, radius = loupeRadius)) }) {
+                drawImage(
+                    image = imageBitmap,
+                    srcOffset = IntOffset(srcLeft.toInt(), srcTop.toInt()),
+                    srcSize = IntSize(srcSize, srcSize),
+                    dstOffset = IntOffset((loupeCenterX - loupeRadius).toInt(), (loupeCenterY - loupeRadius).toInt()),
+                    dstSize = IntSize(LOUPE_DIAMETER.toPx().toInt(), LOUPE_DIAMETER.toPx().toInt()),
+                )
+            }
+            drawCircle(color = Color.White, radius = loupeRadius, center = loupeCenter, style = Stroke(width = 6f))
+            drawCircle(color = Color(0xFF2196F3), radius = loupeRadius, center = loupeCenter, style = Stroke(width = 3f))
+            val crosshair = 14f
+            drawLine(
+                Color(0xFF2196F3),
+                Offset(loupeCenterX - crosshair, loupeCenterY),
+                Offset(loupeCenterX + crosshair, loupeCenterY),
+                strokeWidth = 4f,
+            )
+            drawLine(
+                Color(0xFF2196F3),
+                Offset(loupeCenterX, loupeCenterY - crosshair),
+                Offset(loupeCenterX, loupeCenterY + crosshair),
+                strokeWidth = 4f,
+            )
         }
     }
 }
