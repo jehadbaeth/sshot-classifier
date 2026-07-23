@@ -83,6 +83,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Refresh
@@ -124,7 +125,11 @@ import com.okapiorbits.sshotclassifier.ui.detail.ScreenshotDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
+fun GalleryScreen(
+    viewModel: GalleryViewModel,
+    onOpenCamera: () -> Unit = {},
+    onScanImage: (android.net.Uri) -> Unit = {},
+) {
     val screenshots by viewModel.screenshots.collectAsStateWithLifecycle()
     val pending by viewModel.pendingCount.collectAsStateWithLifecycle()
     val modelState by viewModel.modelState.collectAsStateWithLifecycle()
@@ -290,6 +295,12 @@ fun GalleryScreen(viewModel: GalleryViewModel, onOpenCamera: () -> Unit = {}) {
                     onReorganize = { viewModel.reorganizeSelected() },
                     onDelete = { viewModel.requestBulkDelete() },
                     onShare = { shareImages(context, viewModel.selectedUris()) },
+                    onScan = {
+                        viewModel.selectedUris().firstOrNull()?.let { uri ->
+                            viewModel.clearSelection()
+                            onScanImage(uri)
+                        }
+                    },
                 )
             } else {
                 TopAppBar(
@@ -553,6 +564,7 @@ private fun SelectionTopBar(
     onReorganize: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit,
+    onScan: () -> Unit,
 ) {
     TopAppBar(
         navigationIcon = {
@@ -560,6 +572,11 @@ private fun SelectionTopBar(
         },
         title = { Text("$count selected") },
         actions = {
+            if (count == 1) {
+                IconButton(onClick = onScan) {
+                    Icon(Icons.Default.CropFree, contentDescription = "Scan document")
+                }
+            }
             IconButton(onClick = onShare) { Icon(Icons.Default.Share, contentDescription = "Share") }
             IconButton(onClick = onAddTag) { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = "Add tag") }
             IconButton(onClick = onRemoveTag) { Icon(Icons.AutoMirrored.Filled.LabelOff, contentDescription = "Remove tag") }
