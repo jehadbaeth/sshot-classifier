@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 39
-        versionName = "0.9.28" // Document scanner: corner-adjustable crop, perspective warp, gallery + camera entry points
+        versionCode = 40
+        versionName = "0.9.29" // Document scanner: magnifier loupe for precise corner dragging
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
