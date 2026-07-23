@@ -151,7 +151,11 @@ private fun ImageInfoDialog(screenshot: ScreenshotEntity, uri: Uri, onDismiss: (
             }.getOrNull() ?: "unknown"
         }
     }
-    val source = if (screenshot.source_type == SourceType.CAMERA.name) "Camera capture" else "Screenshot"
+    val source = when (screenshot.source_type) {
+        SourceType.CAMERA.name -> "Camera capture"
+        SourceType.SCAN.name -> "Scanned document"
+        else -> "Screenshot"
+    }
     // MediaStore DATE_ADDED is seconds; other sources may store millis. Normalise.
     val millis = if (screenshot.date_added < 1_000_000_000_000L) screenshot.date_added * 1000 else screenshot.date_added
     val date = DateUtils.formatDateTime(

@@ -56,4 +56,4 @@ data class ScreenshotEntity(
 enum class ProcessingStatus { PENDING, PROCESSING, DONE, FAILED }
 
 /** Origin of an indexed image. */
-enum class SourceType { SCREENSHOT, CAMERA }
+enum class SourceType { SCREENSHOT, CAMERA, SCAN }

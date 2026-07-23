@@ -68,9 +68,10 @@ class ImageProcessor @Inject constructor(
 
         val ocrCandidates = heuristics.classify(ocrResult.text)
 
-        // Camera captures: decode QR/barcodes on-device (offline). Screenshots skip this
-        // so their throughput and eval are unchanged.
-        val isCamera = screenshot.source_type == SourceType.CAMERA.name
+        // Camera captures and document scans: decode QR/barcodes on-device (offline).
+        // Screenshots skip this so their throughput and eval are unchanged.
+        val isCamera = screenshot.source_type == SourceType.CAMERA.name ||
+            screenshot.source_type == SourceType.SCAN.name
         val decoded = if (isCamera && decodeQrCodes) barcode.extract(uri) else null
 
         // CLIP path: image embedding + zero-shot, fused with OCR. Falls back to

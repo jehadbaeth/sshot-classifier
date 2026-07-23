@@ -70,7 +70,8 @@ class ScreenshotDetailViewModel @Inject constructor(
         if (bytes == null) {
             emit(emptyList()); return@flow
         }
-        val isCamera = repository.observeScreenshot(screenshotId).first()?.source_type == SourceType.CAMERA.name
+        val sourceType = repository.observeScreenshot(screenshotId).first()?.source_type
+        val isCamera = sourceType == SourceType.CAMERA.name || sourceType == SourceType.SCAN.name
         val scores = zeroShot.classify(EmbeddingCodec.toFloats(bytes), includeRealWorld = isCamera)
         emit(
             scores.entries

@@ -62,8 +62,8 @@ class ScreenshotProcessingWorker @AssistedInject constructor(
             var done = 0
             for (shot in pending) {
                 processor.process(shot, decodeQrCodes = decodeQrCodes, ocrLanguage = ocrLanguage)
-                // Only camera captures can carry a QR link; auto-resolve when the user opted in.
-                if (shot.source_type == SourceType.CAMERA.name) {
+                // Only camera captures and scans can carry a QR link; auto-resolve when opted in.
+                if (shot.source_type == SourceType.CAMERA.name || shot.source_type == SourceType.SCAN.name) {
                     runCatching { repository.maybeAutoResolve(shot.id) }
                 }
                 done++

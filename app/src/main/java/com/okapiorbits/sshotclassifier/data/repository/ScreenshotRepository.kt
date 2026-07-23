@@ -353,7 +353,7 @@ class ScreenshotRepository @Inject constructor(
      * QR decode, CLIP, description). Returns the new row id, or null if it was a
      * duplicate (same content hash) or could not be read.
      */
-    suspend fun indexCapture(uri: Uri): Long? {
+    suspend fun indexCapture(uri: Uri, sourceType: SourceType = SourceType.CAMERA): Long? {
         val hash = hasher.sha256(uri) ?: return null
         if (dao.existsByHash(hash)) return null
         val (w, h) = hasher.dimensions(uri) ?: (0 to 0)
@@ -367,7 +367,7 @@ class ScreenshotRepository @Inject constructor(
                 date_processed = null,
                 width = w,
                 height = h,
-                source_type = SourceType.CAMERA.name,
+                source_type = sourceType.name,
             )
         )
         return if (rowId != -1L) rowId else null
