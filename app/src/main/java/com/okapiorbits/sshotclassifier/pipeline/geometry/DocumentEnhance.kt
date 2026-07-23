@@ -16,6 +16,13 @@ import kotlin.math.sqrt
  */
 object DocumentEnhance {
 
+    // Local grayscale standard deviation below which a neighborhood is treated as
+    // continuous-tone (photo-like) rather than text-on-paper; above this it's
+    // treated as unambiguous text/ink contrast. Tuned against a scanned receipt
+    // (crisp binarization) and a colored ID-card-style photo (no speckling).
+    private const val LOW_STD_PHOTO = 10.0
+    private const val HIGH_STD_TEXT = 35.0
+
     /**
      * Per-channel histogram stretch: each of R/G/B is independently remapped
      * so its 1st percentile -> 0 and 99th percentile -> 255. This both removes
@@ -119,7 +126,18 @@ object DocumentEnhance {
                 val std = sqrt(variance)
                 val threshold = mean * (1.0 + k * (std / dynamicRange - 1.0))
                 val v = gray[y * width + x]
-                out[y * width + x] = if (v < threshold) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+
+                // Sauvola assumes bimodal (ink-on-paper) local contrast; applied to a
+                // continuous-tone photo region (a face, a gradient, a printed color
+                // pattern) it flips pixels on tiny local variation, producing
+                // black/white static. Only commit to a hard binary decision where the
+                // neighborhood has genuine text-like contrast; blend toward the plain
+                // gray tone as local contrast drops, so photos stay recognizable while
+                // real text still comes out crisp.
+                val textLikeness = ((std - LOW_STD_PHOTO) / (HIGH_STD_TEXT - LOW_STD_PHOTO)).coerceIn(0.0, 1.0)
+                val binary = if (v < threshold) 0 else 255
+                val blended = (v + (binary - v) * textLikeness).toInt().coerceIn(0, 255)
+                out[y * width + x] = (0xFF shl 24) or (blended shl 16) or (blended shl 8) or blended
             }
         }
         return Bitmap.createBitmap(out, width, height, Bitmap.Config.ARGB_8888)
