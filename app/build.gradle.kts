@@ -29,8 +29,8 @@ android {
         applicationId = "com.okapiorbits.sshotclassifier"
         minSdk = 26
         targetSdk = 35
-        versionCode = 40
-        versionName = "0.9.29" // Document scanner: magnifier loupe for precise corner dragging
+        versionCode = 41
+        versionName = "0.9.30" // Document scanner: auto white-balance + B&W printer mode
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
