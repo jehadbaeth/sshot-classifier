@@ -46,6 +46,9 @@ import com.okapiorbits.sshotclassifier.ui.camera.CameraCaptureScreen
 import com.okapiorbits.sshotclassifier.ui.camera.CameraCaptureViewModel
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryScreen
 import com.okapiorbits.sshotclassifier.ui.gallery.GalleryViewModel
+import com.okapiorbits.sshotclassifier.ui.scan.DocumentScanScreen
+import com.okapiorbits.sshotclassifier.ui.scan.DocumentScanViewModel
+import com.okapiorbits.sshotclassifier.ui.scan.ScanOrigin
 import com.okapiorbits.sshotclassifier.ui.settings.SettingsScreen
 import com.okapiorbits.sshotclassifier.ui.settings.SettingsViewModel
 import com.okapiorbits.sshotclassifier.ui.theme.ScreenshotClassifierTheme
@@ -100,6 +103,9 @@ private fun AppRoot() {
 
 private enum class Tab(val label: String) { Gallery("Gallery"), Settings("Settings") }
 
+/** An image awaiting the document-scan crop editor, and where it came from. */
+private data class PendingScan(val uri: android.net.Uri, val origin: ScanOrigin)
+
 @Composable
 private fun MainScaffold() {
     var tab by remember { mutableIntStateOf(0) }
@@ -126,12 +132,31 @@ private fun MainScaffold() {
                 when (current) {
                     0 -> {
                         var showCamera by rememberSaveable { mutableStateOf(false) }
-                        if (showCamera) {
+                        var pendingScan by remember { mutableStateOf<PendingScan?>(null) }
+                        val scan = pendingScan
+                        if (scan != null) {
+                            val scanVm: DocumentScanViewModel = hiltViewModel()
+                            DocumentScanScreen(
+                                viewModel = scanVm,
+                                sourceUri = scan.uri,
+                                origin = scan.origin,
+                                onDone = { pendingScan = null; showCamera = false },
+                                onCancel = { pendingScan = null },
+                            )
+                        } else if (showCamera) {
                             val camVm: CameraCaptureViewModel = hiltViewModel()
-                            CameraCaptureScreen(camVm, onClose = { showCamera = false })
+                            CameraCaptureScreen(
+                                camVm,
+                                onClose = { showCamera = false },
+                                onScanCaptured = { uri -> pendingScan = PendingScan(uri, ScanOrigin.FRESH_CAPTURE) },
+                            )
                         } else {
                             val vm: GalleryViewModel = hiltViewModel()
-                            GalleryScreen(vm, onOpenCamera = { showCamera = true })
+                            GalleryScreen(
+                                vm,
+                                onOpenCamera = { showCamera = true },
+                                onScanImage = { uri -> pendingScan = PendingScan(uri, ScanOrigin.EXISTING_IMAGE) },
+                            )
                         }
                     }
                     else -> {
