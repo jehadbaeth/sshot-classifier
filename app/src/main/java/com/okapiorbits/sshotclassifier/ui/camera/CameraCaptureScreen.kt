@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -69,7 +70,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  * after a shot so several things can be captured in a row.
  */
 @Composable
-fun CameraCaptureScreen(viewModel: CameraCaptureViewModel, onClose: () -> Unit) {
+fun CameraCaptureScreen(
+    viewModel: CameraCaptureViewModel,
+    onClose: () -> Unit,
+    onScanCaptured: (android.net.Uri) -> Unit = {},
+) {
     val context = LocalContext.current
     BackHandler(onBack = onClose)
 
@@ -92,6 +97,7 @@ fun CameraCaptureScreen(viewModel: CameraCaptureViewModel, onClose: () -> Unit) 
     val lifecycleOwner = LocalLifecycleOwner.current
     val imageCapture = remember { ImageCapture.Builder().build() }
     var capturing by remember { mutableStateOf(false) }
+    var scanMode by remember { mutableStateOf(false) }
     val captured by viewModel.capturedCount.collectAsStateWithLifecycle()
     val relativePath by viewModel.captureRelativePath.collectAsStateWithLifecycle()
     val recentCaptures by viewModel.recentCaptures.collectAsStateWithLifecycle()
@@ -179,25 +185,49 @@ fun CameraCaptureScreen(viewModel: CameraCaptureViewModel, onClose: () -> Unit) 
                     }
                 }
             }
+            // Photo mode indexes straight into the gallery; Scan mode hands the shot to the
+            // document-scan crop editor before anything is kept.
+            Row(
+                modifier = Modifier.padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                ModeChip(label = "Photo", selected = !scanMode, onClick = { scanMode = false })
+                ModeChip(label = "Scan", selected = scanMode, onClick = { scanMode = true })
+            }
             FloatingActionButton(
                 onClick = {
                     if (!capturing) {
                         capturing = true
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         triggerFlash()
-                        takePicture(
-                            context = context,
-                            imageCapture = imageCapture,
-                            relativePath = relativePath,
-                            onSaved = { uri ->
-                                capturing = false
-                                viewModel.onCaptured(uri)
-                            },
-                            onError = { msg ->
-                                capturing = false
-                                Toast.makeText(context, "Capture failed: $msg", Toast.LENGTH_LONG).show()
-                            },
-                        )
+                        if (scanMode) {
+                            takePictureToCache(
+                                context = context,
+                                imageCapture = imageCapture,
+                                onSaved = { uri ->
+                                    capturing = false
+                                    onScanCaptured(uri)
+                                },
+                                onError = { msg ->
+                                    capturing = false
+                                    Toast.makeText(context, "Capture failed: $msg", Toast.LENGTH_LONG).show()
+                                },
+                            )
+                        } else {
+                            takePicture(
+                                context = context,
+                                imageCapture = imageCapture,
+                                relativePath = relativePath,
+                                onSaved = { uri ->
+                                    capturing = false
+                                    viewModel.onCaptured(uri)
+                                },
+                                onError = { msg ->
+                                    capturing = false
+                                    Toast.makeText(context, "Capture failed: $msg", Toast.LENGTH_LONG).show()
+                                },
+                            )
+                        }
                     }
                 },
                 modifier = Modifier.size(72.dp),
@@ -246,6 +276,46 @@ private fun takePicture(
                 onError(exception.message ?: "unknown error")
             }
         },
+    )
+}
+
+private fun takePictureToCache(
+    context: android.content.Context,
+    imageCapture: ImageCapture,
+    onSaved: (android.net.Uri) -> Unit,
+    onError: (String) -> Unit,
+) {
+    val file = java.io.File(context.cacheDir, "scan_capture_${System.currentTimeMillis()}.jpg")
+    val output = ImageCapture.OutputFileOptions.Builder(file).build()
+
+    imageCapture.takePicture(
+        output,
+        ContextCompat.getMainExecutor(context),
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(results: ImageCapture.OutputFileResults) {
+                onSaved(android.net.Uri.fromFile(file))
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                onError(exception.message ?: "unknown error")
+            }
+        },
+    )
+}
+
+@Composable
+private fun ModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    androidx.compose.material3.FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        modifier = Modifier.padding(horizontal = 4.dp),
+        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            containerColor = Color.Black.copy(alpha = 0.35f),
+            labelColor = Color.White,
+            selectedContainerColor = Color.White,
+            selectedLabelColor = Color.Black,
+        ),
     )
 }
 
