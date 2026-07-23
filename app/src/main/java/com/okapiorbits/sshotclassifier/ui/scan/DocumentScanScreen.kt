@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -112,6 +113,31 @@ fun DocumentScanScreen(
                                 modifier = Modifier.fillMaxWidth().aspectRatio(bitmap.width.toFloat() / bitmap.height),
                                 imageBitmap = remember(bitmap) { bitmap.asImageBitmap() },
                             )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Black & white (for printing)")
+                                Switch(
+                                    checked = state.blackAndWhite,
+                                    onCheckedChange = { viewModel.toggleBlackAndWhite() },
+                                    enabled = !state.saving,
+                                    modifier = Modifier.padding(start = 8.dp),
+                                )
+                            }
+                            val preview = state.previewBitmap
+                            if (preview != null) {
+                                Image(
+                                    bitmap = remember(preview) { preview.asImageBitmap() },
+                                    contentDescription = "Preview",
+                                    modifier = Modifier
+                                        .height(64.dp)
+                                        .aspectRatio(preview.width.toFloat() / preview.height),
+                                )
+                            }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),

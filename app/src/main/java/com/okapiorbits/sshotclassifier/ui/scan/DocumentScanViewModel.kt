@@ -14,10 +14,13 @@ import com.okapiorbits.sshotclassifier.data.db.entity.SourceType
 import com.okapiorbits.sshotclassifier.data.prefs.CapturePreferencesStore
 import com.okapiorbits.sshotclassifier.data.repository.ScreenshotRepository
 import com.okapiorbits.sshotclassifier.monitoring.ScreenshotProcessingWorker
+import com.okapiorbits.sshotclassifier.pipeline.geometry.DocumentEnhance
 import com.okapiorbits.sshotclassifier.pipeline.geometry.PerspectiveCrop
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +39,10 @@ data class ScanUiState(
     val saving: Boolean = false,
     val error: String? = null,
     val done: Boolean = false,
+    /** Monotone-printer mode: binarize to pure black/white instead of the default color cleanup. */
+    val blackAndWhite: Boolean = false,
+    /** Downsampled preview of the warped + enhanced result, recomputed after corners settle. */
+    val previewBitmap: Bitmap? = null,
 )
 
 @HiltViewModel
@@ -55,6 +62,8 @@ class DocumentScanViewModel @Inject constructor(
     private var sourceWidth = 0
     private var sourceHeight = 0
 
+    private var previewJob: Job? = null
+
     fun load(uri: Uri, origin: ScanOrigin) {
         this.sourceUri = uri
         this.origin = origin
@@ -73,6 +82,7 @@ class DocumentScanViewModel @Inject constructor(
                 PointF(bitmap.width * inset, bitmap.height * (1 - inset)),
             )
             _state.value = ScanUiState(loading = false, bitmap = bitmap, corners = corners)
+            schedulePreview()
         }
     }
 
@@ -85,6 +95,7 @@ class DocumentScanViewModel @Inject constructor(
         )
         val updated = current.corners.toMutableList().also { it[index] = clamped }
         _state.value = current.copy(corners = updated)
+        schedulePreview()
     }
 
     fun resetCorners() {
@@ -98,6 +109,34 @@ class DocumentScanViewModel @Inject constructor(
                 PointF(bitmap.width * inset, bitmap.height * (1 - inset)),
             ),
         )
+        schedulePreview()
+    }
+
+    fun toggleBlackAndWhite() {
+        _state.value = _state.value.copy(blackAndWhite = !_state.value.blackAndWhite)
+        schedulePreview()
+    }
+
+    /** Recomputes the warped + enhanced preview shortly after corners/mode settle, so a
+     * fast drag doesn't trigger a warp+binarize pass on every frame. */
+    private fun schedulePreview() {
+        val current = _state.value
+        val bitmap = current.bitmap ?: return
+        if (current.corners.size != 4) return
+        previewJob?.cancel()
+        previewJob = viewModelScope.launch {
+            delay(200)
+            val corners = current.corners
+            val bw = current.blackAndWhite
+            val preview = withContext(Dispatchers.Default) {
+                val warped = PerspectiveCrop.warpToRect(bitmap, corners, maxDimension = 900)
+                val leveled = DocumentEnhance.autoLevels(warped)
+                if (bw) DocumentEnhance.binarize(leveled) else leveled
+            }
+            if (_state.value.corners === corners && _state.value.blackAndWhite == bw) {
+                _state.value = _state.value.copy(previewBitmap = preview)
+            }
+        }
     }
 
     fun confirm() {
@@ -116,8 +155,10 @@ class DocumentScanViewModel @Inject constructor(
                     val scaleY = fullRes.height.toFloat() / displayBitmap.height
                     val fullResCorners = current.corners.map { PointF(it.x * scaleX, it.y * scaleY) }
                     val cropped = PerspectiveCrop.warpToRect(fullRes, fullResCorners)
+                    val leveled = DocumentEnhance.autoLevels(cropped)
+                    val finished = if (current.blackAndWhite) DocumentEnhance.binarize(leveled) else leveled
                     val root = capturePreferencesStore.current().captureAlbumRoot
-                    writeScanToMediaStore(cropped, "Pictures/$root/Scans")
+                    writeScanToMediaStore(finished, "Pictures/$root/Scans")
                 }
             }.getOrNull()
 
